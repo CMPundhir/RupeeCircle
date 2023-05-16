@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-p9+e@ac7g=c8!#t%pqkot41c(93vrza+9@4%fos^v*37_a-4is
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -82,13 +82,15 @@ WSGI_APPLICATION = 'rupeecircle.wsgi.application'
 DATABASES = {
     'default': {
 		'ENGINE': 'django.db.backends.postgresql',
-		'NAME': 'rupeecircle',
+		'NAME': 'rupeecircle_new',
 		'USER': 'postgres',
 		'PASSWORD': 'purpose',
 		'HOST':'localhost',
 		'PORT':'5432',
 	}
 }
+
+AUTH_USER_MODEL = 'mauth.CustomUser'
 
 
 # Password validation

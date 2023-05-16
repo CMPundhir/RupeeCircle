@@ -18,12 +18,14 @@ from django.contrib import admin
 # from rest_framework.urls
 from django.urls import path, include
 from routes.v1_routes import v1_router
-from apps.mauth.views import LogInView, LogOutView
+from apps.mauth.views import LogInView, LogOutView#, RegistrationViewSet
 urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('admin/', admin.site.urls),
     path('login/', LogInView.as_view(), name='login'),
     path('logout/', LogOutView.as_view(), name='logout'),
+    # path('registration/', RegistrationViewSet.as_view(), name='Registration'),
+    path('v1/', include(v1_router.urls), name="v1")
 ]
 
 admin.site.site_header = "Rupee Circle Admin"
