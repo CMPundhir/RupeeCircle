@@ -30,6 +30,12 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
 
 class CustomUser(AbstractUser):
+    STATUS_CHOICES = (('MOBILE VERIFICATION', 'MOBILE VERIFICATION'), 
+                      ('PAN VERIFICATION', 'PAN VERIFICATION'), 
+                      ('AADHAR VERIFICATION', 'AADHAR VERIFICATION'),
+                      ('BANK VERIFICATION', 'BANK VERIFICATION'),
+                      ('ACTIVE', 'ACTIVE'))
+
     name = models.CharField(null=True, blank=True)
     phone = models.CharField(unique=True, null=True, blank=True)
     is_phone_verified = models.BooleanField(default=False)
@@ -39,6 +45,8 @@ class CustomUser(AbstractUser):
     is_aadhar_verified = models.BooleanField(default=False)
     bank_acc = models.CharField(null=True, blank=True)
     is_bank_acc_verified = models.BooleanField(default=False)
+    # is_active = models.BooleanField(default=False)
+    status = models.CharField(choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []

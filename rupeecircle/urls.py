@@ -18,13 +18,18 @@ from django.contrib import admin
 # from rest_framework.urls
 from django.urls import path, include
 from routes.v1_routes import v1_router
-from apps.mauth.views import LogInView, LogOutView#, RegistrationViewSet
+from apps.mauth.views import *
 urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('admin/', admin.site.urls),
-    path('login/', LogInView.as_view(), name='login'),
-    path('logout/', LogOutView.as_view(), name='logout'),
-    # path('registration/', RegistrationViewSet.as_view(), name='Registration'),
+    # path('login/', LogInView.as_view(), name='login'),
+    # path('logout/', LogOutView.as_view(), name='logout'),
+    # path('get-otp/', GetOTPView.as_view(), name='get-otp'),
+    # path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
+    # path('get-pan/', PanDetailView.as_view(), name='get-pan'),
+    # path('verify-pan/', PanVerifyView.as_view(), name='verify-pan'),
+    # path('get-aadhar/', AadharDetailView.as_view(), name='get-aadhar'),
+    # path('verify-aadhar/', AadharVerifyView.as_view(), name='verify-aadhar'),
     path('v1/', include(v1_router.urls), name="v1")
 ]
 
