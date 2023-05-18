@@ -5,9 +5,10 @@ from django.contrib.auth.password_validation import validate_password
 
 class LogInSerializer(serializers.ModelSerializer):
     mobile = serializers.CharField()
+    otp = serializers.IntegerField()
     class Meta:
         model = User
-        fields = ['mobile']
+        fields = ['mobile', 'otp']
 
 
 class GetOTPSerializer(serializers.ModelSerializer):

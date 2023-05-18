@@ -43,8 +43,9 @@ class AuthViewSet(viewsets.ModelViewSet):
         serializer = LogInSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             mobile = serializer.validated_data['mobile']
+            otp = serializer.validated_data['otp']
             instance = User.objects.filter(mobile=mobile).exists()
-            if instance and data:
+            if instance and OTP_DICT[f'{mobile}'] == otp:
                 user = User.objects.get(mobile=mobile)
                 # if user.status == CustomUser.STATUS_CHOICES[4][0]:
                 token = get_tokens_for_user(user)
@@ -213,6 +214,6 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = BankDetailSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            return Response("Bank Account.")
+            return Response("Hello Ankur.")
         return Response(serializer.errors)
     
