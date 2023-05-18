@@ -189,3 +189,14 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"msg": "OTP does not match."})
         return Response(serializer.errors)
            
+    @action(methods=['POST'], detail=True)
+    def bankDetail(self, request, pk):
+        '''
+        Takes bank details and verifies Bank with a Penny drop testing.
+        '''
+        data = request.data
+        serializer = BankDetailSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            return Response("Bank Account.")
+        return Response(serializer.errors)
+    

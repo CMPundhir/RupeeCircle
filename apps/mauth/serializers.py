@@ -91,6 +91,15 @@ class AadharVerifySerializer(serializers.ModelSerializer):
         model = User
         fields = ['otp']
 
+
+class BankDetailSerializer(serializers.ModelSerializer):
+    bank_acc = serializers.CharField()
+
+    class Meta:
+        model = User
+        fields = ['bank_acc']
+
+
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
