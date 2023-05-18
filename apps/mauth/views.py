@@ -43,30 +43,46 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(methods=['POST'], detail=False)
     def getOtp(self, request):
         '''
-        This function takes phone number and generates OTP and returns User Id and OTP in response.
+        This function takes mobile number and generates OTP and returns User Id and OTP in response.
         '''
         data = request.data
+        print(data)
         # global OTP
         serializer = GetOTPSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            phone=serializer.validated_data['phone']
-            user = User.objects.filter(phone=phone).exists()
-            if user:
-                otp = random.randint(1000, 9999)
-                # OTP = otp
-                OTP_DICT[f'{phone}'] = otp
-                id = user.id
-                return Response({"id": id, "otp": f"Your OTP is {otp}."})
-            else:
-                User.objects.create(username=phone, phone=phone)
-                otp = random.randint(1000, 9999)
-                OTP_DICT[f'{phone}'] = otp
-                # OTP = int(otp)
-                return Response({f"Your OTP is {otp}."})
+            mobile=serializer.validated_data['mobile']
+            try:
+                instance = User.objects.filter(mobile=mobile)[0]
+                print("Try")
+            except:
+                instance = User.objects.create(username=mobile, mobile=mobile)
+                print("Except")
+            # instance = User.objects.get(mobile=mobile)
+            otp = random.randint(1000, 9999)
+            # OTP = otp
+            OTP_DICT[f'{mobile}'] = otp
+            print(OTP_DICT[f'{mobile}'])
+            print(instance)
+            id = instance.id
+            return Response({"id": id, "otp": f"Your OTP is {otp}."})
+            # if user:
+            #     instance = User.objects.get(mobile=mobile)
+            #     otp = random.randint(1000, 9999)
+            #     # OTP = otp
+            #     OTP_DICT[f'{mobile}'] = otp
+            #     id = instance.id
+            #     return Response({"id": id, "otp": f"Your OTP is {otp}."})
+            # else:
+            #     instance = User.objects.create(username=mobile, mobile=mobile)
+            #     otp = random.randint(1000, 9999)
+            #     OTP_DICT[f'{mobile}'] = otp
+            #     id = instance.id
+            #     # OTP = int(otp)
+            #     return Response({f"Your OTP is {otp}."})
         return Response(serializer.errors)
 
     @action(methods=['POST'], detail=True)
-    def verifyOtp(self, request):
+    def verifyOtp(self, request, pk):
         '''
         This method verifies OTP for the given mobile number and return registration status and auth tokens in response if OTP matches
         else returns response accordingly.
@@ -75,27 +91,28 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = VerifyOTPSerializer(data=data)
         if serializer.is_valid():
             otp = serializer.validated_data['otp']
-            phone = serializer.validated_data['phone']
+            mobile = serializer.validated_data['mobile']
             # global OTP
-            if OTP_DICT[f'phone'] == otp:
-                user = User.objects.get(phone=phone)
-                if user.is_active == CustomUser.STATUS_CHOICES[0]:
-                    user.is_phone_verified = True
+            print(OTP_DICT[f'{mobile}'])
+            if OTP_DICT[f'{mobile}'] == otp:
+                user = User.objects.get(pk=pk)
+                if user.status == CustomUser.STATUS_CHOICES[0][0]:
+                    user.is_mobile_verified = True
                     user.status = CustomUser.STATUS_CHOICES[1][0]
                     user.save()
-                    del OTP_DICT[f'phone']
+                    del OTP_DICT[f'{mobile}']
                     # return Response({"msg": "OTP Verified", "step": user.is_active})
                 # try:
-                #     user = User.objects.get(phone=phone)
+                #     user = User.objects.get(mobile=mobile)
                 # except:
-                #     user = User.objects.create(username=phone, phone=phone)
+                #     user = User.objects.create(username=mobile, mobile=mobile)
                 token = get_tokens_for_user(user)
                 return Response({"msg": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
             return Response("OTP does not match.", status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.error_messages)
     
     @action(methods=['POST'], detail=True)
-    def panDetail(self, request):
+    def panDetail(self, request, pk):
         '''
         Takes PAN number and obtains response from PAN database if matches return owner Name in response
         '''
@@ -104,14 +121,14 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = PanSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(phone=request.data['phone'])
+            user = User.objects.get(pk=pk)
             user.pan = serializer.validated_data['pan']
             user.save()
             return Response({"Name": "Your Name"})
         return Response(serializer.errors)
     
     @action(methods=['POST'], detail=True)
-    def panVerify(self, request):
+    def panVerify(self, request, pk):
         '''
         Takes boolean response and saves PAN verification status of user
         '''
@@ -120,7 +137,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = PanVerifySerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(phone=request.data['phone'])
+            user = User.objects.get(pk=pk)
             is_verified = serializer.validated_data['is_verified']
             if is_verified == True:
                 user.is_pan_verified = True
@@ -131,7 +148,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors)
             
     @action(methods=['POST'], detail=True)
-    def aadharDetail(self, request):
+    def aadharDetail(self, request, pk):
         '''
         Takes Aadhar detail and generates OTP for verification for aadhar Verification
         '''
@@ -139,19 +156,19 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = AadharSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(phone=request.data['phone'])
+            user = User.objects.get(pk=pk)
             user.aadhar = serializer.validated_data['aadhar']
             user.save()
-            phone = user.phone
+            mobile = user.mobile
             # global AADHAR_OTP
             otp = random.randint(1000, 9999)
-            OTP_DICT[f'{phone}'] = otp
+            OTP_DICT[f'{mobile}'] = otp
             # AADHAR_OTP = otp
             return Response({"otp": otp})
         return Response(serializer.errors)
     
     @action(methods=['POST'], detail=True)
-    def aadharVerify(self, request):
+    def aadharVerify(self, request, pk):
         '''
         Verifies Aadhar OTP and saves Aadhar verification status of user
         '''
@@ -160,10 +177,11 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = AadharVerifySerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(phone=request.data['phone'])
+            user = User.objects.get(pk)
+            mobile = serializer.validated_data['mobile']
             otp = serializer.validated_data['otp']
-            global AADHAR_OTP
-            if otp == AADHAR_OTP:
+            # global AADHAR_OTP
+            if otp == OTP_DICT[f'{mobile}']:
                 user.is_aadhar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
                 user.save()
