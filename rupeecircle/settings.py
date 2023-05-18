@@ -26,8 +26,22 @@ SECRET_KEY = 'django-insecure-p9+e@ac7g=c8!#t%pqkot41c(93vrza+9@4%fos^v*37_a-4is
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 ALLOWED_HOSTS = ['*']
-
+CORS_ORIGIN_ALLOW_ALL=True
+CSRF_TRUSTED_ORIGINS=[
+    'http://45.142.237.159:82',
+    'http://127.0.0.1:82',
+    'http://localhost:82',
+    'http://192.168.1.20',
+    'http://103.165.119.250:82' 
+    'http://192.168.1.16:82',
+    'http://103.165.119.250:82',
+    'http://localhost:8020',
+    'http://45.142.237.159:8020',
+    'http://127.0.0.1:8020',
+    'https://api.tezphone.com'
+]
 
 # Application definition
 
@@ -42,12 +56,16 @@ INSTALLED_APPS = [
     'rest_framework',
     'apps.mauth',
     'rest_framework_simplejwt',
+    "corsheaders",
+    'sslserver',
+    'django_filters', 
     # 'apps.mauth.apps.MauthConfig.name',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

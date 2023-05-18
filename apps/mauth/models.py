@@ -38,7 +38,7 @@ class CustomUser(AbstractUser):
 
     name = models.CharField(null=True, blank=True)
     mobile = models.CharField(unique=True, null=True, blank=True)
-    is_phone_verified = models.BooleanField(default=False)
+    is_mobile_verified = models.BooleanField(default=False)
     pan = models.CharField(null=True, blank=True)
     is_pan_verified = models.BooleanField(default=False)
     aadhar = models.CharField(null=True, blank=True)
