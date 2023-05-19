@@ -104,9 +104,11 @@ class AuthViewSet(viewsets.ModelViewSet):
             if f'{mobile}' in OTP_DICT:
                 print(OTP_DICT[f'{mobile}'])
                 if OTP_DICT[f'{mobile}'] == otp:
-                    instance = User.objects.filter(mobile=mobile).exists
+                    instance = User.objects.filter(mobile=mobile).exists()
+                    print(instance)
                     if instance:
                         user = User.objects.get(mobile=mobile)
+                        print(user)
                         verification = f'{user.status}'.replace('_',' ')
                         token = get_tokens_for_user(user)
                         return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
@@ -161,6 +163,10 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = PanSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
+            pan = serializer.validated_data['pan']
+            pan_already_exists = User.objects.filter(pan=pan).exists()
+            if pan_already_exists:
+                return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             # user = User.objects.get(id=request.user.id)
             # user = User.objects.get(pk=pk)
             # user.pan = serializer.validated_data['pan']
@@ -183,6 +189,9 @@ class UserViewSet(viewsets.ModelViewSet):
             name = serializer.validated_data['name']
             is_verified = serializer.validated_data['is_verified']
             if is_verified == True:
+                pan_already_exists = User.objects.filter(pan=pan).exists()
+                if pan_already_exists:
+                    return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
                 user.pan = pan
                 user.name = name
                 user.is_pan_verified = True
@@ -201,6 +210,9 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = AadharSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             aadhaar = serializer.validated_data['aadhaar']
+            aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
+            if aadhaar_already_exists:
+                return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             otp = random.randint(100000, 999999)
             OTP_DICT[f'{aadhaar}'] = otp
             return Response({"message": "OTP sent successfully.", "otp": otp})
@@ -221,6 +233,9 @@ class UserViewSet(viewsets.ModelViewSet):
             otp = serializer.validated_data['otp']
             # global AADHAR_OTP
             if otp == OTP_DICT[f'{aadhaar}']:
+                aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
+                if aadhaar_already_exists:
+                    return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
                 user.aadhaar = aadhaar
                 user.is_aadhar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
