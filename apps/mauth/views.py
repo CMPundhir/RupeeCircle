@@ -21,6 +21,7 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
+
 class AuthViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
@@ -37,8 +38,23 @@ class AuthViewSet(viewsets.ModelViewSet):
         else:
             return UserSerializer
     
+    def create(self, request):
+        return Response("Method Not Allowed", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def list(self, request):
+        return Response("Method Not Allowed", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def retrieve(self, request):
+        return Response("Method Not Allowed", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def delete(self, request):
+        return Response("Method Not Allowed", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
     @action(methods=['POST'], detail=False)
     def login(self, request):
+        '''
+        Login API accepts phone number and otp validates and sends response accordingly.
+        '''
         data = request.data
         serializer = LogInSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
@@ -49,15 +65,17 @@ class AuthViewSet(viewsets.ModelViewSet):
                 user = User.objects.get(mobile=mobile)
                 # if user.status == CustomUser.STATUS_CHOICES[4][0]:
                 token = get_tokens_for_user(user)
-                return Response({"token": token, "status": user.status}, status=status.HTTP_200_OK)
-            return Response({"msg": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(serializer.errors)
+                if user.status != CustomUser.STATUS_CHOICES[4][0]:
+                    verification = f'{user.status}'.replace('_', ' ')
+                    return Response({"id": user.id, "token": token, "message": f"Kindly complete your registration from {verification}", "step": user.status}, status=status.HTTP_200_OK)
+                return Response({"id": user.id, "token": token, 'message':'Login Successful.', "status": user.status}, status=status.HTTP_200_OK)
+            return Response({"message": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @permission_classes([AllowAny])
     @action(methods=['POST'], detail=False)
     def getOtp(self, request):
         '''
-        This function takes mobile number and generates OTP and returns User Id and OTP in response.
+        Takes mobile number and generates OTP and returns User Id and OTP in response.
         '''
         data = request.data
         print(data)
@@ -65,17 +83,16 @@ class AuthViewSet(viewsets.ModelViewSet):
         serializer = GetOTPSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             mobile=serializer.validated_data['mobile']
-            otp = random.randint(1000, 9999)
+            otp = random.randint(100000, 999999)
             OTP_DICT[f'{mobile}'] = otp
             print(OTP_DICT[f'{mobile}'])
-            return Response({"otp": f"Your OTP is {otp}."})
-        return Response(serializer.errors)
+            return Response({"message": f"Your OTP is {otp}."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @permission_classes([AllowAny])
     @action(methods=['POST'], detail=False)
     def registerApi(self, request):
         '''
-        This method verifies OTP for the given mobile number and return registration status and auth tokens in response if OTP matches
+        Verifies OTP for the given mobile number and return registration status and auth tokens in response if OTP matches
         else returns response accordingly.
         '''
         data = request.data
@@ -84,28 +101,38 @@ class AuthViewSet(viewsets.ModelViewSet):
             otp = serializer.validated_data['otp']
             mobile = serializer.validated_data['mobile']
             # global OTP
-            print(OTP_DICT[f'{mobile}'])
-            if OTP_DICT[f'{mobile}'] == otp:
-                user = User.objects.create(username=mobile, mobile=mobile, is_mobile_verified=True, status=CustomUser.STATUS_CHOICES[1][0])
-                # user = User.objects.get(pk=pk)
-                # if user.status == CustomUser.STATUS_CHOICES[0][0]:
-                user.is_mobile_verified = True
-                user.status = CustomUser.STATUS_CHOICES[1][0]
-                user.save()
-                id = user.id
-                del OTP_DICT[f'{mobile}']
-                    # return Response({"msg": "OTP Verified", "step": user.is_active})
-                # try:
-                #     user = User.objects.get(mobile=mobile)
-                # except:
-                #     user = User.objects.create(username=mobile, mobile=mobile)
-                token = get_tokens_for_user(user)
-                return Response({"id": id, "msg": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
-            return Response("OTP does not match.", status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.error_messages)
+            if f'{mobile}' in OTP_DICT:
+                print(OTP_DICT[f'{mobile}'])
+                if OTP_DICT[f'{mobile}'] == otp:
+                    instance = User.objects.filter(mobile=mobile).exists
+                    if instance:
+                        user = User.objects.get(mobile=mobile)
+                        verification = f'{user.status}'.replace('_',' ')
+                        token = get_tokens_for_user(user)
+                        return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
+                    user = User.objects.create(username=mobile, mobile=mobile, is_mobile_verified=True, status=CustomUser.STATUS_CHOICES[1][0])
+                    # user = User.objects.get(pk=pk)
+                    # if user.status == CustomUser.STATUS_CHOICES[0][0]:
+                    user.is_mobile_verified = True
+                    # user.tnc = True
+                    user.status = CustomUser.STATUS_CHOICES[1][0]
+                    user.save()
+                    id = user.id
+                    del OTP_DICT[f'{mobile}']
+                        # return Response({"msg": "OTP Verified", "step": user.is_active})
+                    # try:
+                    #     user = User.objects.get(mobile=mobile)
+                    # except:
+                    #     user = User.objects.create(username=mobile, mobile=mobile)
+                    token = get_tokens_for_user(user)
+                    return Response({"id": id, "message": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
+                return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Please generate OTP first."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = User.objects.all()
@@ -120,10 +147,11 @@ class UserViewSet(viewsets.ModelViewSet):
             return AadharSerializer
         elif self.action == 'aadharVerify':
             return AadharVerifySerializer
+        elif self.action == 'bankDetail':
+            return BankDetailSerializer
         else:
             return UserSerializer
-    
-    # @permission_classes([IsAuthenticated])
+
     @action(methods=['POST'], detail=True)
     def panDetail(self, request, pk):
         '''
@@ -134,17 +162,16 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = PanSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(pk=pk)
-            user.pan = serializer.validated_data['pan']
-            user.save()
-            return Response({"Name": "Your Name"})
-        return Response(serializer.errors)
+            # user = User.objects.get(pk=pk)
+            # user.pan = serializer.validated_data['pan']
+            # user.save()
+            return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    # @permission_classes([IsAuthenticated])
     @action(methods=['POST'], detail=True)
     def panVerify(self, request, pk):
         '''
-        Takes boolean response and saves PAN verification status of user
+        Takes response and saves PAN verification status of user
         '''
         # user = request.user
         data = request.data
@@ -152,16 +179,19 @@ class UserViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
             user = User.objects.get(pk=pk)
+            pan = serializer.validated_data['pan']
+            name = serializer.validated_data['name']
             is_verified = serializer.validated_data['is_verified']
             if is_verified == True:
+                user.pan = pan
+                user.name = name
                 user.is_pan_verified = True
                 user.status = CustomUser.STATUS_CHOICES[2][0]
                 user.save()
-                return Response({'msg': 'PAN Verification successful', 'step': user.status})
-            return Response({"msg": "Please verify Name."})
-        return Response(serializer.errors)
+                return Response({'message': 'PAN Verification successful', 'step': user.status})
+            return Response({"message": "Please verify Name."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # @permission_classes([IsAuthenticated])  
     @action(methods=['POST'], detail=True)
     def aadharDetail(self, request, pk):
         '''
@@ -170,19 +200,12 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = AadharSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(pk=pk)
-            user.aadhar = serializer.validated_data['aadhar']
-            user.save()
-            mobile = user.mobile
-            # global AADHAR_OTP
-            otp = random.randint(1000, 9999)
-            OTP_DICT[f'{mobile}'] = otp
-            # AADHAR_OTP = otp
-            return Response({"otp": otp})
-        return Response(serializer.errors)
+            aadhaar = serializer.validated_data['aadhaar']
+            otp = random.randint(100000, 999999)
+            OTP_DICT[f'{aadhaar}'] = otp
+            return Response({"message": "OTP sent successfully.", "otp": otp})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    # @permission_classes([IsAuthenticated])
     @action(methods=['POST'], detail=True)
     def aadharVerify(self, request, pk):
         '''
@@ -193,19 +216,19 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = AadharVerifySerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(pk)
-            mobile = serializer.validated_data['mobile']
+            user = User.objects.get(pk=pk)
+            aadhaar = serializer.validated_data['aadhaar']
             otp = serializer.validated_data['otp']
             # global AADHAR_OTP
-            if otp == OTP_DICT[f'{mobile}']:
+            if otp == OTP_DICT[f'{aadhaar}']:
+                user.aadhaar = aadhaar
                 user.is_aadhar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
                 user.save()
-                return Response({'msg': 'Aadhar Verification successful', 'step': user.status})
-            return Response({"msg": "OTP does not match."})
-        return Response(serializer.errors)
+                return Response({'message': 'Aadhar Verification successful', 'step': user.status})
+            return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    # @permission_classes([IsAuthenticated])
     @action(methods=['POST'], detail=True)
     def bankDetail(self, request, pk):
         '''
@@ -214,6 +237,10 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = BankDetailSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            return Response("Hello Ankur.")
-        return Response(serializer.errors)
-    
+            if 'bank' in serializer.validated_data and 'bank_acc' in serializer.validated_data:
+                return Response({"message": "Hello Ankur."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # @action(methods=['POST'], detail=True)
+    # def bankVerify(self, request, pk):
+    #     data = request.data

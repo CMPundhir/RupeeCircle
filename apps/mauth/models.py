@@ -30,22 +30,24 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
 
 class CustomUser(AbstractUser):
-    STATUS_CHOICES = (('MOBILE VERIFICATION', 'MOBILE VERIFICATION'), 
-                      ('PAN VERIFICATION', 'PAN VERIFICATION'), 
-                      ('AADHAR VERIFICATION', 'AADHAR VERIFICATION'),
-                      ('BANK VERIFICATION', 'BANK VERIFICATION'),
+    STATUS_CHOICES = (('MOBILE_VERIFICATION', 'MOBILE_VERIFICATION'), 
+                      ('PAN_VERIFICATION', 'PAN_VERIFICATION'), 
+                      ('AADHAAR_VERIFICATION', 'AADHAAR_VERIFICATION'),
+                      ('BANK_VERIFICATION', 'BANK_VERIFICATION'),
                       ('ACTIVE', 'ACTIVE'))
 
     name = models.CharField(null=True, blank=True)
+    # tnc = models.BooleanField(default=False)
     mobile = models.CharField(unique=True, null=True, blank=True)
     is_mobile_verified = models.BooleanField(default=False)
-    pan = models.CharField(null=True, blank=True)
+    # email = models.EmailField(blank=True, null=True)
+    # is_email_verified = models.BooleanField(blank=True, null=True)
+    pan = models.CharField(null=True, blank=True, unique=True)
     is_pan_verified = models.BooleanField(default=False)
-    aadhar = models.CharField(null=True, blank=True)
-    is_aadhar_verified = models.BooleanField(default=False)
-    bank_acc = models.CharField(null=True, blank=True)
+    aadhaar = models.CharField(null=True, blank=True, unique=True)
+    is_aadhaar_verified = models.BooleanField(default=False)
+    bank_acc = models.CharField(null=True, blank=True, unique=True)
     is_bank_acc_verified = models.BooleanField(default=False)
-    # is_active = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
 
     USERNAME_FIELD = 'username'
@@ -54,4 +56,4 @@ class CustomUser(AbstractUser):
     objects = CustomUserManager()
 
     def __str__(self):
-        return self.phone
+        return self.username
