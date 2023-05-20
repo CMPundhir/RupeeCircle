@@ -23,6 +23,7 @@ def get_tokens_for_user(user):
 
 
 class AuthViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
     
     def get_queryset(self):
         queryset = User.objects.all()
@@ -65,11 +66,13 @@ class AuthViewSet(viewsets.ModelViewSet):
                 user = User.objects.get(mobile=mobile)
                 # if user.status == CustomUser.STATUS_CHOICES[4][0]:
                 token = get_tokens_for_user(user)
-                if user.status != CustomUser.STATUS_CHOICES[4][0]:
-                    verification = f'{user.status}'.replace('_', ' ')
-                    return Response({"id": user.id, "token": token, "message": f"Kindly complete your registration from {verification}", "step": user.status}, status=status.HTTP_200_OK)
-                return Response({"id": user.id, "token": token, 'message':'Login Successful.', "status": user.status}, status=status.HTTP_200_OK)
-            return Response({"message": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
+                print("Entering if statement")
+                if user.status == CustomUser.STATUS_CHOICES[4][0]:
+                    print("Entered if statement")
+                    return Response({"id": user.id, "token": token, 'message':'Login Successful.', 'message': 'Login Successful.', "step": user.status}, status=status.HTTP_200_OK)
+                verification = f'{user.status}'.replace('_', ' ')
+                return Response({"id": user.id, "token": token, "message": f"Kindly complete your registration from {verification}", "step": user.status}, status=status.HTTP_200_OK)
+            return Response({"message": "User does not exist.", "step": CustomUser.STATUS_CHOICES[0][0]}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -99,8 +102,8 @@ class AuthViewSet(viewsets.ModelViewSet):
         serializer = VerifyOTPSerializer(data=data)
         if serializer.is_valid():
             otp = serializer.validated_data['otp']
+            is_tnc_accepted = serializer.validated_data['is_tnc_accepted']
             mobile = serializer.validated_data['mobile']
-            # global OTP
             if f'{mobile}' in OTP_DICT:
                 print(OTP_DICT[f'{mobile}'])
                 if OTP_DICT[f'{mobile}'] == otp:
@@ -112,7 +115,9 @@ class AuthViewSet(viewsets.ModelViewSet):
                         verification = f'{user.status}'.replace('_',' ')
                         token = get_tokens_for_user(user)
                         return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
-                    user = User.objects.create(username=mobile, mobile=mobile, is_mobile_verified=True, status=CustomUser.STATUS_CHOICES[1][0])
+                    if is_tnc_accepted != True:
+                        return Response({"message": "Please accept Terms & Conditions."}, status=status.HTTP_400_BAD_REQUEST)
+                    user = User.objects.create(username=mobile, mobile=mobile, is_mobile_verified=True, is_tnc_accepted=is_tnc_accepted, status=CustomUser.STATUS_CHOICES[1][0])
                     # user = User.objects.get(pk=pk)
                     # if user.status == CustomUser.STATUS_CHOICES[0][0]:
                     user.is_mobile_verified = True
@@ -193,7 +198,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 if pan_already_exists:
                     return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
                 user.pan = pan
-                user.name = name
+                user.pan_name = name
                 user.is_pan_verified = True
                 user.status = CustomUser.STATUS_CHOICES[2][0]
                 user.save()
@@ -230,13 +235,17 @@ class UserViewSet(viewsets.ModelViewSet):
             # user = User.objects.get(id=request.user.id)
             user = User.objects.get(pk=pk)
             aadhaar = serializer.validated_data['aadhaar']
+            name = serializer.validated_data['name']
             otp = serializer.validated_data['otp']
             # global AADHAR_OTP
             if otp == OTP_DICT[f'{aadhaar}']:
                 aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
                 if aadhaar_already_exists:
                     return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+                if user.pan_name != name:
+                    return Response({'message': 'Aadhaar name doesn\'t match with PAN name.'}, status=status.HTTP_400_BAD_REQUEST)
                 user.aadhaar = aadhaar
+                user.aadhaar_name = name
                 user.is_aadhar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
                 user.save()
@@ -251,11 +260,22 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         data = request.data
         serializer = BankDetailSerializer(data=data)
+        # print("Validating Serializer")
         if serializer.is_valid(raise_exception=True):
-            if 'bank' in serializer.validated_data and 'bank_acc' in serializer.validated_data:
-                return Response({"message": "Hello Ankur."}, status=status.HTTP_200_OK)
+            # print("Serializer Validated")
+            if 'acc_holder_name' in serializer.validated_data and 'bank_acc' in serializer.validated_data and 'bank_ifsc' in serializer.validated_data:
+                # print("Getting User object.")
+                acc_holder_name = serializer.validated_data['acc_holder_name']
+                bank_acc = serializer.validated_data['bank_acc']
+                bank_ifsc = serializer.validated_data['bank_ifsc']
+                # Match the name here
+                user = User.objects.get(pk=pk)
+                user.acc_holder_name = acc_holder_name
+                # user.account_holder_name = 'Name'
+                user.bank_acc = bank_acc
+                user.bank_ifsc = bank_ifsc
+                user.status = CustomUser.STATUS_CHOICES[4][0]
+                user.save()
+                return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # @action(methods=['POST'], detail=True)
-    # def bankVerify(self, request, pk):
-    #     data = request.data

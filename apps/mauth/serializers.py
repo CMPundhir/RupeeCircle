@@ -21,11 +21,13 @@ class GetOTPSerializer(serializers.ModelSerializer):
 
 class VerifyOTPSerializer(serializers.ModelSerializer):
     mobile = serializers.CharField()
+    is_tnc_accepted = serializers.BooleanField()
     otp = serializers.IntegerField()
 
     class Meta:
         model = User
-        fields = ['mobile', 'otp']
+        fields = ['mobile', 'is_tnc_accepted', 'otp']
+
 
 class PanSerializer(serializers.ModelSerializer):
     # mobile = serializers.CharField()
@@ -34,6 +36,7 @@ class PanSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['pan']
+
 
 class PanVerifySerializer(serializers.ModelSerializer):
     # mobile = serializers.CharField()
@@ -53,26 +56,30 @@ class AadharSerializer(serializers.ModelSerializer):
         model = User
         fields = ['aadhaar']
 
+
 class AadharVerifySerializer(serializers.ModelSerializer):
     aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
+    name = serializers.CharField()
     otp = serializers.IntegerField()
 
     class Meta:
         model = User
-        fields = ['aadhaar', 'otp']
+        fields = ['aadhaar', 'name', 'otp']
 
 
 class BankDetailSerializer(serializers.ModelSerializer):
-    bank = serializers.CharField()
+    acc_holder_name = serializers.CharField()
+    bank_ifsc = serializers.CharField()
+    # name = serializers.Ch
     bank_acc = serializers.CharField()
 
     class Meta:
         model = User
-        fields = ['bank', 'bank_acc']
+        fields = ['acc_holder_name', 'bank_ifsc', 'bank_acc']
 
 
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'mobile', 'is_mobile_verified', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'is_bank_acc_verified', 'status']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'mobile', 'is_mobile_verified', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status']
