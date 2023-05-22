@@ -70,7 +70,6 @@ class AadharVerifySerializer(serializers.ModelSerializer):
 class BankDetailSerializer(serializers.ModelSerializer):
     acc_holder_name = serializers.CharField()
     bank_ifsc = serializers.CharField()
-    # name = serializers.Ch
     bank_acc = serializers.CharField()
 
     class Meta:
@@ -78,8 +77,25 @@ class BankDetailSerializer(serializers.ModelSerializer):
         fields = ['acc_holder_name', 'bank_ifsc', 'bank_acc']
 
 
+class EmailDetailSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
+
+    class Meta:
+        model = User
+        fields = ['email']
+
+
+class EmailVerifySerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
+    otp = serializers.IntegerField()
+
+    class Meta:
+        model = User
+        fields = ['email', 'otp']
+
+
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'mobile', 'is_mobile_verified', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status']

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 import random
-from utility.otputility import OTP_DICT, AADHAR_OTP_DICT
+from utility.otputility import *
 from apps.mauth.models import CustomUser
 from django.contrib.auth import authenticate, logout
 from .serializers import *
@@ -57,21 +57,21 @@ class AuthViewSet(viewsets.ModelViewSet):
         Login API accepts phone number and otp validates and sends response accordingly.
         '''
         data = request.data
-        serializer = LogInSerializer(data=data)
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             mobile = serializer.validated_data['mobile']
             otp = serializer.validated_data['otp']
             instance = User.objects.filter(mobile=mobile).exists()
-            if instance and OTP_DICT[f'{mobile}'] == otp:
-                user = User.objects.get(mobile=mobile)
-                # if user.status == CustomUser.STATUS_CHOICES[4][0]:
-                token = get_tokens_for_user(user)
-                print("Entering if statement")
-                if user.status == CustomUser.STATUS_CHOICES[4][0]:
-                    print("Entered if statement")
-                    return Response({"id": user.id, "token": token, 'message':'Login Successful.', 'message': 'Login Successful.', "step": user.status}, status=status.HTTP_200_OK)
-                verification = f'{user.status}'.replace('_', ' ')
-                return Response({"id": user.id, "token": token, "message": f"Kindly complete your registration from {verification}", "step": user.status}, status=status.HTTP_200_OK)
+            if instance:
+                if mobile in OTP_DICT and OTP_DICT[f'{mobile}'] == otp:
+                    user = User.objects.get(mobile=mobile)
+                    # if user.status == CustomUser.STATUS_CHOICES[4][0]:
+                    token = get_tokens_for_user(user)
+                    if user.status == CustomUser.STATUS_CHOICES[4][0]:
+                        return Response({"id": user.id, "token": token, 'message':'Login Successful.', 'message': 'Login Successful.', "step": user.status}, status=status.HTTP_200_OK)
+                    verification = f'{user.status}'.replace('_', ' ')
+                    return Response({"id": user.id, "token": token, "message": f"Kindly complete your registration from {verification}", "step": user.status}, status=status.HTTP_200_OK)
+                return Response({"message": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
             return Response({"message": "User does not exist.", "step": CustomUser.STATUS_CHOICES[0][0]}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -83,7 +83,7 @@ class AuthViewSet(viewsets.ModelViewSet):
         data = request.data
         print(data)
         # global OTP
-        serializer = GetOTPSerializer(data=data)
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             mobile=serializer.validated_data['mobile']
             otp = random.randint(100000, 999999)
@@ -91,7 +91,7 @@ class AuthViewSet(viewsets.ModelViewSet):
             print(OTP_DICT[f'{mobile}'])
             return Response({"message": f"Your OTP is {otp}."})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(methods=['POST'], detail=False)
     def registerApi(self, request):
         '''
@@ -99,7 +99,7 @@ class AuthViewSet(viewsets.ModelViewSet):
         else returns response accordingly.
         '''
         data = request.data
-        serializer = VerifyOTPSerializer(data=data)
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             otp = serializer.validated_data['otp']
             is_tnc_accepted = serializer.validated_data['is_tnc_accepted']
@@ -156,6 +156,10 @@ class UserViewSet(viewsets.ModelViewSet):
             return AadharVerifySerializer
         elif self.action == 'bankDetail':
             return BankDetailSerializer
+        elif self.action == 'getEmailOtp':
+            return EmailDetailSerializer
+        elif self.action == 'verifyEmail':
+            return EmailVerifySerializer
         else:
             return UserSerializer
 
@@ -277,5 +281,33 @@ class UserViewSet(viewsets.ModelViewSet):
                 user.status = CustomUser.STATUS_CHOICES[4][0]
                 user.save()
                 return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['POST'], detail=True)
+    def getEmailOtp(self, request, pk):
+        data = request.data
+        serializer = EmailDetailSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            email = serializer.validated_data['email']
+            otp = random.randint(100000, 999999)
+            EMAIL_OTP[f'{email}'] = otp
+            return Response({"message": f"OTP for email verification is {otp}"})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['POST'], detail=True)
+    def verifyEmail(self, request, pk):
+        data = request.data
+        serializer = EmailVerifySerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            if f'{email}' in EMAIL_OTP and EMAIL_OTP[f'{email}'] == otp:
+                user = User.objects.get(pk=pk)
+                user.email = email
+                user.is_email_verified = True
+                user.save()
+                del EMAIL_OTP[f'{email}']
+                return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
+            return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
