@@ -59,12 +59,12 @@ class AadharSerializer(serializers.ModelSerializer):
 
 class AadharVerifySerializer(serializers.ModelSerializer):
     aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
-    name = serializers.CharField()
+    # name = serializers.CharField()
     otp = serializers.IntegerField()
 
     class Meta:
         model = User
-        fields = ['aadhaar', 'name', 'otp']
+        fields = ['aadhaar', 'otp']
 
 
 class BankDetailSerializer(serializers.ModelSerializer):
@@ -99,3 +99,10 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status']
+
+
+class AggregatorRegistrationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['id', 'name', 'mobile', 'email', 'gender', 'address', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc']

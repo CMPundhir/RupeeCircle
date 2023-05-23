@@ -30,6 +30,7 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
 
 class CustomUser(AbstractUser):
+    ROLE_CHOICES = (('INVESTOR', 'INVESTOR'), ('AGGREGATOR', 'AGGREGATOR'), ('ADMIN', 'ADMIN'))
     STATUS_CHOICES = (('MOBILE_VERIFICATION', 'MOBILE_VERIFICATION'), 
                       ('PAN_VERIFICATION', 'PAN_VERIFICATION'), 
                       ('AADHAAR_VERIFICATION', 'AADHAAR_VERIFICATION'),
@@ -41,7 +42,7 @@ class CustomUser(AbstractUser):
     is_tnc_accepted = models.BooleanField(default=False)
     mobile = models.CharField(unique=True, null=True, blank=True)
     is_mobile_verified = models.BooleanField(default=False)
-    # email = models.EmailField(blank=True, null=True)
+    # email = models.EmailField(unique=True, null=True)
     is_email_verified = models.BooleanField(default=False)
     gender = models.CharField(choices=GENDER_CHOICES, blank=True, null=True)
     address = models.CharField(blank=True, null=True)
@@ -57,6 +58,7 @@ class CustomUser(AbstractUser):
     bank_name = models.CharField(null=True, blank=True)
     is_bank_acc_verified = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
+    role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []

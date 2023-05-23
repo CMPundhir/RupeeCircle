@@ -142,7 +142,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = User.objects.all()
+        queryset = User.objects.filter(role=CustomUser.ROLE_CHOICES[0][0])
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
@@ -239,17 +239,17 @@ class UserViewSet(viewsets.ModelViewSet):
             # user = User.objects.get(id=request.user.id)
             user = User.objects.get(pk=pk)
             aadhaar = serializer.validated_data['aadhaar']
-            name = serializer.validated_data['name']
+            # name = serializer.validated_data['name']
             otp = serializer.validated_data['otp']
             # global AADHAR_OTP
             if otp == OTP_DICT[f'{aadhaar}']:
                 aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
                 if aadhaar_already_exists:
                     return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-                if user.pan_name != name:
-                    return Response({'message': 'Aadhaar name doesn\'t match with PAN name.'}, status=status.HTTP_400_BAD_REQUEST)
+                # if user.pan_name != name:
+                #     return Response({'message': 'Aadhaar name doesn\'t match with PAN name.'}, status=status.HTTP_400_BAD_REQUEST)
                 user.aadhaar = aadhaar
-                user.aadhaar_name = name
+                # user.aadhaar_name = name
                 user.is_aadhar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
                 user.save()
@@ -311,3 +311,54 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class AggregatorViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        # queryset = User.objects.filter(role=CustomUser.ROLE_CHOICES[1][0])
+        queryset = User.objects.all()
+        return queryset
+    
+    def get_serializer_class(self):
+        if self.action == 'register':
+            return AggregatorRegistrationSerializer
+        if self.action == 'list' or self.action == 'retrieve':
+            return UserSerializer
+        return UserSerializer   
+    
+    @action(methods=['POST'], detail=False)
+    def register(self, request):
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid(raise_exception=True):
+            mobile_exist = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
+            email_exist = User.objects.filter(email=serializer.validated_data['email']).exists()
+            pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
+            aadhaar_exist = User.objects.filter(aadhaar=serializer.validated_data['aadhaar']).exists()
+            bank_acc_exist = User.objects.filter(bank_acc=serializer.validated_data['bank_acc']).exists()
+
+            if mobile_exist:
+                return Response({"message": "Mobile Number already exist."})
+            if email_exist:
+                return Response({"message": "Email already exist."})
+            if pan_exist:
+                return Response({"message": "PAN Number already exist."})
+            if aadhaar_exist:
+                return Response({"message": "AADHAAR Number already exist."})
+            if bank_acc_exist:
+                return Response({"message": "Bank account already exist."})
+            
+            instance = User.objects.create(username=serializer.validated_data['mobile'])
+            instance.name = serializer.validated_data['name']
+            instance.mobile = serializer.validated_data['mobile']
+            instance.email = serializer.validated_data['email']
+            instance.gender = serializer.validated_data['gender']
+            instance.address = serializer.validated_data['address']
+            instance.pan = serializer.validated_data['pan']
+            instance.aadhaar = serializer.validated_data['aadhaar']
+            instance.bank_acc = serializer.validated_data['bank_acc']
+            instance.bank_ifsc = serializer.validated_data['bank_ifsc']
+            instance.role = CustomUser.ROLE_CHOICES[1][0]
+            instance.save()
+            return Response({"message": "Aggregator registered successfully."}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
