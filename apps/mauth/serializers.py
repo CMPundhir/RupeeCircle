@@ -3,45 +3,13 @@ from .models import CustomUser as User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
-# class LogInSerializer(serializers.Serializer):
-#     phone = serializers.CharField()
-    # class Meta:
-    #     model = User
-    #     fields = ['username', 'password']
+class LogInSerializer(serializers.ModelSerializer):
+    mobile = serializers.CharField()
+    otp = serializers.IntegerField()
+    class Meta:
+        model = User
+        fields = ['mobile', 'otp']
 
-
-# class RegistrationSerializer(serializers.Serializer):
-#     username = serializers.CharField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])
-#     first_name = serializers.CharField(required=True)
-#     last_name = serializers.CharField()
-#     email = serializers.EmailField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])
-#     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-#     password2 = serializers.CharField(required=True, write_only=True)
-
-#     def validate(self, args):
-#         if args['password'] != args['password2']:
-#             raise serializers.ValidationError({"Password":"Password fields does not match."})
-#         return args
-    
-#     def create(self, validated_data):
-#         user = User.objects.create(
-#             username = validated_data['username'],
-#             first_name = validated_data['first_name'],
-#             last_name = validated_data['last_name'],
-#             email = validated_data['email']
-#         )
-#         user.set_password(validated_data['password'])
-#         user.save()
-#         return user
-
-
-# class UserSerializer(serializers.ModelSerializer):
-#     # username = serializers.CharField()
-#     # password = serializers.CharField()
-
-#     class Meta:
-#         model = User
-#         fields = '__all__'
 
 class GetOTPSerializer(serializers.ModelSerializer):
     mobile = serializers.CharField()
@@ -52,12 +20,14 @@ class GetOTPSerializer(serializers.ModelSerializer):
 
 
 class VerifyOTPSerializer(serializers.ModelSerializer):
-    # mobile = serializers.CharField()
+    mobile = serializers.CharField()
+    is_tnc_accepted = serializers.BooleanField()
     otp = serializers.IntegerField()
 
     class Meta:
         model = User
-        fields = ['otp']
+        fields = ['mobile', 'is_tnc_accepted', 'otp']
+
 
 class PanSerializer(serializers.ModelSerializer):
     # mobile = serializers.CharField()
@@ -67,41 +37,65 @@ class PanSerializer(serializers.ModelSerializer):
         model = User
         fields = ['pan']
 
+
 class PanVerifySerializer(serializers.ModelSerializer):
     # mobile = serializers.CharField()
+    pan = serializers.RegexField(regex=r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$')
+    name = serializers.CharField()
     is_verified = serializers.BooleanField()
 
     class Meta:
         model = User
-        fields = ['is_verified']
+        fields = ['pan', 'name', 'is_verified']
 
 class AadharSerializer(serializers.ModelSerializer):
     # mobile = serializers.CharField()
-    aadhar = serializers.RegexField(regex=r'^[0-9]{12}$')
+    aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
 
     class Meta:
         model = User
-        fields = ['aadhar']
+        fields = ['aadhaar']
+
 
 class AadharVerifySerializer(serializers.ModelSerializer):
-    # mobile = serializers.CharField()
+    aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
+    name = serializers.CharField()
     otp = serializers.IntegerField()
 
     class Meta:
         model = User
-        fields = ['otp']
+        fields = ['aadhaar', 'name', 'otp']
 
 
 class BankDetailSerializer(serializers.ModelSerializer):
+    acc_holder_name = serializers.CharField()
+    bank_ifsc = serializers.CharField()
     bank_acc = serializers.CharField()
 
     class Meta:
         model = User
-        fields = ['bank_acc']
+        fields = ['acc_holder_name', 'bank_ifsc', 'bank_acc']
+
+
+class EmailDetailSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
+
+    class Meta:
+        model = User
+        fields = ['email']
+
+
+class EmailVerifySerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
+    otp = serializers.IntegerField()
+
+    class Meta:
+        model = User
+        fields = ['email', 'otp']
 
 
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'mobile', 'is_phone_verified', 'pan', 'is_pan_verified', 'aadhar', 'is_aadhar_verified', 'bank_acc', 'is_bank_acc_verified', 'status']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status']

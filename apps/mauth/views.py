@@ -1,6 +1,6 @@
 from django.shortcuts import render
 import random
-from utility.otputility import OTP_DICT, AADHAR_OTP_DICT
+from utility.otputility import *
 from apps.mauth.models import CustomUser
 from django.contrib.auth import authenticate, logout
 from .serializers import *
@@ -9,7 +9,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import CustomUser as User
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -20,16 +22,131 @@ def get_tokens_for_user(user):
     }
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    # serializer_class = UserSerializer
-
-    def get_serializer_class(self, *args, **kwargs):
+class AuthViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
+    
+    def get_queryset(self):
+        queryset = User.objects.all()
+        return queryset
+    
+    def get_serializer_class(self):
         if self.action == 'getOtp':
             return GetOTPSerializer
-        elif self.action == 'verifyOtp':
+        elif self.action == 'login':
+            return LogInSerializer
+        elif self.action == 'registerApi':
             return VerifyOTPSerializer
-        elif self.action == 'panDetail':
+        else:
+            return UserSerializer
+    
+    def create(self, request):
+        return Response("Method Not Allowed", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def list(self, request):
+        return Response("Method Not Allowed", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def retrieve(self, request):
+        return Response("Method Not Allowed", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def delete(self, request):
+        return Response("Method Not Allowed", status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    @action(methods=['POST'], detail=False)
+    def login(self, request):
+        '''
+        Login API accepts phone number and otp validates and sends response accordingly.
+        '''
+        data = request.data
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            mobile = serializer.validated_data['mobile']
+            otp = serializer.validated_data['otp']
+            instance = User.objects.filter(mobile=mobile).exists()
+            if instance:
+                if mobile in OTP_DICT and OTP_DICT[f'{mobile}'] == otp:
+                    user = User.objects.get(mobile=mobile)
+                    # if user.status == CustomUser.STATUS_CHOICES[4][0]:
+                    token = get_tokens_for_user(user)
+                    if user.status == CustomUser.STATUS_CHOICES[4][0]:
+                        return Response({"id": user.id, "token": token, 'message':'Login Successful.', 'message': 'Login Successful.', "step": user.status}, status=status.HTTP_200_OK)
+                    verification = f'{user.status}'.replace('_', ' ')
+                    return Response({"id": user.id, "token": token, "message": f"Kindly complete your registration from {verification}", "step": user.status}, status=status.HTTP_200_OK)
+                return Response({"message": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "User does not exist.", "step": CustomUser.STATUS_CHOICES[0][0]}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['POST'], detail=False)
+    def getOtp(self, request):
+        '''
+        Takes mobile number and generates OTP and returns User Id and OTP in response.
+        '''
+        data = request.data
+        print(data)
+        # global OTP
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            mobile=serializer.validated_data['mobile']
+            otp = random.randint(100000, 999999)
+            OTP_DICT[f'{mobile}'] = otp
+            print(OTP_DICT[f'{mobile}'])
+            return Response({"message": f"Your OTP is {otp}."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['POST'], detail=False)
+    def registerApi(self, request):
+        '''
+        Verifies OTP for the given mobile number and return registration status and auth tokens in response if OTP matches
+        else returns response accordingly.
+        '''
+        data = request.data
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            otp = serializer.validated_data['otp']
+            is_tnc_accepted = serializer.validated_data['is_tnc_accepted']
+            mobile = serializer.validated_data['mobile']
+            if f'{mobile}' in OTP_DICT:
+                print(OTP_DICT[f'{mobile}'])
+                if OTP_DICT[f'{mobile}'] == otp:
+                    instance = User.objects.filter(mobile=mobile).exists()
+                    print(instance)
+                    if instance:
+                        user = User.objects.get(mobile=mobile)
+                        print(user)
+                        verification = f'{user.status}'.replace('_',' ')
+                        token = get_tokens_for_user(user)
+                        return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
+                    if is_tnc_accepted != True:
+                        return Response({"message": "Please accept Terms & Conditions."}, status=status.HTTP_400_BAD_REQUEST)
+                    user = User.objects.create(username=mobile, mobile=mobile, is_mobile_verified=True, is_tnc_accepted=is_tnc_accepted, status=CustomUser.STATUS_CHOICES[1][0])
+                    # user = User.objects.get(pk=pk)
+                    # if user.status == CustomUser.STATUS_CHOICES[0][0]:
+                    user.is_mobile_verified = True
+                    # user.tnc = True
+                    user.status = CustomUser.STATUS_CHOICES[1][0]
+                    user.save()
+                    id = user.id
+                    del OTP_DICT[f'{mobile}']
+                        # return Response({"msg": "OTP Verified", "step": user.is_active})
+                    # try:
+                    #     user = User.objects.get(mobile=mobile)
+                    # except:
+                    #     user = User.objects.create(username=mobile, mobile=mobile)
+                    token = get_tokens_for_user(user)
+                    return Response({"id": id, "message": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
+                return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Please generate OTP first."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = User.objects.all()
+        return queryset
+
+    def get_serializer_class(self, *args, **kwargs):
+        if self.action == 'panDetail':
             return PanSerializer
         elif self.action == 'panVerify':
             return PanVerifySerializer
@@ -37,80 +154,15 @@ class UserViewSet(viewsets.ModelViewSet):
             return AadharSerializer
         elif self.action == 'aadharVerify':
             return AadharVerifySerializer
+        elif self.action == 'bankDetail':
+            return BankDetailSerializer
+        elif self.action == 'getEmailOtp':
+            return EmailDetailSerializer
+        elif self.action == 'verifyEmail':
+            return EmailVerifySerializer
         else:
             return UserSerializer
 
-    @action(methods=['POST'], detail=False)
-    def getOtp(self, request):
-        '''
-        This function takes mobile number and generates OTP and returns User Id and OTP in response.
-        '''
-        data = request.data
-        print(data)
-        # global OTP
-        serializer = GetOTPSerializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            mobile=serializer.validated_data['mobile']
-            try:
-                instance = User.objects.filter(mobile=mobile)[0]
-                print("Try")
-            except:
-                instance = User.objects.create(username=mobile, mobile=mobile)
-                print("Except")
-            # instance = User.objects.get(mobile=mobile)
-            otp = random.randint(1000, 9999)
-            # OTP = otp
-            OTP_DICT[f'{mobile}'] = otp
-            print(OTP_DICT[f'{mobile}'])
-            print(instance)
-            id = instance.id
-            return Response({"id": id, "otp": f"Your OTP is {otp}."})
-            # if user:
-            #     instance = User.objects.get(mobile=mobile)
-            #     otp = random.randint(1000, 9999)
-            #     # OTP = otp
-            #     OTP_DICT[f'{mobile}'] = otp
-            #     id = instance.id
-            #     return Response({"id": id, "otp": f"Your OTP is {otp}."})
-            # else:
-            #     instance = User.objects.create(username=mobile, mobile=mobile)
-            #     otp = random.randint(1000, 9999)
-            #     OTP_DICT[f'{mobile}'] = otp
-            #     id = instance.id
-            #     # OTP = int(otp)
-            #     return Response({f"Your OTP is {otp}."})
-        return Response(serializer.errors)
-
-    @action(methods=['POST'], detail=True)
-    def verifyOtp(self, request, pk):
-        '''
-        This method verifies OTP for the given mobile number and return registration status and auth tokens in response if OTP matches
-        else returns response accordingly.
-        '''
-        data = request.data
-        serializer = VerifyOTPSerializer(data=data)
-        if serializer.is_valid():
-            otp = serializer.validated_data['otp']
-            mobile = serializer.validated_data['mobile']
-            # global OTP
-            print(OTP_DICT[f'{mobile}'])
-            if OTP_DICT[f'{mobile}'] == otp:
-                user = User.objects.get(pk=pk)
-                if user.status == CustomUser.STATUS_CHOICES[0][0]:
-                    user.is_mobile_verified = True
-                    user.status = CustomUser.STATUS_CHOICES[1][0]
-                    user.save()
-                    del OTP_DICT[f'{mobile}']
-                    # return Response({"msg": "OTP Verified", "step": user.is_active})
-                # try:
-                #     user = User.objects.get(mobile=mobile)
-                # except:
-                #     user = User.objects.create(username=mobile, mobile=mobile)
-                token = get_tokens_for_user(user)
-                return Response({"msg": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
-            return Response("OTP does not match.", status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.error_messages)
-    
     @action(methods=['POST'], detail=True)
     def panDetail(self, request, pk):
         '''
@@ -120,17 +172,21 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = PanSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
+            pan = serializer.validated_data['pan']
+            pan_already_exists = User.objects.filter(pan=pan).exists()
+            if pan_already_exists:
+                return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(pk=pk)
-            user.pan = serializer.validated_data['pan']
-            user.save()
-            return Response({"Name": "Your Name"})
-        return Response(serializer.errors)
+            # user = User.objects.get(pk=pk)
+            # user.pan = serializer.validated_data['pan']
+            # user.save()
+            return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
     def panVerify(self, request, pk):
         '''
-        Takes boolean response and saves PAN verification status of user
+        Takes response and saves PAN verification status of user
         '''
         # user = request.user
         data = request.data
@@ -138,15 +194,22 @@ class UserViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
             user = User.objects.get(pk=pk)
+            pan = serializer.validated_data['pan']
+            name = serializer.validated_data['name']
             is_verified = serializer.validated_data['is_verified']
             if is_verified == True:
+                pan_already_exists = User.objects.filter(pan=pan).exists()
+                if pan_already_exists:
+                    return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+                user.pan = pan
+                user.pan_name = name
                 user.is_pan_verified = True
                 user.status = CustomUser.STATUS_CHOICES[2][0]
                 user.save()
-                return Response({'msg': 'PAN Verification successful', 'step': user.status})
-            return Response({"msg": "Please verify Name."})
-        return Response(serializer.errors)
-            
+                return Response({'message': 'PAN Verification successful', 'step': user.status})
+            return Response({"message": "Please verify Name."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(methods=['POST'], detail=True)
     def aadharDetail(self, request, pk):
         '''
@@ -155,17 +218,14 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = AadharSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(pk=pk)
-            user.aadhar = serializer.validated_data['aadhar']
-            user.save()
-            mobile = user.mobile
-            # global AADHAR_OTP
-            otp = random.randint(1000, 9999)
-            OTP_DICT[f'{mobile}'] = otp
-            # AADHAR_OTP = otp
-            return Response({"otp": otp})
-        return Response(serializer.errors)
+            aadhaar = serializer.validated_data['aadhaar']
+            aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
+            if aadhaar_already_exists:
+                return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            otp = random.randint(100000, 999999)
+            OTP_DICT[f'{aadhaar}'] = otp
+            return Response({"message": "OTP sent successfully.", "otp": otp})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
     def aadharVerify(self, request, pk):
@@ -177,18 +237,26 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = AadharVerifySerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(pk)
-            mobile = serializer.validated_data['mobile']
+            user = User.objects.get(pk=pk)
+            aadhaar = serializer.validated_data['aadhaar']
+            name = serializer.validated_data['name']
             otp = serializer.validated_data['otp']
             # global AADHAR_OTP
-            if otp == OTP_DICT[f'{mobile}']:
+            if otp == OTP_DICT[f'{aadhaar}']:
+                aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
+                if aadhaar_already_exists:
+                    return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+                if user.pan_name != name:
+                    return Response({'message': 'Aadhaar name doesn\'t match with PAN name.'}, status=status.HTTP_400_BAD_REQUEST)
+                user.aadhaar = aadhaar
+                user.aadhaar_name = name
                 user.is_aadhar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
                 user.save()
-                return Response({'msg': 'Aadhar Verification successful', 'step': user.status})
-            return Response({"msg": "OTP does not match."})
-        return Response(serializer.errors)
-           
+                return Response({'message': 'Aadhar Verification successful', 'step': user.status})
+            return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     @action(methods=['POST'], detail=True)
     def bankDetail(self, request, pk):
         '''
@@ -196,7 +264,50 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         data = request.data
         serializer = BankDetailSerializer(data=data)
+        # print("Validating Serializer")
         if serializer.is_valid(raise_exception=True):
-            return Response("Bank Account.")
-        return Response(serializer.errors)
+            # print("Serializer Validated")
+            if 'acc_holder_name' in serializer.validated_data and 'bank_acc' in serializer.validated_data and 'bank_ifsc' in serializer.validated_data:
+                # print("Getting User object.")
+                acc_holder_name = serializer.validated_data['acc_holder_name']
+                bank_acc = serializer.validated_data['bank_acc']
+                bank_ifsc = serializer.validated_data['bank_ifsc']
+                # Match the name here
+                user = User.objects.get(pk=pk)
+                user.acc_holder_name = acc_holder_name
+                # user.account_holder_name = 'Name'
+                user.bank_acc = bank_acc
+                user.bank_ifsc = bank_ifsc
+                user.status = CustomUser.STATUS_CHOICES[4][0]
+                user.save()
+                return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(methods=['POST'], detail=True)
+    def getEmailOtp(self, request, pk):
+        data = request.data
+        serializer = EmailDetailSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            email = serializer.validated_data['email']
+            otp = random.randint(100000, 999999)
+            EMAIL_OTP[f'{email}'] = otp
+            return Response({"message": f"OTP for email verification is {otp}"})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['POST'], detail=True)
+    def verifyEmail(self, request, pk):
+        data = request.data
+        serializer = EmailVerifySerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            if f'{email}' in EMAIL_OTP and EMAIL_OTP[f'{email}'] == otp:
+                user = User.objects.get(pk=pk)
+                user.email = email
+                user.is_email_verified = True
+                user.save()
+                del EMAIL_OTP[f'{email}']
+                return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
+            return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
