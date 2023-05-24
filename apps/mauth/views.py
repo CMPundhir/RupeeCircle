@@ -36,6 +36,8 @@ class AuthViewSet(viewsets.ModelViewSet):
             return LogInSerializer
         elif self.action == 'registerApi':
             return VerifyOTPSerializer
+        elif self.action == 'dedup':
+            return DedupSerializer
         else:
             return UserSerializer
     
@@ -136,6 +138,33 @@ class AuthViewSet(viewsets.ModelViewSet):
                 return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
             return Response({"message": "Please generate OTP first."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['POST'], detail=False)
+    def dedup(self, request):
+        data = request.data
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            mobile_exist = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
+            email_exist = User.objects.filter(email=serializer.validated_data['email']).exists()
+            pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
+            aadhaar_exist = User.objects.filter(aadhaar=serializer.validated_data['aadhaar']).exists()
+            bank_acc_exist = User.objects.filter(bank_acc=serializer.validated_data['bank_acc']).exists()
+
+            response = dict()
+
+            if mobile_exist:
+                response['mobile'] = "Mobile Number already exist."
+            if email_exist:
+                response['email'] = "Email already exist."
+            if pan_exist:
+                response['pan'] = "PAN Number already exist."
+            if aadhaar_exist:
+                response['aadhaar'] = "AADHAAR Number already exist."
+            if bank_acc_exist:
+                response['bank_acc'] = "Bank account already exist."
+
+            return Response(response, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):

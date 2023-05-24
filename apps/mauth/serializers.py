@@ -19,6 +19,14 @@ class GetOTPSerializer(serializers.ModelSerializer):
         fields = ['mobile']
 
 
+class DedupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['mobile', 'pan', 'aadhaar', 'bank_acc']
+
+
+
 class VerifyOTPSerializer(serializers.ModelSerializer):
     mobile = serializers.CharField()
     is_tnc_accepted = serializers.BooleanField()
