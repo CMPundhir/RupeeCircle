@@ -224,7 +224,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             otp = random.randint(100000, 999999)
             OTP_DICT[f'{aadhaar}'] = otp
-            return Response({"message": "OTP sent successfully.", "otp": otp})
+            return Response({"message": "OTP sent to AADHAAR registered mobile number.", "otp": otp})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
@@ -311,6 +311,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class AggregatorViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
@@ -362,3 +363,17 @@ class AggregatorViewSet(viewsets.ModelViewSet):
             return Response({"message": "Aggregator registered successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(methods=['POST'], detail=False)
+    def login(self, request):
+        data = request.data
+        serializer = LogInSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            instance = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
+            if instance:
+                user = User.objects.get(username=serializer.validated_data['mobile'])
+                if user.role == CustomUser.ROLE_CHOICES[1][0]:
+                    token = get_tokens_for_user(user)
+                    return Response({"message": "Login successful.", "id": user.id, "token": token}, status=status.HTTP_200_OK)
+                return Response({"message": "User is not an Aggregator."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Invalid credentials."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors)

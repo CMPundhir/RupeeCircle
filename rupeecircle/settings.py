@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'apps.mauth',
     'apps.loans',
+    'apps.notification',
     'rest_framework_simplejwt',
     "corsheaders",
     'sslserver',
@@ -157,7 +158,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    )
+    ),
+    'EXCEPTION_HANDLER': 'utility.exception_handler.custom_exception_handler', 
 }
 
 SIMPLE_JWT = {
