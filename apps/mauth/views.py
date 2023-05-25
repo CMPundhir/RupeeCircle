@@ -397,7 +397,7 @@ class AggregatorViewSet(viewsets.ModelViewSet):
     @action(methods=['POST'], detail=False)
     def registerInvestor(self, request):
         '''
-        API for registering Aggregator.
+        API for registering Investor.
         '''
         data = request.data
         serializer = self.get_serializer(data=data)
@@ -430,6 +430,7 @@ class AggregatorViewSet(viewsets.ModelViewSet):
             instance.bank_acc = serializer.validated_data['bank_acc']
             instance.bank_ifsc = serializer.validated_data['bank_ifsc']
             instance.role = CustomUser.ROLE_CHOICES[0][0]
+            instance.aggregator = request.user
             instance.save()
             return Response({"message": "Investor registered successfully.", "investor": instance}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -455,6 +456,9 @@ class AdminViewSet(viewsets.ModelViewSet):
     
     @action(methods=['POST'], detail=True)
     def linkAggregator(self, request, pk):
+        '''
+        Links Investigator to an Aggregator.
+        '''
         data = request.data
         serializer = LinkAggregatorSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
