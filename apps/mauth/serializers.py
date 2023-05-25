@@ -26,6 +26,14 @@ class DedupSerializer(serializers.ModelSerializer):
         fields = ['mobile', 'pan', 'aadhaar', 'bank_acc']
 
 
+class SelfieUploadSerializer(serializers.ModelSerializer):
+    selfie = serializers.ImageField()
+
+    class Meta:
+        model = User
+        fields = ['selfie']
+
+
 
 class VerifyOTPSerializer(serializers.ModelSerializer):
     mobile = serializers.CharField()
@@ -85,6 +93,14 @@ class BankDetailSerializer(serializers.ModelSerializer):
         fields = ['acc_holder_name', 'bank_ifsc', 'bank_acc']
 
 
+class LinkAggregatorSerializer(serializers.ModelSerializer):
+    # aggregator = serializers.CharField()
+
+    class Meta:
+        model = User
+        fields = ['aggregator']
+
+
 class EmailDetailSerializer(serializers.ModelSerializer):
     email = serializers.EmailField()
 
@@ -106,7 +122,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
+        fields = ['id', 'selfie', 'username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
 
 
 class AggregatorRegistrationSerializer(serializers.ModelSerializer):

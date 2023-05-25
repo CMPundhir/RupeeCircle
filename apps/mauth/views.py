@@ -10,8 +10,7 @@ from rest_framework.response import Response
 from .models import CustomUser as User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -189,6 +188,8 @@ class UserViewSet(viewsets.ModelViewSet):
             return EmailDetailSerializer
         elif self.action == 'verifyEmail':
             return EmailVerifySerializer
+        elif self.action == 'uploadSelfie':
+            return SelfieUploadSerializer
         else:
             return UserSerializer
 
@@ -339,26 +340,137 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
             return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['POST'], detail=True)
+    def uploadSelfie(self, request, pk):
+        '''
+        API for uploading selfie.
+        '''
+        data = request.data
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            instance = User.objects.get(pk=pk)
+            instance.selfie = serializer.validated_data['selfie']
+            instance.save()
+            return Response({"message": "Image uploaded successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AggregatorViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # queryset = User.objects.filter(role=CustomUser.ROLE_CHOICES[1][0])
-        queryset = User.objects.all()
+        user = self.request.user
+        queryset = User.objects.filter(aggregator=user)
         return queryset
     
     def get_serializer_class(self):
-        if self.action == 'register':
-            return AggregatorRegistrationSerializer
         if self.action == 'list' or self.action == 'retrieve':
             return UserSerializer
         return UserSerializer   
     
     @action(methods=['POST'], detail=False)
-    def register(self, request):
+    def login(self, request):
+        '''
+        API for Aggregator Login.
+        '''
         data = request.data
-        serializer = self.serializer_class(data=data)
+        serializer = LogInSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            instance = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
+            if instance:
+                user = User.objects.get(username=serializer.validated_data['mobile'])
+                if user.role == CustomUser.ROLE_CHOICES[1][0]:
+                    token = get_tokens_for_user(user)
+                    return Response({"message": "Login successful.", "id": user.id, "token": token}, status=status.HTTP_200_OK)
+                return Response({"message": "User is not an Aggregator."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Invalid credentials."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors)
+
+    @action(methods=['POST'], detail=False)
+    def investors(self, request):
+        user = request.user
+        queryset = User.objects.filter(aggregator=user)
+        serializer = UserSerializer(queryset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(methods=['POST'], detail=False)
+    def registerInvestor(self, request):
+        '''
+        API for registering Aggregator.
+        '''
+        data = request.data
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            mobile_exist = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
+            email_exist = User.objects.filter(email=serializer.validated_data['email']).exists()
+            pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
+            aadhaar_exist = User.objects.filter(aadhaar=serializer.validated_data['aadhaar']).exists()
+            bank_acc_exist = User.objects.filter(bank_acc=serializer.validated_data['bank_acc']).exists()
+
+            if mobile_exist:
+                return Response({"message": "Mobile Number already exist."})
+            if email_exist:
+                return Response({"message": "Email already exist."})
+            if pan_exist:
+                return Response({"message": "PAN Number already exist."})
+            if aadhaar_exist:
+                return Response({"message": "AADHAAR Number already exist."})
+            if bank_acc_exist:
+                return Response({"message": "Bank account already exist."})
+            
+            instance = User.objects.create(username=serializer.validated_data['mobile'])
+            instance.name = serializer.validated_data['name']
+            instance.mobile = serializer.validated_data['mobile']
+            instance.email = serializer.validated_data['email']
+            instance.gender = serializer.validated_data['gender']
+            instance.address = serializer.validated_data['address']
+            instance.pan = serializer.validated_data['pan']
+            instance.aadhaar = serializer.validated_data['aadhaar']
+            instance.bank_acc = serializer.validated_data['bank_acc']
+            instance.bank_ifsc = serializer.validated_data['bank_ifsc']
+            instance.role = CustomUser.ROLE_CHOICES[0][0]
+            instance.save()
+            return Response({"message": "Investor registered successfully.", "investor": instance}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        if self.action == 'linkInvestor':
+            return User.objects.filter(role=CustomUser.ROLE_CHOICES[1][0])
+        elif self.action == 'listInvestor':
+            return User.objects.filter(role=CustomUser.ROLE_CHOICES[0][1])
+        else:
+            return User.objects.filter(is_superuser=True)
+    
+    def get_serializer_class(self):
+        if self.action == 'linkInvestor':
+            return LinkInvestorSerializer
+        if self.action == 'registerAggregator':
+            return AggregatorRegistrationSerializer
+        return UserSerializer
+    
+    @action(methods=['POST'], detail=True)
+    def linkAggregator(self, request, pk):
+        data = request.data
+        serializer = LinkAggregatorSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            instance = User.objects.get(pk=pk)
+            instance.aggregator = serializer.validated_data['aggregator']
+            instance.save()
+            return Response({"message": "Investor linked successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['POST'], detail=False)
+    def registerAggregator(self, request):
+        '''
+        API for registering Aggregator.
+        '''
+        data = request.data
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             mobile_exist = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
             email_exist = User.objects.filter(email=serializer.validated_data['email']).exists()
@@ -392,17 +504,4 @@ class AggregatorViewSet(viewsets.ModelViewSet):
             return Response({"message": "Aggregator registered successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(methods=['POST'], detail=False)
-    def login(self, request):
-        data = request.data
-        serializer = LogInSerializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            instance = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
-            if instance:
-                user = User.objects.get(username=serializer.validated_data['mobile'])
-                if user.role == CustomUser.ROLE_CHOICES[1][0]:
-                    token = get_tokens_for_user(user)
-                    return Response({"message": "Login successful.", "id": user.id, "token": token}, status=status.HTTP_200_OK)
-                return Response({"message": "User is not an Aggregator."}, status=status.HTTP_400_BAD_REQUEST)
-            return Response({"message": "Invalid credentials."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(serializer.errors)
+

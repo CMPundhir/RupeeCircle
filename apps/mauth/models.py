@@ -3,6 +3,9 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext as _
 from django.db import models
 
+def upload_selfie(instance, filename):
+    return f'selfie/{filename}'
+
 class CustomUserManager(BaseUserManager):
     """
     Custom user model manager where phone is the unique identifier
@@ -39,6 +42,7 @@ class CustomUser(AbstractUser):
     GENDER_CHOICES = (('MALE', 'MALE'), ('FEMALE', 'FEMALE'), ('OTHERS', 'OTHERS'))
 
     name = models.CharField(null=True, blank=True)
+    selfie = models.ImageField(upload_to=upload_selfie, blank=True, null=True)
     is_tnc_accepted = models.BooleanField(default=False)
     mobile = models.CharField(unique=True, null=True, blank=True)
     is_mobile_verified = models.BooleanField(default=False)
@@ -59,7 +63,7 @@ class CustomUser(AbstractUser):
     is_bank_acc_verified = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
     role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])
-    # aggregator = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)
+    aggregator = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
@@ -67,4 +71,4 @@ class CustomUser(AbstractUser):
     objects = CustomUserManager()
 
     def __str__(self):
-        return self.username
+        return f'{self.username} {self.role}'

@@ -19,6 +19,10 @@ from django.contrib import admin
 from django.urls import path, include
 from routes.v1_routes import v1_router
 from apps.mauth.views import *
+from django.conf.urls.static import static
+from rupeecircle import settings
+
+
 urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('admin/', admin.site.urls),
@@ -36,3 +40,5 @@ urlpatterns = [
 admin.site.site_header = "Rupee Circle Admin"
 admin.site.site_title = "Rupee Circle Admin Portal"
 admin.site.index_title = "Welcome to Rupee Circle Admin Portal"
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
