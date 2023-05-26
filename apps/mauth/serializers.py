@@ -122,11 +122,11 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'selfie', 'username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
+        fields = ['id', 'selfie', 'username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'zip_code', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
 
 
 class AggregatorRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'mobile', 'email', 'gender', 'address', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc']
+        fields = ['id', 'name', 'mobile', 'email', 'gender', 'country', 'state', 'city', 'zip_code', 'address', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc']

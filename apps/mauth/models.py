@@ -6,6 +6,7 @@ from django.db import models
 def upload_selfie(instance, filename):
     return f'selfie/{filename}'
 
+
 class CustomUserManager(BaseUserManager):
     """
     Custom user model manager where phone is the unique identifier
@@ -32,6 +33,7 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_('Superuser must have is_superuser=True.'))
         return self.create_user(username, password, **extra_fields)
 
+
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (('INVESTOR', 'INVESTOR'), ('AGGREGATOR', 'AGGREGATOR'), ('ADMIN', 'ADMIN'))
     STATUS_CHOICES = (('MOBILE_VERIFICATION', 'MOBILE_VERIFICATION'), 
@@ -49,7 +51,11 @@ class CustomUser(AbstractUser):
     # email = models.EmailField(unique=True, null=True)
     is_email_verified = models.BooleanField(default=False)
     gender = models.CharField(choices=GENDER_CHOICES, blank=True, null=True)
-    address = models.CharField(blank=True, null=True)
+    country = models.CharField(max_length=255, null=True, blank=True)
+    state = models.CharField(max_length=255, null=True, blank=True)
+    city = models.CharField(max_length=255, null=True, blank=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    zip_code = models.CharField(max_length=255, null=True, blank=True)
     pan = models.CharField(null=True, blank=True, unique=True)
     pan_name = models.CharField(null=True, blank=True)
     is_pan_verified = models.BooleanField(default=False)

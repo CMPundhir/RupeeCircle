@@ -140,6 +140,9 @@ class AuthViewSet(viewsets.ModelViewSet):
 
     @action(methods=['POST'], detail=False)
     def dedup(self, request):
+        '''
+        API verifies whether user detail already exists.
+        '''
         data = request.data
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
@@ -280,7 +283,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 #     return Response({'message': 'Aadhaar name doesn\'t match with PAN name.'}, status=status.HTTP_400_BAD_REQUEST)
                 user.aadhaar = aadhaar
                 # user.aadhaar_name = name
-                user.is_aadhar_verified = True
+                user.is_aadhaar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
                 user.save()
                 return Response({'message': 'Aadhar Verification successful', 'step': user.status})
@@ -302,12 +305,16 @@ class UserViewSet(viewsets.ModelViewSet):
                 acc_holder_name = serializer.validated_data['acc_holder_name']
                 bank_acc = serializer.validated_data['bank_acc']
                 bank_ifsc = serializer.validated_data['bank_ifsc']
+                bank_acc_exists = User.objects.filter(bank_acc=bank_acc).exists()
+                if bank_acc_exists:
+                    return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
                 # Match the name here
                 user = User.objects.get(pk=pk)
                 user.acc_holder_name = acc_holder_name
                 # user.account_holder_name = 'Name'
                 user.bank_acc = bank_acc
                 user.bank_ifsc = bank_ifsc
+                user.is_bank_acc_verified = True
                 user.status = CustomUser.STATUS_CHOICES[4][0]
                 user.save()
                 return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
@@ -449,7 +456,7 @@ class AdminViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action == 'linkInvestor':
-            return LinkInvestorSerializer
+            return LinkAggregatorSerializer
         if self.action == 'registerAggregator':
             return AggregatorRegistrationSerializer
         return UserSerializer
