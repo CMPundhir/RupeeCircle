@@ -92,7 +92,7 @@ class BankDetailSerializer(serializers.ModelSerializer):
         model = User
         fields = ['acc_holder_name', 'bank_ifsc', 'bank_acc']
 
-
+# include
 class LinkAggregatorSerializer(serializers.ModelSerializer):
     # aggregator = serializers.CharField()
 
@@ -117,16 +117,30 @@ class EmailVerifySerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'otp']
 
-
+# include
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'selfie', 'username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'zip_code', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
+        fields = ['id', 'selfie', 'username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
 
 
+class InvestorSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['selfie', 'username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
+
+# include
 class AggregatorRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'mobile', 'email', 'gender', 'country', 'state', 'city', 'zip_code', 'address', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc']
+        fields = ['first_name', 'last_name', 'mobile', 'email', 'gender', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc']
+        extra_kwargs = {'first_name': {'required': True},
+                        'mobile': {'required': True}, 
+                        'email': {'required': True},
+                        'pan': {'required': True},
+                        'aadhaar': {'required': True},
+                        'bank_acc': {'required': True},
+                        'bank_ifsc': {'required': True}} 

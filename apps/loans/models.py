@@ -16,7 +16,7 @@ class Loan(models.Model):
     governing_law = models.CharField(max_length=1000, null=True, blank=True)
 
     def __str__(self):
-        return self.id
+        return f'{self.id}'
 
 
 class LoanForm(models.Model):
@@ -34,4 +34,4 @@ class LoanForm(models.Model):
     loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING, null=True)
 
     def __str__(self):
-        return self.id
+        return f'{self.id}'

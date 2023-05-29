@@ -12,11 +12,11 @@ class CustomUserAdmin(UserAdmin):
     # form = CustomUserChangeForm  
     # model = CustomerUser  
   
-    list_display = ('email', 'is_staff', 'is_active',)  
+    list_display = ('username', 'email', 'is_staff', 'is_active', 'is_superuser')  
     list_filter = ('email', 'is_staff', 'is_active',)  
     fieldsets = (  
         (None, {'fields': ('email', 'password')}),  
-        ('Permissions', {'fields': ('is_staff', 'is_active')}),  
+        ('Permissions', {'fields': ('is_staff', 'is_active', 'is_superuser')}),  
     )  
     add_fieldsets = (  
         (None, {  

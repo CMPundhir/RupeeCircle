@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'apps.mauth',
     'apps.loans',
     'apps.notification',
+    'apps.dashboard',
     'rest_framework_simplejwt',
     "corsheaders",
     'sslserver',
@@ -162,7 +163,10 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'EXCEPTION_HANDLER': 'utility.exception_handler.custom_exception_handler', 
+    'EXCEPTION_HANDLER': 'utility.exception_handler.custom_exception_handler',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',)
 }
 
 SIMPLE_JWT = {
