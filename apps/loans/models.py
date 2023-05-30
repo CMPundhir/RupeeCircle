@@ -1,8 +1,9 @@
 from django.db import models
+from apps.mauth.models import BaseModel
 from apps.mauth.models import CustomUser
 # Create your models here.
 
-class Loan(models.Model):
+class Loan(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
     loan_amount = models.IntegerField(null=False, blank=False)
     interest_rate = models.CharField(max_length=255, null=False, blank=False)
@@ -19,7 +20,7 @@ class Loan(models.Model):
         return f'{self.id}'
 
 
-class LoanForm(models.Model):
+class LoanForm(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
     owner = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING)
     first_name = models.CharField(max_length=255, null=False)

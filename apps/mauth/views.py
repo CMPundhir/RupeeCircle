@@ -2,6 +2,7 @@ from django.shortcuts import render
 import random
 from utility.otputility import *
 from apps.mauth.models import CustomUser
+from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
 from .serializers import *
 from rest_framework import viewsets, status
@@ -104,6 +105,7 @@ class AuthViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             otp = serializer.validated_data['otp']
             is_tnc_accepted = serializer.validated_data['is_tnc_accepted']
+            role = serializer.validated_data['role']
             mobile = serializer.validated_data['mobile']
             if f'{mobile}' in OTP_DICT:
                 print(OTP_DICT[f'{mobile}'])
@@ -124,6 +126,7 @@ class AuthViewSet(viewsets.ModelViewSet):
                     user.is_mobile_verified = True
                     # user.tnc = True
                     user.status = CustomUser.STATUS_CHOICES[1][0]
+                    user.role = role
                     user.save()
                     id = user.id
                     del OTP_DICT[f'{mobile}']
@@ -167,7 +170,12 @@ class AuthViewSet(viewsets.ModelViewSet):
 
             return Response(response, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+    @action(methods=['GET'], detail=False)
+    def getRoles(self, request):
+        result = [i[1] for i in CustomUser.ROLE_CHOICES[0:2]]
+        return Response(result)
+       
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -317,6 +325,8 @@ class UserViewSet(viewsets.ModelViewSet):
                 user.is_bank_acc_verified = True
                 user.status = CustomUser.STATUS_CHOICES[4][0]
                 user.save()
+                Wallet.objects.create(owner=user)
+                
                 return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

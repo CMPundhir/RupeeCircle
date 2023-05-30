@@ -23,9 +23,10 @@ class InvestorViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            return UserSerializer
-        return UserSerializer   
+        if self.action == 'create':
+            return InvestorSerializer
+        else:
+            return UserSerializer   
     
     def create(self, request):
         '''
@@ -63,12 +64,13 @@ class InvestorViewSet(viewsets.ModelViewSet):
             instance.bank_ifsc = serializer.validated_data['bank_ifsc']
             instance.role = User.ROLE_CHOICES[0][0]
             instance.aggregator = request.user
+            instance.status = CustomUser.STATUS_CHOICES[4][1]
             instance.save()
             return Response({"message": "Investor registered successfully.", "investor": instance}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AggregatorViewSet(viewsets.ModelViewSet):
+class PartnerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
 
     def get_queryset(self):
@@ -137,7 +139,53 @@ class AggregatorViewSet(viewsets.ModelViewSet):
             instance.bank_acc = serializer.validated_data['bank_acc']
             instance.bank_ifsc = serializer.validated_data['bank_ifsc']
             instance.role = User.ROLE_CHOICES[1][0]
+            instance.status = CustomUser.STATUS_CHOICES[4][1]
             instance.save()
             return Response({"message": "Aggregator registered successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors)
 
+
+class WalletViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == CustomUser.ROLE_CHOICES[2][1]:
+            queryset = Wallet.objects.all()
+        else:
+            queryset = []
+        return queryset
+    
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return WalletGetSerializer
+        elif self.action == 'addFunds':
+            return AddFundsSerializer
+        else:
+            return WalletSerializer
+    
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    @action(methods=['POST'], detail=True)
+    def addFunds(self, request, pk):
+        data = request.data
+        instance = self.get_queryset().get(pk=pk)
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            instance.balance += serializer.validated_data['value']
+            instance.save()
+            return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TransactionViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Transaction.objects.filter(owner=user).order_by('-id')
+        return queryset
+    
+    def get_serializer_class(self):
+        return TransactionSerializer

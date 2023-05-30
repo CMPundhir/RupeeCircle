@@ -42,7 +42,7 @@ class VerifyOTPSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['mobile', 'is_tnc_accepted', 'otp']
+        fields = ['mobile', 'role', 'is_tnc_accepted', 'otp']
 
 
 class PanSerializer(serializers.ModelSerializer):
@@ -129,7 +129,7 @@ class InvestorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['selfie', 'username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
+        fields = ['username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
 
 # include
 class AggregatorRegistrationSerializer(serializers.ModelSerializer):

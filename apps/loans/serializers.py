@@ -13,3 +13,10 @@ class LoanFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoanForm
         fields = '__all__'
+
+
+class RecentLoanSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = LoanForm
+        fields = ['first_name', 'last_name', 'loan']

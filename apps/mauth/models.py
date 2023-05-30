@@ -2,6 +2,8 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext as _
 from django.db import models
+from django.utils import timezone
+from .middleware import get_current_authenticated_user
 
 def upload_selfie(instance, filename):
     return f'selfie/{filename}'
@@ -35,7 +37,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class CustomUser(AbstractUser):
-    ROLE_CHOICES = (('INVESTOR', 'INVESTOR'), ('AGGREGATOR', 'AGGREGATOR'), ('ADMIN', 'ADMIN'))
+    ROLE_CHOICES = (('INVESTOR', 'INVESTOR'), ('PARTNER', 'PARTNER'), ('ADMIN', 'ADMIN'))
     STATUS_CHOICES = (('MOBILE_VERIFICATION', 'MOBILE_VERIFICATION'), 
                       ('PAN_VERIFICATION', 'PAN_VERIFICATION'), 
                       ('AADHAAR_VERIFICATION', 'AADHAAR_VERIFICATION'),
@@ -79,3 +81,44 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return f'{self.username} {self.role}'
+    
+
+class BaseModel(models.Model):
+    """
+        BaseModel
+            This represents the BaseModel for the project without any creation, modification
+            or deletion history.
+        Inherits : `models.Model`
+
+    """
+    is_record_active = models.BooleanField(default=True)
+    
+    created = models.DateTimeField(null=True, blank=True,
+                                   help_text='Indicates the time when the record was created',
+                                   verbose_name="Published On", auto_now_add=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING, null=True, blank=True,
+                                   help_text='Indicates the user who created this record',
+                                   related_name='created_%(class)ss')
+    last_modified_at = models.DateTimeField(null=True, blank=True,
+                                            help_text='Indicates the time when the record was last modified',
+                                            auto_now_add=True)
+    last_modified_by = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING, null=True, blank=True,
+                                         help_text='Indicates the user who last modified this record',
+                                         related_name='updated_%(class)ss',)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, *args, **kwargs):
+        print("BaseModel : save invoked")
+        if self.id is None:
+            if self.created_by is None:
+                self.created_by = get_current_authenticated_user()
+            self.created = timezone.localtime()
+        if get_current_authenticated_user() is not None:
+
+            if get_current_authenticated_user()._meta.model.__name__ != "GatewayConsumer":
+                self.last_modified_by = get_current_authenticated_user()
+        self.last_modified_at = timezone.localtime()
+        super(BaseModel, self).save(*args, **kwargs)
+        print("BaseModel : save completed")
+
+    class Meta:
+        abstract = True

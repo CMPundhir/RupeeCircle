@@ -24,9 +24,10 @@ class LoanViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self):
-        if self.action == 'apply':
-            return LoanFormSerializer
-        return LoanSerializer
+        if self.action == 'apply' or self.action == 'recentApplications':
+            return RecentLoanSerializer
+        else:
+            return LoanSerializer
     
     @action(methods=['POST'], detail=True)
     def apply(self, request, pk):
@@ -38,3 +39,9 @@ class LoanViewSet(viewsets.ModelViewSet):
             instance.save()
             return Response({"message": "Application submitted successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['GET'], detail=False)
+    def recentApplications(self, request):
+        queryset = LoanForm.objects.all().order_by('-id')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
