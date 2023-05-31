@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'apps.mauth',
     'apps.loans',
+    'apps.wallet',
     'apps.notification',
     'apps.dashboard',
     'rest_framework_simplejwt',

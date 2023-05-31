@@ -3,6 +3,7 @@ from django.urls import path, include
 from rest_framework import routers
 from apps.mauth.views import *
 from apps.notification.views import ActivityAppViewSet
+from apps.wallet.views import *
 from apps.dashboard.views import *
 from apps.loans.views import *
 

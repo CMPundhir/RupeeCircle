@@ -1,34 +1,48 @@
 from rest_framework import serializers
 from apps.loans.models import *
-from .models import Wallet, Transaction
-from apps.mauth.serializers import UserSerializer
+from apps.mauth.models import CustomUser as User
+from apps.mauth.serializers import UserSerializer, UserDetailSerializer
 
 
-class WalletSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Wallet
-        fields = '__all__'
-
-
-class WalletGetSerializer(serializers.ModelSerializer):
-    # owner = UserSerializer()
+class InvestorSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Wallet
-        fields = ['id', 'owner', 'balance', 'invested_amount']
+        model = User
+        fields = ['first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode']
 
 
-class AddFundsSerializer(serializers.ModelSerializer):
-    value = serializers.IntegerField()
-
-    class Meta:
-        model = Wallet
-        fields = ['value']
-
-
-class TransactionSerializer(serializers.ModelSerializer):
+class InvestorGetSerializer(serializers.ModelSerializer):
+    partner = UserDetailSerializer()
 
     class Meta:
-        model = Transaction
-        fields = '__all__'
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode', 'partner']
+
+
+class PartnerRegistrationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode']
+        # fields = ['first_name', 'last_name', 'mobile', 'email', 'gender', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc']
+        # extra_kwargs = {'first_name': {'required': True},
+        #                 'mobile': {'required': True}, 
+        #                 'email': {'required': True},
+        #                 'pan': {'required': True},
+        #                 'aadhaar': {'required': True},
+        #                 'bank_acc': {'required': True},
+        #                 'bank_ifsc': {'required': True}}
+
+
+class PartnerGetSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode']
+
+
+class PartnerDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'mobile']

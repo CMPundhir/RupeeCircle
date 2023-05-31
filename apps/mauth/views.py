@@ -2,7 +2,7 @@ from django.shortcuts import render
 import random
 from utility.otputility import *
 from apps.mauth.models import CustomUser
-from apps.dashboard.models import Wallet
+# from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
 from .serializers import *
 from rest_framework import viewsets, status
@@ -173,9 +173,10 @@ class AuthViewSet(viewsets.ModelViewSet):
     
     @action(methods=['GET'], detail=False)
     def getRoles(self, request):
-        result = [i[1] for i in CustomUser.ROLE_CHOICES[0:2]]
+        result = [i[1] for i in CustomUser.ROLE_CHOICES[0:3]]
+        print(result)
         return Response(result)
-       
+    
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -199,8 +200,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return EmailDetailSerializer
         elif self.action == 'verifyEmail':
             return EmailVerifySerializer
-        elif self.action == 'uploadSelfie':
-            return SelfieUploadSerializer
         else:
             return UserSerializer
 
@@ -325,7 +324,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 user.is_bank_acc_verified = True
                 user.status = CustomUser.STATUS_CHOICES[4][0]
                 user.save()
-                Wallet.objects.create(owner=user)
+                # Wallet.objects.create(owner=user)
                 
                 return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -357,18 +356,3 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
             return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(methods=['POST'], detail=True)
-    def uploadSelfie(self, request, pk):
-        '''
-        API for uploading selfie.
-        '''
-        data = request.data
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            instance = User.objects.get(pk=pk)
-            instance.selfie = serializer.validated_data['selfie']
-            instance.save()
-            return Response({"message": "Image uploaded successfully."}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-

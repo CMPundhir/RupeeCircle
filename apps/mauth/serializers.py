@@ -98,7 +98,7 @@ class LinkAggregatorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['aggregator']
+        fields = ['partner']
 
 
 class EmailDetailSerializer(serializers.ModelSerializer):
@@ -122,25 +122,11 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'selfie', 'username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
+        fields = ['id', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
+ 
 
-
-class InvestorSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ['username', 'aggregator', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role']
-
-# include
-class AggregatorRegistrationSerializer(serializers.ModelSerializer):
+class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'mobile', 'email', 'gender', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc']
-        extra_kwargs = {'first_name': {'required': True},
-                        'mobile': {'required': True}, 
-                        'email': {'required': True},
-                        'pan': {'required': True},
-                        'aadhaar': {'required': True},
-                        'bank_acc': {'required': True},
-                        'bank_ifsc': {'required': True}} 
+        fields = ['id', 'first_name', 'last_name']

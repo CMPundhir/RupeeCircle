@@ -7,14 +7,6 @@ from rest_framework import status
 from rest_framework.decorators import action
 
 # Create your views here.
-
-class LoanFormViewSet(viewsets.ModelViewSet):
-    
-    def get_queryset(self):
-        return LoanForm.objects.all()
-    
-    def get_serializer_class(self):
-        return LoanFormSerializer
     
 
 class LoanViewSet(viewsets.ModelViewSet):
@@ -45,3 +37,33 @@ class LoanViewSet(viewsets.ModelViewSet):
         queryset = LoanForm.objects.all().order_by('-id')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True)
+    def invest(self, request):
+        return Response({"message": "Work on progress."})
+
+    @action(methods=['GET'], detail=True)
+    def investors(self, request, pk):
+        instance = Loan.objects.get(pk=pk)
+        queryset = instance.investor.all()
+        print(queryset)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = UserSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = UserSerializer(queryset, many=True)
+        return Response(serializer.data)
+        # serializer = UserSerializer(queryset, many=True)
+        # return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # @action(methods=['GET'], detail=False)
+    # def addtoall(self, request):
+    #     user = request.user
+    #     queryset = self.get_queryset()
+    #     for i in queryset:
+    #         i.borrower = user
+    #         i.investor.add(user)
+    #         i.save()
+    #     return Response({"message": "added all."})
+    

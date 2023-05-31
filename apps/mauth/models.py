@@ -37,7 +37,7 @@ class CustomUserManager(BaseUserManager):
 
 
 class CustomUser(AbstractUser):
-    ROLE_CHOICES = (('INVESTOR', 'INVESTOR'), ('PARTNER', 'PARTNER'), ('ADMIN', 'ADMIN'))
+    ROLE_CHOICES = (('INVESTOR', 'INVESTOR'), ('PARTNER', 'PARTNER'), ('BORROWER', 'BORROWER'), ('ADMIN', 'ADMIN'))
     STATUS_CHOICES = (('MOBILE_VERIFICATION', 'MOBILE_VERIFICATION'), 
                       ('PAN_VERIFICATION', 'PAN_VERIFICATION'), 
                       ('AADHAAR_VERIFICATION', 'AADHAAR_VERIFICATION'),
@@ -72,7 +72,7 @@ class CustomUser(AbstractUser):
     is_bank_acc_verified = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
     role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])
-    aggregator = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)
+    partner = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
