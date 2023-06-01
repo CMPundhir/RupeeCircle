@@ -11,7 +11,7 @@ class ActivityTracker(models.Model):
     ref = models.CharField(max_length=255, default="NA")
     url = models.URLField(max_length=255, default="NA")
     type = models.CharField(max_length=64, default="NA")
-    is_notification = models.BooleanField(default=False)
+    is_transaction = models.BooleanField(default=False)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

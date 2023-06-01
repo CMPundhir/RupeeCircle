@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from apps.notification.services import LogService
 from rest_framework import status
 from .models import Wallet
 from apps.mauth.models import CustomUser as User
@@ -37,11 +38,14 @@ class WalletViewSet(viewsets.ModelViewSet):
     @action(methods=['POST'], detail=True)
     def addFunds(self, request, pk):
         data = request.data
+        user = request.user
         instance = self.get_queryset().get(pk=pk)
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             instance.balance += serializer.validated_data['value']
             instance.save()
+            LogService.log(user=user, msg=f"{serializer.validated_data['value']} Rs. added to  your wallet. Your wallet balance is {instance.balance}.",
+                           is_transaction=True)
             return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

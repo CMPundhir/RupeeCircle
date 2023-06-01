@@ -6,6 +6,7 @@ from apps.mauth.views import get_tokens_for_user
 from rest_framework.permissions import IsAdminUser
 from rest_framework import status
 from rest_framework.response import Response
+from apps.notification.services import LogService
 from .serializers import *
 from apps.mauth.serializers import *
 from apps.loans.models import *
@@ -70,7 +71,7 @@ class InvestorViewSet(viewsets.ModelViewSet):
             instance.bank_ifsc = serializer.validated_data['bank_ifsc']
             instance.is_bank_acc_verified = True
             instance.role = User.ROLE_CHOICES[0][0]
-            instance.status = CustomUser.STATUS_CHOICES[4][1]
+            instance.status = User.STATUS_CHOICES[4][1]
             if 'country' in serializer.validated_data and serializer.validated_data['country']:
                 instance.country = serializer.validated_data['country']
             if 'state' in serializer.validated_data and serializer.validated_data['state']:
@@ -90,6 +91,7 @@ class InvestorViewSet(viewsets.ModelViewSet):
             else:
                 instance.aggregator = request.user
             instance.save()
+            LogService.log(user=instance, msg="Welcome to RupeeCircle.", is_transaction=False)
             serializer = InvestorGetSerializer(instance)
             return Response({"message": "Investor registered successfully.", "investor": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -156,7 +158,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
             instance.bank_ifsc = serializer.validated_data['bank_ifsc']
             instance.is_bank_acc_verified = True
             instance.role = User.ROLE_CHOICES[1][0]
-            instance.status = CustomUser.STATUS_CHOICES[4][1]
+            instance.status = User.STATUS_CHOICES[4][1]
             if 'country' in serializer.validated_data and serializer.validated_data['country']:
                 instance.country = serializer.validated_data['country']
             if 'state' in serializer.validated_data and serializer.validated_data['state']:
@@ -172,6 +174,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
             if 'last_name' in serializer.validated_data and serializer.validated_data['last_name']:
                 instance.last_name = serializer.validated_data['last_name']
             instance.save()
+            LogService.log(user=instance, msg="Welcome to RupeeCircle.", is_transaction=False)
             serializer = self.get_serializer(instance)
             return Response({"message": "Partner registered successfully.", "partner": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -192,6 +195,6 @@ class PartnerViewSet(viewsets.ModelViewSet):
     
     @action(methods=['GET'], detail=False)
     def allPartners(self, request):
-        queryset = User.objects.filter(role=CustomUser.ROLE_CHOICES[1][0])
+        queryset = User.objects.filter(role=User.ROLE_CHOICES[1][0])
         serializer = PartnerDetailSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

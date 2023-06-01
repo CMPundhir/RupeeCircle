@@ -5,6 +5,8 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
+from apps.wallet.models import Wallet
+from apps.notification.services import LogService
 
 # Create your views here.
     
@@ -38,10 +40,25 @@ class LoanViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=['POST'], detail=True)
-    def invest(self, request):
-        return Response({"message": "Work on progress."})
+    @action(methods=['GET'], detail=True)
+    def invest(self, request, pk):
+        # return Response({"message": "Work on progress."})
+        user = request.user
+        instance = self.get_queryset().get(pk=pk)
+        instance.investor.add(user)
+        instance.save()
+        wallet = Wallet.objects.get(owner=user)
+        if wallet.balance < instance.loan_amount:
+            return Response({"message": "You don't have enough wallet balance. Add amount to your wallet."})
+        wallet.balance -= instance.loan_amount
+        wallet.invested_amount += instance.loan_amount
+        wallet.save()
+        LogService.log(user=user, msg=f"Invested in loan{instance.id}.")
+        LogService.log(user=user, msg=f"Your wallet balance is debited with amount {instance.loan_amount}. Current wallet balance is {wallet.balance}.")
+        LogService.log(user=instance.borrower, msg=f"{user.first_name} {user.last_name} has invested in your loan.")
+        return Response({"message": "Invested Successfully."})
 
+  
     @action(methods=['GET'], detail=True)
     def investors(self, request, pk):
         instance = Loan.objects.get(pk=pk)

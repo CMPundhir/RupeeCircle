@@ -1,11 +1,25 @@
 from django.db import models
 from apps.mauth.models import BaseModel
 from apps.mauth.models import CustomUser as User
+from apps.mauth.middleware import get_current_authenticated_user
+import datetime
+import uuid
 # Create your models here.
+
+# def get_loan_id():
+#     date = datetime.datetime.now()
+#     date = str(date)
+#     user = get_current_authenticated_user()
+#     result = date.replace("-", "").replace(" ", f"{user.id}").replace(":", "").replace(".", "")
+#     print(result)
+#     return f"LOAN{result}"
+
+
 
 class Loan(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
     loan_amount = models.IntegerField(null=False, blank=False)
+    loan_id = models.UUIDField(default=uuid.uuid4().hex, editable=False)
     interest_rate = models.CharField(max_length=255, null=False, blank=False)
     repayment_terms = models.CharField(max_length=1000, null=True, blank=True)
     installments = models.CharField(max_length=1000, null=False, blank=True)

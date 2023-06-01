@@ -15,6 +15,7 @@ class Wallet(BaseModel, models.Model):
 
 class Transaction(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
+    transaction_id = models.UUIDField(default=uuid.uuid4().hex, editable=False)
     wallet = models.ForeignKey(Wallet, on_delete=models.DO_NOTHING)
     owner = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     amount = models.IntegerField()
