@@ -58,7 +58,6 @@ class LoanViewSet(viewsets.ModelViewSet):
         LogService.log(user=instance.borrower, msg=f"{user.first_name} {user.last_name} has invested in your loan.")
         return Response({"message": "Invested Successfully."})
 
-  
     @action(methods=['GET'], detail=True)
     def investors(self, request, pk):
         instance = Loan.objects.get(pk=pk)

@@ -15,11 +15,13 @@ from .serializers import *
 class WalletViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
-        user = self.request.user
-        if user.role == User.ROLE_CHOICES[3][1]:
-            queryset = Wallet.objects.all()
-        else:
-            queryset = []
+        # user = self.request.user
+        # if user.role == User.ROLE_CHOICES[3][1]:
+        #     queryset = Wallet.objects.all()
+        # else:
+        #     queryset = []
+        # return queryset
+        queryset = Wallet.objects.all()
         return queryset
     
     def get_serializer_class(self):
@@ -63,8 +65,10 @@ class WalletViewSet(viewsets.ModelViewSet):
 class TransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = Transaction.objects.filter(owner=user).order_by('-id')
+        # user = self.request.user
+        # queryset = Transaction.objects.filter(owner=user).order_by('-id')
+        # return queryset
+        queryset = Transaction.objects.all()
         return queryset
     
     def get_serializer_class(self):
