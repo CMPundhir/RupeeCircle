@@ -182,7 +182,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = User.objects.all()
+        queryset = User.objects.all().order_by('-id')
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
@@ -243,6 +243,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
                 user.pan = pan
                 user.pan_name = name
+                user.first_name = name
                 user.is_pan_verified = True
                 user.status = CustomUser.STATUS_CHOICES[2][0]
                 user.save()
@@ -356,3 +357,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
             return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['GET'], detail=False)
+    def count(self, request):
+        investor = User.objects.filter(role=CustomUser.ROLE_CHOICES[0][1]).count()
+        borrower = User.objects.filter(role=CustomUser.ROLE_CHOICES[2][1]).count()
+        return Response({"investors": investor, "borrowers": borrower}, status=status.HTTP_200_OK)

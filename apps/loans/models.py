@@ -12,9 +12,10 @@ def get_loan_id(id):
     return loan_id
 
 class Loan(BaseModel, models.Model):
+    STATUS_CHOICES = (('APPLIED', 'APPLIED'), ('UNDER BIDDING', 'UNDER BIDDING'), ('CLOSED', 'CLOSED'))
     id = models.AutoField(primary_key=True)
     loan_amount = models.IntegerField(null=False, blank=False)
-    # loan_id = models.UUIDField(default=get_loan_id, editable=False, unique=True)
+    loan_id = models.CharField(max_length=1000, blank=True, unique=True)
     interest_rate = models.CharField(max_length=255, null=False, blank=False)
     repayment_terms = models.CharField(max_length=1000, null=True, blank=True)
     installments = models.CharField(max_length=1000, null=False, blank=True)
@@ -26,9 +27,23 @@ class Loan(BaseModel, models.Model):
     governing_law = models.CharField(max_length=1000, null=True, blank=True)
     borrower = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='borrower')
     investor = models.ManyToManyField(User, related_name='investor')
+    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def __str__(self):
         return f'{self.id}'
+    
+    def save(self, *args, **kwargs):
+        self.loan_id = f'LOAN{self.id}'
+        super(Loan, self).save(*args, **kwargs)
+
+
+class InvestmentPlan(BaseModel, models.Model):
+    TYPE_CHOICES = (('FIXED ROI', 'FIXED ROI'), ('ANYTIME WITHDRAWAL', 'ANYTIME WITHDRAWAL'))
+    id = models.AutoField(primary_key=True)
+    amount = models.IntegerField(null=False, blank=False)
+    interest_rate = models.CharField(max_length=255, null=False, blank=False)
+    tenure = models.CharField(max_length=255)
+    type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=TYPE_CHOICES[0][1])
 
 
 class LoanForm(BaseModel, models.Model):

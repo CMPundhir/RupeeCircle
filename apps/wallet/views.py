@@ -21,7 +21,7 @@ class WalletViewSet(viewsets.ModelViewSet):
         # else:
         #     queryset = []
         # return queryset
-        queryset = Wallet.objects.all()
+        queryset = Wallet.objects.filter(owner=self.request.user.id)
         return queryset
     
     def get_serializer_class(self):
@@ -47,7 +47,8 @@ class WalletViewSet(viewsets.ModelViewSet):
             instance.balance += serializer.validated_data['value']
             instance.save()
             LogService.log(user=user, msg=f"{serializer.validated_data['value']} Rs. added to  your wallet. Your wallet balance is {instance.balance}.",
-                           is_transaction=True)
+                           is_activity=True)
+            LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'])
             return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -73,4 +74,13 @@ class TransactionViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         return TransactionSerializer
+
+    @action(methods=['GET'], detail=False)
+    def recentTransactions(self, request):
+        queryset = Transaction.objects.filter(owner=request.user).order_by('-id')[0:10]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # @action(methods=['GET'], detail=False)
+    # def graphDetail(self, request):
 

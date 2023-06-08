@@ -15,6 +15,7 @@ v1_router.register(r'partner', PartnerViewSet, basename='partner')
 v1_router.register(r'wallet', WalletViewSet, basename='wallet')
 v1_router.register(r'transaction', TransactionViewSet, basename='transaction')
 v1_router.register(r'loan', LoanViewSet, basename='loan')
+v1_router.register(r'investment-plan', InvestmentPlanViewSet, basename='investment-plan')
 v1_router.register(r'notification', ActivityAppViewSet, basename='notification')
 
 urlpatterns = [
