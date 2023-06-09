@@ -37,11 +37,12 @@ class WalletViewSet(viewsets.ModelViewSet):
             return AddFundsSerializer
         else:
             return WalletSerializer
-    
-    # def list(self, request):
-    #     queryset = self.get_queryset()
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def list(self, request):
+        user = request.user    
+        instance = self.get_queryset().get(owner=user)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     @action(methods=['POST'], detail=True)
     def addFunds(self, request, pk):
