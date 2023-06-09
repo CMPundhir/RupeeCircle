@@ -26,7 +26,7 @@ class Loan(BaseModel, models.Model):
     privacy = models.CharField(max_length=1000, null=True, blank=True)
     governing_law = models.CharField(max_length=1000, null=True, blank=True)
     borrower = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='borrower')
-    investor = models.ManyToManyField(User, related_name='investor')
+    investors = models.ManyToManyField(User)#, related_name='investor')
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def __str__(self):
@@ -44,6 +44,7 @@ class InvestmentPlan(BaseModel, models.Model):
     interest_rate = models.CharField(max_length=255, null=False, blank=False)
     tenure = models.CharField(max_length=255)
     type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=TYPE_CHOICES[0][1])
+    investors = models.ManyToManyField(User, blank=True)
 
 
 class LoanForm(BaseModel, models.Model):

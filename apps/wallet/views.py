@@ -6,6 +6,8 @@ from apps.notification.services import LogService
 from rest_framework import status
 from .models import Wallet
 from apps.mauth.models import CustomUser as User
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 from .serializers import *
 
 
@@ -13,6 +15,10 @@ from .serializers import *
 
 
 class WalletViewSet(viewsets.ModelViewSet):
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['owner', 'balance', 'invested_amount']
+    ordering_fields = ['id']
+    filterset_fields = ['owner', 'balance', 'invested_amount']
 
     def get_queryset(self):
         # user = self.request.user
@@ -27,7 +33,7 @@ class WalletViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
             return WalletGetSerializer
-        elif self.action == 'addFunds':
+        elif self.action == 'addFunds' or self.action == 'withdrawFunds':
             return AddFundsSerializer
         else:
             return WalletSerializer
@@ -46,9 +52,26 @@ class WalletViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             instance.balance += serializer.validated_data['value']
             instance.save()
-            LogService.log(user=user, msg=f"{serializer.validated_data['value']} Rs. added to  your wallet. Your wallet balance is {instance.balance}.",
+            LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} credited to  your wallet. Your wallet balance is {instance.balance}.",
                            is_activity=True)
             LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'])
+            return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['POST'], detail=True)
+    def withdrawFunds(self, request, pk):
+        data = request.data
+        user = request.user
+        instance = self.get_queryset().get(pk=pk)
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            if instance.balance < serializer.validated_data['value']:
+                return Response({"message": "You don't have enough balance in your wallet."}, status=status.HTTP_400_BAD_REQUEST)
+            instance.balance -= serializer.validated_data['value']
+            instance.save()
+            LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} debited to your wallet. Your wallet balance is {instance.balance}.",
+                           is_activity=True)
+            LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'], debit=True)
             return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -64,6 +87,10 @@ class WalletViewSet(viewsets.ModelViewSet):
 
 
 class TransactionViewSet(viewsets.ModelViewSet):
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['transaction_id', 'owner', 'amount', 'id', 'wallet']
+    ordering_fields = ['id']
+    filterset_fields = ['transaction_id', 'wallet', 'owner', 'amount']
 
     def get_queryset(self):
         # user = self.request.user

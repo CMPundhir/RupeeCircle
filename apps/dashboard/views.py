@@ -4,6 +4,8 @@ from rest_framework.decorators import action
 from apps.mauth.models import CustomUser as User
 from apps.mauth.views import get_tokens_for_user
 from rest_framework.permissions import IsAdminUser
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 from rest_framework import status
 from rest_framework.response import Response
 from apps.notification.services import LogService
@@ -14,6 +16,10 @@ from apps.loans.models import *
 # Create your views here.
 
 class InvestorViewSet(viewsets.ModelViewSet):
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'partner']
+    ordering_fields = ['id']
+    filterset_fields = ['partner']
 
     def get_queryset(self):
         user = self.request.user
@@ -99,6 +105,10 @@ class InvestorViewSet(viewsets.ModelViewSet):
 
 class PartnerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'partner']
+    ordering_fields = ['id']
+    filterset_fields = []
 
     def get_queryset(self):
         if self.action == 'linkInvestor':

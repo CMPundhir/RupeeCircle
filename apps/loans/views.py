@@ -2,17 +2,23 @@ from django.shortcuts import render
 from django.db.models import Count
 from .models import *
 from .serializers import *
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
 from apps.wallet.models import Wallet
 from apps.notification.services import LogService
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 # Create your views here.
     
 
 class LoanViewSet(viewsets.ModelViewSet):
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['loan_amount', 'loan_id', 'interest_rate', 'repayment_terms', 'installments', 'borrower', 'investor', 'status']
+    ordering_fields = ['id', 'loan_id']
+    filterset_fields = ['loan_amount', 'interest_rate', 'borrower', 'investor', 'status', 'collateral']
 
     def get_queryset(self):
         queryset = Loan.objects.all()
@@ -100,6 +106,11 @@ class LoanViewSet(viewsets.ModelViewSet):
     
 
 class InvestmentPlanViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['amount', 'tenure', 'type', 'interest_rate']
+    ordering_fields = ['id']
+    filterset_fields = ['amount', 'tenure', 'type', 'interest_rate']
 
     def get_queryset(self):
         queryset = InvestmentPlan.objects.all()
@@ -107,3 +118,46 @@ class InvestmentPlanViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self, *args, **kwargs):
         return InvestmentPlanSerializer
+    
+    @action(methods=['GET'], detail=True)
+    def apply(self, request, pk):
+        instance = self.get_object()
+        user = request.user
+        if user.role != User.ROLE_CHOICES[0][1]:
+            return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
+        if user not in instance.investors.all():
+            instance.investors.add(user)
+            return Response({"message": "Success."}, status=status.HTTP_200_OK)
+        return Response({"message": "Already applied for this Investment plan."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MyInvestmentViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        user = self.request.user
+        if self.action == 'marketplace':
+            queryset = Loan.objects.filter(investors__in=[user])
+            return queryset
+        if self.action == 'investmentPlans':
+            queryset = InvestmentPlan.objects.filter(investors__in=[user])
+            return queryset
+        return []
+        
+    def get_serializer_class(self):
+        if self.action == 'marketplace':
+            return LoanSerializer
+        if self.action == 'investmentPlans':
+            return InvestmentPlanSerializer
+        return LoanSerializer
+        
+    @action(methods=['GET'], detail=False)
+    def marketplace(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(methods=['GET'], detail=False)
+    def investmentPlans(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -23,6 +23,7 @@ class Transaction(BaseModel, models.Model):
     wallet = models.ForeignKey(Wallet, on_delete=models.DO_NOTHING)
     owner = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     amount = models.IntegerField()
+    debit = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         s = datetime.now()

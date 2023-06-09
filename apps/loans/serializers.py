@@ -4,11 +4,11 @@ from .models import *
 
 class LoanSerializer(serializers.ModelSerializer):
     borrower = UserSerializer()
-    investor = UserSerializer(many=True)
+    investors = UserSerializer(many=True)
 
     class Meta:
         model = Loan
-        fields = ['id', 'loan_id', 'created', 'loan_amount', 'interest_rate', 'repayment_terms', 'installments', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law', 'borrower', 'investor']
+        fields = ['id', 'loan_id', 'created', 'loan_amount', 'interest_rate', 'repayment_terms', 'installments', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law', 'borrower', 'investors']
 
 
 class LoanFormSerializer(serializers.ModelSerializer):

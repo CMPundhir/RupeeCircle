@@ -12,6 +12,8 @@ from .models import CustomUser as User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -180,6 +182,10 @@ class AuthViewSet(viewsets.ModelViewSet):
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'role', 'partner']
+    ordering_fields = ['id']
+    filterset_fields = ['role', 'partner',]
 
     def get_queryset(self):
         queryset = User.objects.all().order_by('-id')
