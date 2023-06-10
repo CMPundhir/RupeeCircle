@@ -105,10 +105,10 @@ WSGI_APPLICATION = 'rupeecircle.wsgi.application'
 DATABASES = {
     'default': {
 		'ENGINE': 'django.db.backends.postgresql',
-		'NAME': 'rupeecircle_new',
+		'NAME': 'postgres',
 		'USER': 'postgres',
-		'PASSWORD': 'purpose',
-		'HOST':'localhost',
+		'PASSWORD': 'kuchhBhi#098', # kuchhBhi#098
+		'HOST':'database-1.cdje8iud1vtd.ap-south-1.rds.amazonaws.com',
 		'PORT':'5432',
 	}
 }
