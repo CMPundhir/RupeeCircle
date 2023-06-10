@@ -1,9 +1,13 @@
 from django.db import models
 import uuid
+from datetime import datetime
 from apps.mauth.models import BaseModel
 from apps.mauth.models import CustomUser as User
 
 # Create your models here.
+
+# def get_transaction_id():
+
 
 class Wallet(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
@@ -15,6 +19,14 @@ class Wallet(BaseModel, models.Model):
 
 class Transaction(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
+    transaction_id = models.CharField(max_length=1000, unique=True, blank=True)
     wallet = models.ForeignKey(Wallet, on_delete=models.DO_NOTHING)
     owner = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     amount = models.IntegerField()
+    debit = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        s = datetime.now()
+        result = str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')
+        self.transaction_id = f'T{self.wallet.id}{result}'
+        super(Transaction, self).save(*args, **kwargs)

@@ -3,8 +3,10 @@ from .models import ActivityTracker
 from .serializers import ActivityTrackerSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 
 # Create your views here.
@@ -12,9 +14,11 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 class ActivityAppViewSet(viewsets.ModelViewSet):
     # authentication_classes = [SessionAuthentication]
     permission_classes = [AllowAny]
-    serializer_class = ActivityTrackerSerializer
     http_method_names = ['get', 'head']
-    # filterset_fields = ['is_notification']
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['user', 'type', '']
+    ordering_fields = ['id']
+    filterset_fields = ['user', 'type', 'is_activity']
     
     def get_queryset(self):
         user = self.request.user
@@ -47,3 +51,10 @@ class ActivityAppViewSet(viewsets.ModelViewSet):
         ActivityTracker.objects.filter(
             user=user).filter(is_read=False).update(is_read=True)
         return Response("Success")
+    
+    @action(methods=['GET'], detail=False)
+    def recentActivity(self, request):
+        queryset = ActivityTracker.objects.filter(is_activity=True).order_by('-id')[:10]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+

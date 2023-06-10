@@ -14,7 +14,7 @@ class WalletGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Wallet
-        fields = ['id', 'owner', 'balance', 'invested_amount']
+        fields = ['id', 'uid', 'owner', 'balance', 'invested_amount']
 
 
 class AddFundsSerializer(serializers.ModelSerializer):

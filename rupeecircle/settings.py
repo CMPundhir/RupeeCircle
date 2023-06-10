@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'apps.wallet',
     'apps.notification',
     'apps.dashboard',
+    'apps.helpline',
     'rest_framework_simplejwt',
     "corsheaders",
     'sslserver',

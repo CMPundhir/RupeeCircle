@@ -12,6 +12,8 @@ from .models import CustomUser as User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -180,9 +182,13 @@ class AuthViewSet(viewsets.ModelViewSet):
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'role', 'partner']
+    ordering_fields = ['id']
+    filterset_fields = ['role', 'partner',]
 
     def get_queryset(self):
-        queryset = User.objects.all()
+        queryset = User.objects.all().order_by('-id')
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
@@ -243,6 +249,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
                 user.pan = pan
                 user.pan_name = name
+                user.first_name = name
                 user.is_pan_verified = True
                 user.status = CustomUser.STATUS_CHOICES[2][0]
                 user.save()
@@ -356,3 +363,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({"message": "Email verified successfully."}, status=status.HTTP_200_OK)
             return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['GET'], detail=False)
+    def count(self, request):
+        investor = User.objects.filter(role=CustomUser.ROLE_CHOICES[0][1]).count()
+        borrower = User.objects.filter(role=CustomUser.ROLE_CHOICES[2][1]).count()
+        return Response({"investors": investor, "borrowers": borrower}, status=status.HTTP_200_OK)
