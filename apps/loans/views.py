@@ -54,7 +54,6 @@ class LoanViewSet(viewsets.ModelViewSet):
         instance.save()
         return instance
         
-
     def get_success_headers(self, data):
         try:
             return {'Location': str(data[api_settings.URL_FIELD_NAME])}
@@ -71,12 +70,6 @@ class LoanViewSet(viewsets.ModelViewSet):
             instance.save()
             return Response({"message": "Application submitted successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    def retrieve(self, request, *args, **kwargs):
-        print(f'TOKENS => {request.auth}')
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
     
     @action(methods=['GET'], detail=False)
     def recentApplications(self, request):
@@ -134,7 +127,7 @@ class LoanViewSet(viewsets.ModelViewSet):
     #         i.investor.add(user)
     #         i.save()
     #     return Response({"message": "added all."})
-    
+
 
 class FixedROIViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -265,6 +258,49 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class AllInvestmentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        user = self.request.user
+        all_users = User.objects.all()
+        if self.action == 'marketplace':
+            queryset = Loan.objects.filter(investors__in=all_users)
+            return queryset
+        if self.action == 'fixedRoi':
+            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1], investors__in=all_users)
+            return queryset
+        if self.action == 'anytimeWithdraw':
+            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1], investors__in=all_users)
+            return queryset
+        return []
+        
+    def get_serializer_class(self):
+        if self.action == 'marketplace':
+            return LoanSerializer
+        if self.action == 'anytimeWithdraw' or self.action == 'fixedRoi':
+            return InvestmentPlanSerializer
+        return LoanSerializer
+        
+    @action(methods=['GET'], detail=False)
+    def marketplace(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(methods=['GET'], detail=False)
+    def fixedRoi(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(methods=['GET'], detail=False)
+    def anytimeWithdraw(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class InvestmentRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
 
@@ -296,5 +332,10 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
         # approving request
         instance.status = InvestmentRequest.STATUS_CHOICES[1][1]
         instance.save()
+
+        # Adding investor in investment plan
+        plan = InvestmentPlan.objects.get(id=instance.plan.id)
+        plan.investors.add(instance.investor)
+        plan.save()
         LogService.log(user=instance.investor, msg=f'Your Application for Investment Plan is approved.')
         return Response({"message": "Application Approved."}, status=status.HTTP_200_OK)

@@ -44,11 +44,11 @@ class WalletViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
     
-    @action(methods=['POST'], detail=True)
-    def addFunds(self, request, pk):
+    @action(methods=['POST'], detail=False)
+    def addFunds(self, request):
         data = request.data
         user = request.user
-        instance = self.get_queryset().get(pk=pk)
+        instance = self.get_queryset()[0]
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             instance.balance += serializer.validated_data['value']
@@ -59,11 +59,11 @@ class WalletViewSet(viewsets.ModelViewSet):
             return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(methods=['POST'], detail=True)
-    def withdrawFunds(self, request, pk):
+    @action(methods=['POST'], detail=False)
+    def withdrawFunds(self, request):
         data = request.data
         user = request.user
-        instance = self.get_queryset().get(pk=pk)
+        instance = self.get_queryset()[0]
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             if instance.balance < serializer.validated_data['value']:
