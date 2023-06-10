@@ -3,6 +3,7 @@ from django.db.models import Count
 from .models import *
 from .serializers import *
 from rest_framework import viewsets, permissions
+from rest_framework.settings import api_settings
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
@@ -16,9 +17,9 @@ from rest_framework import filters
 
 class LoanViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
-    search_fields = ['loan_amount', 'loan_id', 'interest_rate', 'repayment_terms', 'installments', 'borrower', 'investor', 'status']
+    search_fields = ['loan_amount', 'loan_id', 'interest_rate', 'repayment_terms', 'installments', 'borrower', 'investors', 'status']
     ordering_fields = ['id', 'loan_id']
-    filterset_fields = ['loan_amount', 'interest_rate', 'borrower', 'investor', 'status', 'collateral']
+    filterset_fields = ['loan_amount', 'interest_rate', 'borrower', 'investors', 'status', 'collateral']
 
     def get_queryset(self):
         queryset = Loan.objects.all()
@@ -105,7 +106,7 @@ class LoanViewSet(viewsets.ModelViewSet):
     #     return Response({"message": "added all."})
     
 
-class InvestmentPlanViewSet(viewsets.ModelViewSet):
+class FixedROIViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['amount', 'tenure', 'type', 'interest_rate']
@@ -113,7 +114,7 @@ class InvestmentPlanViewSet(viewsets.ModelViewSet):
     filterset_fields = ['amount', 'tenure', 'type', 'interest_rate']
 
     def get_queryset(self):
-        queryset = InvestmentPlan.objects.all()
+        queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1])
         return queryset
     
     def get_serializer_class(self, *args, **kwargs):
@@ -123,11 +124,82 @@ class InvestmentPlanViewSet(viewsets.ModelViewSet):
     def apply(self, request, pk):
         instance = self.get_object()
         user = request.user
+
+        # Checking if user is Investor or not.
         if user.role != User.ROLE_CHOICES[0][1]:
             return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Checking if investor has already applied for this plan. If not then creating a request for this plan.
         if user not in instance.investors.all():
-            instance.investors.add(user)
-            return Response({"message": "Success."}, status=status.HTTP_200_OK)
+            # instance.investors.add(user)
+            # return Response({"message": "Success."}, status=status.HTTP_200_OK)
+
+            # Checking wallet balance is sufficient or not
+            wallet = Wallet.objects.get(owner=user)
+            if wallet.balance < instance.amount:
+                return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
+            
+            # Creating request for this plan.
+            InvestmentRequest.objects.create(plan=instance, investor=user)
+            LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
+            return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
+        return Response({"message": "Already applied for this Investment plan."}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['amount', 'tenure', 'type', 'interest_rate']
+    ordering_fields = ['id']
+    filterset_fields = ['amount', 'tenure', 'type', 'interest_rate']
+
+    def get_queryset(self):
+        queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1])
+        return queryset
+    
+    def get_serializer_class(self, *args, **kwargs):
+        return InvestmentPlanSerializer
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        serializer.validated_data['type'] = InvestmentPlan.TYPE_CHOICES[1][1]
+        serializer.save()
+
+    def get_success_headers(self, data):
+        try:
+            return {'Location': str(data[api_settings.URL_FIELD_NAME])}
+        except (TypeError, KeyError):
+            return {}
+    
+    @action(methods=['GET'], detail=True)
+    def apply(self, request, pk):
+        instance = self.get_object()
+        user = request.user
+
+        # Checking if user is Investor or not.
+        if user.role != User.ROLE_CHOICES[0][1]:
+            return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Checking if investor has already applied for this plan. If not then creating a request for this plan.
+        if user not in instance.investors.all():
+            # instance.investors.add(user)
+            # return Response({"message": "Success."}, status=status.HTTP_200_OK)
+
+            # Checking wallet balance is sufficient or not
+            wallet = Wallet.objects.get(owner=user)
+            if wallet.balance < instance.amount:
+                return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
+            
+            # Creating request for this plan.
+            InvestmentRequest.objects.create(plan=instance, investor=user)
+            LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
+            return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
         return Response({"message": "Already applied for this Investment plan."}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -161,3 +233,38 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class InvestmentRequestViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        queryset = InvestmentRequest.objects.filter(status=InvestmentRequest.STATUS_CHOICES[0][1])
+        return queryset
+    
+    def get_serializer_class(self):
+        return InvestmentRequestSerializer
+    
+    @action(methods=['GET'], detail=True)
+    def approve(self, request, pk):
+        user=request.user
+        instance = self.get_object()
+        print(f'Your amount => {instance.plan.amount}')
+        wallet = Wallet.objects.get(owner=instance.investor)
+
+        # checking balance in the wallet
+        if wallet.balance < instance.plan.amount:
+            LogService.log(user=instance.investor, msg=f'Your application for investment plan could not be approved due to insufficient balance in your wallet.')
+            return Response({"message": "Investor doesn't have enough balance in their wallet."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Deducting amount from the wallet
+        wallet.balance -= instance.plan.amount
+        wallet.save()
+        LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=instance.plan.amount, debit=True)
+        LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {instance.plan.amount}. Current Wallet balance is Rs. {wallet.balance}')
+        
+        # approving request
+        instance.status = InvestmentRequest.STATUS_CHOICES[1][1]
+        instance.save()
+        LogService.log(user=instance.investor, msg=f'Your Application for Investment Plan is approved.')
+        return Response({"message": "Application Approved."}, status=status.HTTP_200_OK)

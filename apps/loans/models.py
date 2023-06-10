@@ -63,3 +63,15 @@ class LoanForm(BaseModel, models.Model):
 
     def __str__(self):
         return f'{self.id}'
+    
+
+class InvestmentRequest(BaseModel, models.Model):
+    STATUS_CHOICES = (('PENDING', 'PENDING'), ('APPROVED', 'APPROVED'))
+    id = models.AutoField(primary_key=True)
+    plan = models.ForeignKey(InvestmentPlan, on_delete=models.DO_NOTHING)
+    investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
+
+    def __str__(self):
+        return f'{self.id}'
+

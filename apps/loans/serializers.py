@@ -3,8 +3,8 @@ from apps.mauth.serializers import UserSerializer
 from .models import *
 
 class LoanSerializer(serializers.ModelSerializer):
-    borrower = UserSerializer()
-    investors = UserSerializer(many=True)
+    # borrower = UserSerializer()
+    # investors = UserSerializer(many=True)
 
     class Meta:
         model = Loan
@@ -29,4 +29,11 @@ class InvestmentPlanSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InvestmentPlan
+        fields = '__all__'
+
+
+class InvestmentRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = InvestmentRequest
         fields = '__all__'
