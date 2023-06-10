@@ -18,23 +18,23 @@ class Loan(BaseModel, models.Model):
     loan_id = models.CharField(max_length=1000, blank=True, unique=True)
     interest_rate = models.CharField(max_length=255, null=False, blank=False)
     repayment_terms = models.CharField(max_length=1000, null=True, blank=True)
-    installments = models.CharField(max_length=1000, null=False, blank=True)
-    collateral = models.CharField(max_length=255, null=False, blank=False)
+    installments = models.CharField(max_length=1000, null=True, blank=True)
+    collateral = models.CharField(max_length=255, null=True, blank=True)
     late_pay_penalties = models.CharField(max_length=255, null=True, blank=True)
     prepayment_options = models.CharField(max_length=255, null=True, blank=True)
     default_remedies = models.CharField(max_length=1000, null=True, blank=True)
     privacy = models.CharField(max_length=1000, null=True, blank=True)
     governing_law = models.CharField(max_length=1000, null=True, blank=True)
     borrower = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='borrower')
-    investors = models.ManyToManyField(User)#, related_name='investor')
+    investors = models.ManyToManyField(User, blank=True)#, related_name='investor')
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def __str__(self):
         return f'{self.id}'
     
-    def save(self, *args, **kwargs):
-        self.loan_id = f'LOAN{self.id}'
-        super(Loan, self).save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     self.loan_id = f'LOAN{self.id}'
+    #     super(Loan, self).save(*args, **kwargs)
 
 
 class InvestmentPlan(BaseModel, models.Model):

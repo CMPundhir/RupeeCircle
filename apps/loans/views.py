@@ -22,6 +22,9 @@ class LoanViewSet(viewsets.ModelViewSet):
     filterset_fields = ['loan_amount', 'interest_rate', 'borrower', 'investors', 'status', 'collateral']
 
     def get_queryset(self):
+        user = self.request.user
+        if user.role == User.ROLE_CHOICES[2][1]:
+            queryset = Loan.objects.filter(borrower=user)
         queryset = Loan.objects.all()
         return queryset
     
@@ -30,6 +33,33 @@ class LoanViewSet(viewsets.ModelViewSet):
             return RecentLoanSerializer
         else:
             return LoanSerializer
+        
+    def create(self, request, *args, **kwargs):
+        user = self.request.user
+        if user.role != User.ROLE_CHOICES[2][1]:
+            return Response({"message": "Only borrower can create a Marketplace Loan."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.validated_data['borrower'] = user
+        instance = self.perform_create(serializer)
+        data = self.get_serializer(instance)
+        # instance.loan_id = f'LOAN{instance.id}'
+        headers = self.get_success_headers(serializer.data)
+        # return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        instance.loan_id = f'LOAN{instance.id}'
+        instance.save()
+        return instance
+        
+
+    def get_success_headers(self, data):
+        try:
+            return {'Location': str(data[api_settings.URL_FIELD_NAME])}
+        except (TypeError, KeyError):
+            return {}
     
     @action(methods=['POST'], detail=True)
     def apply(self, request, pk):
