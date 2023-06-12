@@ -68,10 +68,17 @@ class LoanForm(BaseModel, models.Model):
 class InvestmentRequest(BaseModel, models.Model):
     STATUS_CHOICES = (('PENDING', 'PENDING'), ('APPROVED', 'APPROVED'))
     id = models.AutoField(primary_key=True)
-    plan = models.ForeignKey(InvestmentPlan, on_delete=models.DO_NOTHING)
+    plan = models.ForeignKey(InvestmentPlan, on_delete=models.DO_NOTHING, null=True, blank=True)
+    loan = models.ForeignKey(Loan, on_delete=models.DO_NOTHING, null=True, blank=True)
     investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    borrower = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='loan_borrower', null=True, blank=True)
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def __str__(self):
         return f'{self.id}'
+    
+    def save(self, *args, **kwargs):
+        user = get_current_authenticated_user()
+        self.created_by = user
+        super(InvestmentRequest, self).save(*args, **kwargs)
 

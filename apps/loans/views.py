@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
 from apps.wallet.models import Wallet
+from apps.mauth.models import CustomUser as User
 from apps.notification.services import LogService
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
@@ -60,16 +61,32 @@ class LoanViewSet(viewsets.ModelViewSet):
         except (TypeError, KeyError):
             return {}
     
-    @action(methods=['POST'], detail=True)
+    @action(methods=['GET'], detail=True)
     def apply(self, request, pk):
-        data = request.data
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            instance = LoanForm.objects.create(serializer.validated_data)
-            instance.loan = pk
-            instance.save()
-            return Response({"message": "Application submitted successfully."}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user = request.user
+        loan_plan = self.get_object()
+
+        # Checking if user is a investor
+        if user.role != User.ROLE_CHOICES[0][1]:
+            return Response({"message": "Only Investors are allowed to apply for loans."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Checking wallet balance
+        wallet = Wallet.objects.get(owner=user)
+        if wallet.balance < loan_plan.loan_amount:
+            return Response({"message": "You do not have enough balance in your wallet. Add funds first."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Creating Investment Request
+        InvestmentRequest.objects.create(loan=loan_plan, investor=user, borrower=loan_plan.borrower)
+        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for investment in {loan_plan}.')
+        return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
+        # data = request.data
+        # serializer = self.get_serializer(data=data)
+        # if serializer.is_valid(raise_exception=True):
+        #     instance = LoanForm.objects.create(serializer.validated_data)
+        #     instance.loan = pk
+        #     instance.save()
+        #     return Response({"message": "Application submitted successfully."}, status=status.HTTP_201_CREATED)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['GET'], detail=False)
     def recentApplications(self, request):
@@ -118,15 +135,6 @@ class LoanViewSet(viewsets.ModelViewSet):
         queryset = Loan.objects.annotate(investor_count=Count('investor')).order_by('-investor_count')[0:4]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    # @action(methods=['GET'], detail=False)
-    # def addtoall(self, request):
-    #     user = request.user
-    #     queryset = self.get_queryset()
-    #     for i in queryset:
-    #         i.borrower = user
-    #         i.investor.add(user)
-    #         i.save()
-    #     return Response({"message": "added all."})
 
 
 class FixedROIViewSet(viewsets.ModelViewSet):
@@ -221,7 +229,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
             
             # Creating request for this plan.
             InvestmentRequest.objects.create(plan=instance, investor=user)
-            LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
+            LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for investment plan.')
             return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
         return Response({"message": "Already applied for this Investment plan."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -305,7 +313,13 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
 
     def get_queryset(self):
-        queryset = InvestmentRequest.objects.filter(status=InvestmentRequest.STATUS_CHOICES[0][1])
+        user = self.request.user
+        if user.role == User.ROLE_CHOICES[2][1]:
+            queryset = InvestmentRequest.objects.filter(plan=None, borrower=user)
+        elif user.role == User.ROLE_CHOICES[3][1]:
+            queryset = InvestmentRequest.objects.filter(loan=None)
+        else:
+            return Response({"message": "You are not authorized to access Investment Requests."}, status=status.HTTP_401_UNAUTHORIZED)
         return queryset
     
     def get_serializer_class(self):
@@ -315,27 +329,43 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk):
         user=request.user
         instance = self.get_object()
-        print(f'Your amount => {instance.plan.amount}')
+        if user.role == User.ROLE_CHOICES[2][1]:
+            loan_or_role_amount = instance.loan.loan_amount
+        elif user.role == User.ROLE_CHOICES[3][1]:
+            loan_or_role_amount = instance.plan.amount
+        print(f'Your amount => {loan_or_role_amount}')
         wallet = Wallet.objects.get(owner=instance.investor)
 
         # checking balance in the wallet
-        if wallet.balance < instance.plan.amount:
+        if wallet.balance < loan_or_role_amount:
             LogService.log(user=instance.investor, msg=f'Your application for investment plan could not be approved due to insufficient balance in your wallet.')
             return Response({"message": "Investor doesn't have enough balance in their wallet."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Deducting amount from the wallet
-        wallet.balance -= instance.plan.amount
+        wallet.balance -= loan_or_role_amount
         wallet.save()
-        LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=instance.plan.amount, debit=True)
-        LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {instance.plan.amount}. Current Wallet balance is Rs. {wallet.balance}')
+        LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=loan_or_role_amount, debit=True)
+        LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {loan_or_role_amount}. Current Wallet balance is Rs. {wallet.balance}')
         
         # approving request
         instance.status = InvestmentRequest.STATUS_CHOICES[1][1]
         instance.save()
 
         # Adding investor in investment plan
-        plan = InvestmentPlan.objects.get(id=instance.plan.id)
-        plan.investors.add(instance.investor)
-        plan.save()
+        if instance.loan == None:
+            plan = InvestmentPlan.objects.get(id=instance.plan.id)
+            plan.investors.add(instance.investor)
+            plan.save()
+        else:
+            loan = Loan.objects.get(id=instance.loan.id)
+            loan.investors.add(instance.investor)
+            loan.save()
+        LogService.log(user=request.user, msg=f"You approved Investment Request of investor{instance.investor}", is_activity=True)
         LogService.log(user=instance.investor, msg=f'Your Application for Investment Plan is approved.')
         return Response({"message": "Application Approved."}, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=False)
+    def approvedRequests(self, request):
+        queryset = InvestmentRequest.objects.filter(status=InvestmentRequest.STATUS_CHOICES[1][1])
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

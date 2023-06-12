@@ -53,7 +53,7 @@ class WalletViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             instance.balance += serializer.validated_data['value']
             instance.save()
-            LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} credited to  your wallet. Your wallet balance is {instance.balance}.",
+            LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} credited to  your wallet. Your wallet balance is Rs.{instance.balance}.",
                            is_activity=True)
             LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'])
             return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
@@ -70,10 +70,10 @@ class WalletViewSet(viewsets.ModelViewSet):
                 return Response({"message": "You don't have enough balance in your wallet."}, status=status.HTTP_400_BAD_REQUEST)
             instance.balance -= serializer.validated_data['value']
             instance.save()
-            LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} debited to your wallet. Your wallet balance is {instance.balance}.",
+            LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} debited to your wallet. Your wallet balance is Rs.{instance.balance}.",
                            is_activity=True)
             LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'], debit=True)
-            return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
+            return Response({"message": "Funds withdrawn successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     # @action(methods=['GET'], detail=False)
