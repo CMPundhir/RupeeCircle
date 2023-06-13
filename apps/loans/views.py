@@ -14,7 +14,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
 # Create your views here.
-    
+
 
 class LoanViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
@@ -132,7 +132,7 @@ class LoanViewSet(viewsets.ModelViewSet):
     @action(methods=['GET'], detail=False)
     def popularLoans(self, request):
         print(request.auth)
-        queryset = Loan.objects.annotate(investor_count=Count('investor')).order_by('-investor_count')[0:4]
+        queryset = Loan.objects.annotate(investor_count=Count('investors')).order_by('-investor_count')[0:4]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -175,7 +175,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
             LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
             return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
         return Response({"message": "Already applied for this Investment plan."}, status=status.HTTP_400_BAD_REQUEST)
-    
+
 
 class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
