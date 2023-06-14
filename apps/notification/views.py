@@ -54,7 +54,7 @@ class ActivityAppViewSet(viewsets.ModelViewSet):
     
     @action(methods=['GET'], detail=False)
     def recentActivity(self, request):
-        queryset = ActivityTracker.objects.filter(is_activity=True).order_by('-id')[:10]
+        queryset = ActivityTracker.objects.filter(user=request.user, is_activity=True).order_by('-id')[:10]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -63,7 +63,7 @@ class RecentActivityViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = ActivityTracker.objects.filter(user=user, is_activity=True).order_by('-id')
+        queryset = ActivityTracker.objects.filter(user=user, is_activity=True).order_by('-id')[:10]
         return queryset
     
     def get_serializer_class(self):

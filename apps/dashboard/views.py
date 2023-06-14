@@ -34,6 +34,8 @@ class InvestorViewSet(viewsets.ModelViewSet):
             return InvestorSerializer
         elif self.action == 'list' or self.action == 'retrieve':
             return InvestorGetSerializer
+        elif self.action == 'investmentOptions':
+            return InvestmentOptionsSerializer
         else:
             return UserSerializer   
     
@@ -102,6 +104,21 @@ class InvestorViewSet(viewsets.ModelViewSet):
             return Response({"message": "Investor registered successfully.", "investor": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=['POST'], detail=True)
+    def investmentOptions(self, request, pk):
+        # data = request.data
+        instance = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            data = serializer.validated_data
+            if 'is_fixedroi_allowed' in data and data['is_fixedroi_allowed']:
+                instance.is_fixedroi_allowed = data['is_fixedroi_allowed']
+            if 'is_anytime_withdrawal_allowed' in data and data['is_anytime_withdrawal_allowed']:
+                instance.is_anytime_withdrawal_allowed = data['is_anytime_withdrawal_allowed']
+            if 'is_marketplace_allowed' in data and data['is_marketplace_allowed']:
+                instance.is_marketplace_allowed = data['is_marketplace_allowed']
+            instance.save()
+        return Response({"message": "Investment Options updated Successfully."}, status=status.HTTP_200_OK)
 
 class PartnerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]

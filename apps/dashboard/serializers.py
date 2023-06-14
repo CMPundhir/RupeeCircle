@@ -16,7 +16,8 @@ class InvestorGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode', 'partner']
+        # fields = ['id', 'username', 'first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode', 'partner']
+        fields = '__all__'
 
 
 class PartnerRegistrationSerializer(serializers.ModelSerializer):
@@ -46,3 +47,10 @@ class PartnerDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'mobile']
+
+
+class InvestmentOptionsSerializer(serializers.Serializer):
+    is_fiexedroi_allowed = serializers.BooleanField()
+    is_anytime_withdrawal_allowed = serializers.BooleanField()
+    is_marketplace_allowed = serializers.BooleanField()
+

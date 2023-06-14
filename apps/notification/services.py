@@ -15,7 +15,8 @@ class LogService():
         owner=owner
         wallet=wallet
         amount=amount
-        instance = Transaction.objects.create(wallet=wallet, owner=owner, amount=amount)
+        debit=debit
+        instance = Transaction.objects.create(wallet=wallet, owner=owner, amount=amount, debit=debit)
         return print('Transaction Created')
 
 

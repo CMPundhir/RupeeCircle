@@ -20,14 +20,20 @@ class LoanViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['loan_amount', 'loan_id', 'interest_rate', 'repayment_terms', 'installments', 'borrower', 'investors', 'status']
     ordering_fields = ['id', 'loan_id']
-    filterset_fields = ['loan_amount', 'interest_rate', 'borrower', 'investors', 'status', 'collateral']
+    filterset_fields = []
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == User.ROLE_CHOICES[2][1]:
+        if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_marketplace_allowed == True:
+            queryset = Loan.objects.filter(is_record_active=True)
+        elif user.role == User.ROLE_CHOICES[2][1]:
             queryset = Loan.objects.filter(borrower=user)
-        queryset = Loan.objects.all()
+        else:
+            queryset = []
         return queryset
+        
+        # queryset = Loan.objects.all()
+        # return queryset
     
     def get_serializer_class(self):
         if self.action == 'apply' or self.action == 'recentApplications':
@@ -145,7 +151,11 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     filterset_fields = ['amount', 'tenure', 'type', 'interest_rate']
 
     def get_queryset(self):
-        queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1])
+        user = self.request.user
+        if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
+            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1], is_record_active=True)
+        else:
+            queryset = []
         return queryset
     
     def get_serializer_class(self, *args, **kwargs):
@@ -185,8 +195,14 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
     filterset_fields = ['amount', 'tenure', 'type', 'interest_rate']
 
     def get_queryset(self):
-        queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1])
+        user = self.request.user
+        if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
+            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1], is_record_active=True)
+        else:
+            queryset = []
         return queryset
+        # queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1])
+        # return queryset
     
     def get_serializer_class(self, *args, **kwargs):
         return InvestmentPlanSerializer

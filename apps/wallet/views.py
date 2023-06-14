@@ -97,7 +97,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         # user = self.request.user
         # queryset = Transaction.objects.filter(owner=user).order_by('-id')
         # return queryset
-        queryset = Transaction.objects.all()
+        queryset = Transaction.objects.all().order_by('-id')
         return queryset
     
     def get_serializer_class(self):
@@ -112,3 +112,25 @@ class TransactionViewSet(viewsets.ModelViewSet):
     # @action(methods=['GET'], detail=False)
     # def graphDetail(self, request):
 
+
+class BankAccountViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = BankAccount.objects.all()
+        return queryset
+    
+    def get_serializer_class(self):
+        return BankAccountSerializer
+    
+    @action(methods=['GET'], detail=False)
+    def createAll(self, request):
+        all_users = User.objects.all()
+        for user in all_users:
+            already_exist = BankAccount.objects.filter(owner=user).exists()
+            if not already_exist:
+                if user.status == User.STATUS_CHOICES[4][1]:
+                    BankAccount.objects.create(bank='SBI',  owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+            else:
+                pass
+        return Response({"message": "Created for all."})

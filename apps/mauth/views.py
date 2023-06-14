@@ -4,6 +4,7 @@ from utility.otputility import *
 from apps.mauth.models import CustomUser
 # from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
+from apps.wallet.models import BankAccount
 from .serializers import *
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
@@ -331,6 +332,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 user.is_bank_acc_verified = True
                 user.status = CustomUser.STATUS_CHOICES[4][0]
                 user.save()
+                BankAccount.objects.create(bank=user.bank_name, owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
                 # Wallet.objects.create(owner=user)
                 
                 return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
@@ -366,6 +368,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(methods=['GET'], detail=False)
     def count(self, request):
-        investor = User.objects.filter(role=CustomUser.ROLE_CHOICES[0][1]).count()
-        borrower = User.objects.filter(role=CustomUser.ROLE_CHOICES[2][1]).count()
-        return Response({"investors": investor, "borrowers": borrower}, status=status.HTTP_200_OK)
+        investors = User.objects.filter(role=CustomUser.ROLE_CHOICES[0][1]).count()
+        borrowers = User.objects.filter(role=CustomUser.ROLE_CHOICES[2][1]).count()
+        partners = User.objects.filter(role=CustomUser.ROLE_CHOICES[1][1]).count()
+        return Response({"investors": investors, "borrowers": borrowers, "partners": partners}, status=status.HTTP_200_OK)

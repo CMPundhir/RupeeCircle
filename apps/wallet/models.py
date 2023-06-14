@@ -30,3 +30,13 @@ class Transaction(BaseModel, models.Model):
         result = str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')
         self.transaction_id = f'T{self.wallet.id}{result}'
         super(Transaction, self).save(*args, **kwargs)
+
+
+class BankAccount(BaseModel, models.Model):
+    id = models.AutoField(primary_key=True)
+    bank = models.CharField(max_length=255)
+    owner = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    acc_number = models.CharField(max_length=255, unique=True)
+    ifsc = models.CharField(max_length=255)
+    is_primary = models.BooleanField(default=False)
+
