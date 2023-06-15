@@ -120,7 +120,7 @@ class BaseModel(models.Model):
             if get_current_authenticated_user()._meta.model.__name__ != "GatewayConsumer":
                 self.last_modified_by = get_current_authenticated_user()
         self.last_modified_at = timezone.localtime()
-        self.is_record_active = True
+        # self.is_record_active = True
         super(BaseModel, self).save(*args, **kwargs)
         print("BaseModel : save completed")
 

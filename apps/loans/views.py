@@ -402,11 +402,12 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
         return queryset
     
     def create(self, request, *args, **kwargs):
-        all_plans = self.get_queryset().count()
-        if all_plans >= 4:
-            return Response({"message": "An investor can be given maximum 4 special offers."})
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        investor = serializer.validated_data['allowed_investor']
+        all_plans = InvestmentPlan.objects.filter(is_special_plan=True, is_record_active=True, allowed_investor=investor).count()
+        if all_plans >= 4:
+            return Response({"message": "An investor can be given maximum 4 special offers."}, status=status.HTTP_400_BAD_REQUEST)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -423,3 +424,9 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         return InvestmentPlanSerializer
+
+    def destroy(self, request, pk):
+        return Response({"message": "Something went wrong."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def update(self, request):
+        return Response(status=status.HTTP_400_BAD_REQUEST)
