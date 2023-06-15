@@ -84,13 +84,13 @@ class AadharVerifySerializer(serializers.ModelSerializer):
 
 
 class BankDetailSerializer(serializers.ModelSerializer):
-    acc_holder_name = serializers.CharField()
+    # acc_holder_name = serializers.CharField()
     bank_ifsc = serializers.CharField()
     bank_acc = serializers.CharField()
 
     class Meta:
         model = User
-        fields = ['acc_holder_name', 'bank_ifsc', 'bank_acc']
+        fields = ['bank_ifsc', 'bank_acc']
 
 # include
 class LinkAggregatorSerializer(serializers.ModelSerializer):

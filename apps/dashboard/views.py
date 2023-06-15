@@ -12,6 +12,7 @@ from apps.notification.services import LogService
 from .serializers import *
 from apps.mauth.serializers import *
 from apps.loans.models import *
+from apps.loans.serializers import InvestmentPlanSerializer
 
 # Create your views here.
 
@@ -37,7 +38,7 @@ class InvestorViewSet(viewsets.ModelViewSet):
         elif self.action == 'investmentOptions':
             return InvestmentOptionsSerializer
         else:
-            return UserSerializer   
+            return InvestorSerializer   
     
     def create(self, request):
         '''
@@ -120,6 +121,20 @@ class InvestorViewSet(viewsets.ModelViewSet):
             instance.save()
         return Response({"message": "Investment Options updated Successfully."}, status=status.HTTP_200_OK)
 
+    @action(methods=['GET'], detail=True)
+    def specialPlans(self, request, pk):
+        user = self.get_object()
+        queryset = InvestmentPlan.objects.filter(allowed_investor=user)
+        # serializer = InvestmentPlanSerializer(queryset, many=True)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = InvestmentPlanSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = InvestmentPlanSerializer(queryset, many=True)
+        return Response(serializer.data)
+        
+        
 class PartnerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-import random
+import random, requests, json
 from utility.otputility import *
 from apps.mauth.models import CustomUser
 # from apps.dashboard.models import Wallet
@@ -186,7 +186,7 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'role', 'partner']
     ordering_fields = ['id']
-    filterset_fields = ['role', 'partner',]
+    filterset_fields = ['role', 'partner', 'mobile']
 
     def get_queryset(self):
         queryset = User.objects.all().order_by('-id')
@@ -323,6 +323,20 @@ class UserViewSet(viewsets.ModelViewSet):
                 bank_acc_exists = User.objects.filter(bank_acc=bank_acc).exists()
                 if bank_acc_exists:
                     return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
+                # Integrate Penny Drop Api below
+                bank_detail = {
+                    "bankAccount": serializer.validated_data['bank_acc'], 
+                    "ifsc": serializer.validated_data['bank_ifsc'], 
+                    "name": "", 
+                    "phone": "", 
+                    "traceId": ""}
+                url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                response = requests.post(url, json=bank_detail)
+                r = json.loads(response)
+                if r.status == 'FAILURE':
+                    return Response({"message": "Bank Verification Failed. Please try again."})
+                # Integrate Penny Drop Api above
+                
                 # Match the name here
                 user = User.objects.get(pk=pk)
                 user.acc_holder_name = acc_holder_name
@@ -332,7 +346,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 user.is_bank_acc_verified = True
                 user.status = CustomUser.STATUS_CHOICES[4][0]
                 user.save()
-                BankAccount.objects.create(bank=user.bank_name, owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+                BankAccount.objects.create(bank=user.bank_name, owner=user, bankAccountacc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
                 # Wallet.objects.create(owner=user)
                 
                 return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)

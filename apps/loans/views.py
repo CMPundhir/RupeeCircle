@@ -153,7 +153,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
-            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1], is_record_active=True)
+            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1], is_record_active=True, is_special_plan=False)
         else:
             queryset = []
         return queryset
@@ -197,12 +197,10 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
-            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1], is_record_active=True)
+            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1], is_record_active=True, is_special_plan=False)
         else:
             queryset = []
         return queryset
-        # queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1])
-        # return queryset
     
     def get_serializer_class(self, *args, **kwargs):
         return InvestmentPlanSerializer
@@ -385,3 +383,43 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
         queryset = InvestmentRequest.objects.filter(status=InvestmentRequest.STATUS_CHOICES[1][1])
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SpecialPlanViewSet(viewsets.ModelViewSet):
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = ['interest_rate', 'allowed_investor', 'tenure']
+
+    def get_queryset(self):
+        user=self.request.user
+        if user.is_superuser:
+            queryset = InvestmentPlan.objects.filter(is_special_plan=True, is_record_active=True)
+        elif user.role == User.ROLE_CHOICES[0][1]:
+            queryset = InvestmentPlan.objects.filter(is_special_plan=True, allowed_investor=user, is_record_active=True)
+        else:
+            queryset = []
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        all_plans = self.get_queryset().count()
+        if all_plans >= 4:
+            return Response({"message": "An investor can be given maximum 4 special offers."})
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        serializer.validated_data['is_special_plan'] = True
+        serializer.save()
+
+    def get_success_headers(self, data):
+        try:
+            return {'Location': str(data[api_settings.URL_FIELD_NAME])}
+        except (TypeError, KeyError):
+            return {}
+
+    def get_serializer_class(self):
+        return InvestmentPlanSerializer

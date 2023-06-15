@@ -8,6 +8,7 @@ from .models import Wallet
 from apps.mauth.models import CustomUser as User
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from rest_framework.settings import api_settings
 from .serializers import *
 
 
@@ -117,12 +118,29 @@ class BankAccountViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = BankAccount.objects.all()
+        queryset = BankAccount.objects.filter(owner=user)
         return queryset
     
     def get_serializer_class(self):
         return BankAccountSerializer
     
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        serializer.validated_data['owner'] = self.request.user
+        serializer.save()
+
+    def get_success_headers(self, data):
+        try:
+            return {'Location': str(data[api_settings.URL_FIELD_NAME])}
+        except (TypeError, KeyError):
+            return {}
+
     @action(methods=['GET'], detail=False)
     def createAll(self, request):
         all_users = User.objects.all()
@@ -130,7 +148,7 @@ class BankAccountViewSet(viewsets.ModelViewSet):
             already_exist = BankAccount.objects.filter(owner=user).exists()
             if not already_exist:
                 if user.status == User.STATUS_CHOICES[4][1]:
-                    BankAccount.objects.create(bank='SBI',  owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+                    BankAccount.objects.create(bank='SBI',  owner=user, bankAccount=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
             else:
                 pass
         return Response({"message": "Created for all."})
