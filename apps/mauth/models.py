@@ -73,6 +73,7 @@ class CustomUser(AbstractUser):
     is_fixedroi_allowed = models.BooleanField(default=True)
     is_anytime_withdrawal_allowed = models.BooleanField(default=False)
     is_marketplace_allowed = models.BooleanField(default=False)
+    special_plan_exist = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
     role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])
     partner = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)

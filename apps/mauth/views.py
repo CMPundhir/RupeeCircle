@@ -2,6 +2,7 @@ from django.shortcuts import render
 import random, requests, json
 from utility.otputility import *
 from apps.mauth.models import CustomUser
+from apps.loans.models import InvestmentPlan
 # from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
 from apps.wallet.models import BankAccount
@@ -207,6 +208,8 @@ class UserViewSet(viewsets.ModelViewSet):
             return EmailDetailSerializer
         elif self.action == 'verifyEmail':
             return EmailVerifySerializer
+        # elif self.action == 'retrieve':
+        #     return UserGetSerializer
         else:
             return UserSerializer
 
@@ -386,3 +389,14 @@ class UserViewSet(viewsets.ModelViewSet):
         borrowers = User.objects.filter(role=CustomUser.ROLE_CHOICES[2][1]).count()
         partners = User.objects.filter(role=CustomUser.ROLE_CHOICES[1][1]).count()
         return Response({"investors": investors, "borrowers": borrowers, "partners": partners}, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=False)
+    def updateSpecialPlan(self, request):
+        queryset = self.get_queryset()
+        for i in queryset:
+            plan_exist = InvestmentPlan.objects.filter(allowed_investor=i).exists()
+            if plan_exist:
+                i.special_plan_exist = True
+                i.save()
+        return Response({"message": "Updateds"})
+    

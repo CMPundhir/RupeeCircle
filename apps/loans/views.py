@@ -410,6 +410,9 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
             return Response({"message": "An investor can be given maximum 4 special offers."}, status=status.HTTP_400_BAD_REQUEST)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
+        updated_investor = User.objects.get(id=investor)
+        updated_investor.special_plan_exist = True
+        updated_investor.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
@@ -428,5 +431,19 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
     def destroy(self, request, pk):
         return Response({"message": "Something went wrong."}, status=status.HTTP_400_BAD_REQUEST)
     
-    def update(self, request):
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    @action(methods=['GET'], detail=False)
+    def getPrimary(self, request):
+        instance = self.get_queryset().get(is_primary=True)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=True)
+    def makePrimary(self, request, pk):
+        old_primary = self.get_queryset().get(is_primary=True)
+        if old_primary:
+            old_primary.is_primary = False
+            old_primary.save()
+        instance = self.get_object()
+        instance.is_primary=True
+        instance.save()
+        return Response({"message": "Made Primary Successfully."}, status=status.HTTP_200_OK)

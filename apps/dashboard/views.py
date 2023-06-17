@@ -33,8 +33,10 @@ class InvestorViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return InvestorSerializer
-        elif self.action == 'list' or self.action == 'retrieve':
-            return InvestorGetSerializer
+        elif self.action == 'list':
+            return UserSerializer
+        elif self.action == 'retrieve':
+            return UserDetailSerializer
         elif self.action == 'investmentOptions':
             return InvestmentOptionsSerializer
         else:

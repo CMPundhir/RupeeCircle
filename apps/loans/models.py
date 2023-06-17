@@ -45,6 +45,7 @@ class InvestmentPlan(BaseModel, models.Model):
     tenure = models.CharField(max_length=255)
     type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=TYPE_CHOICES[0][1])
     is_special_plan = models.BooleanField(default=False)
+    is_primary = models.BooleanField(default=False)
     allowed_investor = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='allowed_investor', null=True, blank=True)
     investors = models.ManyToManyField(User, blank=True)
 
