@@ -18,7 +18,7 @@ from apps.loans.serializers import InvestmentPlanSerializer
 # Create your views here.
 
 class InvestorViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'partner']
     ordering_fields = ['id']
@@ -160,7 +160,7 @@ class InvestorViewSet(viewsets.ModelViewSet):
         
 
 class PartnerViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'partner']
     ordering_fields = ['id']
@@ -268,6 +268,10 @@ class PartnerViewSet(viewsets.ModelViewSet):
 
 class BorrowerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = []
 
     def get_queryset(self):
         queryset = User.objects.filter(role=User.ROLE_CHOICES[2][1], status=User.STATUS_CHOICES[4][1])

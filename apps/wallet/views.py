@@ -115,6 +115,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
 
 class BankAccountViewSet(viewsets.ModelViewSet):
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = []
 
     def get_queryset(self):
         user = self.request.user

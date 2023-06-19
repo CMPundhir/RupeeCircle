@@ -81,35 +81,27 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         # Creating Investment Request
         InvestmentRequest.objects.create(loan=loan_plan, investor=user, borrower=loan_plan.borrower)
         LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for investment in {loan_plan}.')
-        return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
-        # data = request.data
-        # serializer = self.get_serializer(data=data)
-        # if serializer.is_valid(raise_exception=True):
-        #     instance = LoanForm.objects.create(serializer.validated_data)
-        #     instance.loan = pk
-        #     instance.save()
-        #     return Response({"message": "Application submitted successfully."}, status=status.HTTP_201_CREATED)
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Applied Successfully."}, status=status.HTTP_200_OK)
 
-    @action(methods=['GET'], detail=True)
-    def invest(self, request, pk):
-        # return Response({"message": "Work on progress."})
-        user = request.user
-        instance = self.get_queryset().get(pk=pk)
-        if user in instance.investor.all():
-            return Response({"message": "You have already invested in this loan."})
-        instance.investor.add(user)
-        instance.save()
-        wallet = Wallet.objects.get(owner=user)
-        if wallet.balance < instance.loan_amount:
-            return Response({"message": "You don't have enough wallet balance. Add amount to your wallet."})
-        wallet.balance -= instance.loan_amount
-        wallet.invested_amount += instance.loan_amount
-        wallet.save()
-        LogService.log(user=user, msg=f"Invested in loan{instance.id}.")
-        LogService.log(user=user, msg=f"Your wallet balance is debited with amount {instance.loan_amount}. Current wallet balance is {wallet.balance}.")
-        LogService.log(user=instance.borrower, msg=f"{user.first_name} {user.last_name} has invested in your loan.")
-        return Response({"message": "Invested Successfully."})
+    # @action(methods=['GET'], detail=True)
+    # def invest(self, request, pk):
+    #     # return Response({"message": "Work on progress."})
+    #     user = request.user
+    #     instance = self.get_queryset().get(pk=pk)
+    #     if user in instance.investor.all():
+    #         return Response({"message": "You have already invested in this loan."})
+    #     instance.investor.add(user)
+    #     instance.save()
+    #     wallet = Wallet.objects.get(owner=user)
+    #     if wallet.balance < instance.loan_amount:
+    #         return Response({"message": "You don't have enough wallet balance. Add amount to your wallet."})
+    #     wallet.balance -= instance.loan_amount
+    #     wallet.invested_amount += instance.loan_amount
+    #     wallet.save()
+    #     LogService.log(user=user, msg=f"Invested in loan{instance.id}.")
+    #     LogService.log(user=user, msg=f"Your wallet balance is debited with amount {instance.loan_amount}. Current wallet balance is {wallet.balance}.")
+    #     LogService.log(user=instance.borrower, msg=f"{user.first_name} {user.last_name} has invested in your loan.")
+    #     return Response({"message": "Invested Successfully."})
 
     @action(methods=['GET'], detail=True)
     def investors(self, request, pk):
@@ -132,7 +124,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         queryset = LoanApplication.objects.annotate(investor_count=Count('investors')).order_by('-investor_count')[0:4]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
+# 
 
 class FixedROIViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -246,6 +238,10 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
 
 
 class MyInvestmentViewSet(viewsets.ModelViewSet):
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = []
 
     def get_queryset(self):
         user = self.request.user
@@ -279,6 +275,10 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
 
 class AllInvestmentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = []
 
     def get_queryset(self):
         user = self.request.user
@@ -322,6 +322,10 @@ class AllInvestmentViewSet(viewsets.ModelViewSet):
 
 class InvestmentRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = []
 
     def get_queryset(self):
         user = self.request.user
