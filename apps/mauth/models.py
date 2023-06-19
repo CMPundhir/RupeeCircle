@@ -44,6 +44,7 @@ class CustomUser(AbstractUser):
                       ('BANK_VERIFICATION', 'BANK_VERIFICATION'),
                       ('ACTIVE', 'ACTIVE'))
     GENDER_CHOICES = (('MALE', 'MALE'), ('FEMALE', 'FEMALE'), ('OTHERS', 'OTHERS'))
+    RISK_CHOICES = (('LOW', 'LOW'), ('MODERATE', 'MODERATE'), ('HIGH', 'HIGH'))
 
     name = models.CharField(null=True, blank=True)
     selfie = models.ImageField(upload_to=upload_selfie, blank=True, null=True)
@@ -75,7 +76,8 @@ class CustomUser(AbstractUser):
     is_marketplace_allowed = models.BooleanField(default=False)
     special_plan_exist = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
-    role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])
+    role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])   
+    rc_risk = models.CharField(max_length=255, choices=RISK_CHOICES, default=RISK_CHOICES[0][1])
     partner = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)
 
     USERNAME_FIELD = 'username'
@@ -127,3 +129,10 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class RiskLog(BaseModel, models.Model):
+    id = models.AutoField(primary_key=True)
+    owner = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING)
+    updated_risk = models.CharField(max_length=255)
+    comment = models.CharField(max_length=1000)

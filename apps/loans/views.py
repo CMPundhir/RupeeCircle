@@ -16,7 +16,7 @@ from rest_framework import filters
 # Create your views here.
 
 
-class LoanViewSet(viewsets.ModelViewSet):
+class LoanApplicationViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['loan_amount', 'loan_id', 'interest_rate', 'repayment_terms', 'installments', 'borrower', 'investors', 'status']
     ordering_fields = ['id', 'loan_id']
@@ -25,9 +25,9 @@ class LoanViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_marketplace_allowed == True:
-            queryset = Loan.objects.filter(is_record_active=True)
+            queryset = LoanApplication.objects.filter(is_record_active=True)
         elif user.role == User.ROLE_CHOICES[2][1]:
-            queryset = Loan.objects.filter(borrower=user)
+            queryset = LoanApplication.objects.filter(borrower=user)
         else:
             queryset = []
         return queryset
@@ -36,10 +36,7 @@ class LoanViewSet(viewsets.ModelViewSet):
         # return queryset
     
     def get_serializer_class(self):
-        if self.action == 'apply' or self.action == 'recentApplications':
-            return RecentLoanSerializer
-        else:
-            return LoanSerializer
+        return LoanApplicationSerializer
         
     def create(self, request, *args, **kwargs):
         user = self.request.user
@@ -67,7 +64,7 @@ class LoanViewSet(viewsets.ModelViewSet):
         except (TypeError, KeyError):
             return {}
     
-    @action(methods=['GET'], detail=True)
+    @action(methods=['POST'], detail=True)
     def apply(self, request, pk):
         user = request.user
         loan_plan = self.get_object()
@@ -93,12 +90,6 @@ class LoanViewSet(viewsets.ModelViewSet):
         #     instance.save()
         #     return Response({"message": "Application submitted successfully."}, status=status.HTTP_201_CREATED)
         # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(methods=['GET'], detail=False)
-    def recentApplications(self, request):
-        queryset = LoanForm.objects.all().order_by('-id')
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=True)
     def invest(self, request, pk):
@@ -122,7 +113,7 @@ class LoanViewSet(viewsets.ModelViewSet):
 
     @action(methods=['GET'], detail=True)
     def investors(self, request, pk):
-        instance = Loan.objects.get(pk=pk)
+        instance = LoanApplication.objects.get(pk=pk)
         queryset = instance.investor.all()
         print(queryset)
         page = self.paginate_queryset(queryset)
@@ -138,7 +129,7 @@ class LoanViewSet(viewsets.ModelViewSet):
     @action(methods=['GET'], detail=False)
     def popularLoans(self, request):
         print(request.auth)
-        queryset = Loan.objects.annotate(investor_count=Count('investors')).order_by('-investor_count')[0:4]
+        queryset = LoanApplication.objects.annotate(investor_count=Count('investors')).order_by('-investor_count')[0:4]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -161,7 +152,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self, *args, **kwargs):
         return InvestmentPlanSerializer
     
-    @action(methods=['GET'], detail=True)
+    @action(methods=['POST'], detail=True)
     def apply(self, request, pk):
         instance = self.get_object()
         user = request.user
@@ -185,6 +176,12 @@ class FixedROIViewSet(viewsets.ModelViewSet):
             LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
             return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
         return Response({"message": "Already applied for this Investment plan."}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['GET'], detail=False)
+    def bulkcreate(self, request):
+        for i in range(50):
+            InvestmentPlan.objects.create(amount=500000, interest_rate=15, tenure=2, type=InvestmentPlan.TYPE_CHOICES[0][1])
+        return Response({"message": "Done"})
 
 
 class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
@@ -222,7 +219,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
         except (TypeError, KeyError):
             return {}
     
-    @action(methods=['GET'], detail=True)
+    @action(methods=['POST'], detail=True)
     def apply(self, request, pk):
         instance = self.get_object()
         user = request.user
@@ -253,7 +250,7 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if self.action == 'marketplace':
-            queryset = Loan.objects.filter(investors__in=[user])
+            queryset = LoanApplication.objects.filter(investors__in=[user])
             return queryset
         if self.action == 'investmentPlans':
             queryset = InvestmentPlan.objects.filter(investors__in=[user])
@@ -262,10 +259,10 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
         
     def get_serializer_class(self):
         if self.action == 'marketplace':
-            return LoanSerializer
+            return LoanApplicationSerializer
         if self.action == 'investmentPlans':
             return InvestmentPlanSerializer
-        return LoanSerializer
+        return LoanApplicationSerializer
         
     @action(methods=['GET'], detail=False)
     def marketplace(self, request):
@@ -287,7 +284,7 @@ class AllInvestmentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         all_users = User.objects.all()
         if self.action == 'marketplace':
-            queryset = Loan.objects.filter(investors__in=all_users)
+            queryset = LoanApplication.objects.filter(investors__in=all_users)
             return queryset
         if self.action == 'fixedRoi':
             queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1], investors__in=all_users)
@@ -299,10 +296,10 @@ class AllInvestmentViewSet(viewsets.ModelViewSet):
         
     def get_serializer_class(self):
         if self.action == 'marketplace':
-            return LoanSerializer
+            return LoanApplicationSerializer
         if self.action == 'anytimeWithdraw' or self.action == 'fixedRoi':
             return InvestmentPlanSerializer
-        return LoanSerializer
+        return LoanApplicationSerializer
         
     @action(methods=['GET'], detail=False)
     def marketplace(self, request):
@@ -337,6 +334,8 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return InvestmentRequestGetSerializer
         return InvestmentRequestSerializer
     
     @action(methods=['GET'], detail=True)
@@ -371,7 +370,7 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
             plan.investors.add(instance.investor)
             plan.save()
         else:
-            loan = Loan.objects.get(id=instance.loan.id)
+            loan = LoanApplication.objects.get(id=instance.loan.id)
             loan.investors.add(instance.investor)
             loan.save()
         LogService.log(user=request.user, msg=f"You approved Investment Request of investor{instance.investor}", is_activity=True)

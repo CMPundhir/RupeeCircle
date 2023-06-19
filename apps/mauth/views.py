@@ -208,8 +208,8 @@ class UserViewSet(viewsets.ModelViewSet):
             return EmailDetailSerializer
         elif self.action == 'verifyEmail':
             return EmailVerifySerializer
-        # elif self.action == 'retrieve':
-        #     return UserGetSerializer
+        elif self.action == 'updateRisk':
+            return RiskLogSerializer
         else:
             return UserSerializer
 

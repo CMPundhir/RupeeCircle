@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import CustomUser as User
+from .models import RiskLog
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
@@ -122,7 +123,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'role']
+        fields = ['id', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'rc_risk', 'role']
  
 
 class UserDetailSerializer(serializers.ModelSerializer):
@@ -130,3 +131,10 @@ class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'special_plan_exist']
+
+
+class RiskLogSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = RiskLog
+        fields = '__all__'

@@ -9,6 +9,7 @@ from rest_framework import filters
 from rest_framework import status
 from rest_framework.response import Response
 from apps.notification.services import LogService
+from rest_framework.permissions import IsAdminUser
 from .serializers import *
 from apps.mauth.serializers import *
 from apps.loans.models import *
@@ -17,6 +18,7 @@ from apps.loans.serializers import InvestmentPlanSerializer
 # Create your views here.
 
 class InvestorViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'partner']
     ordering_fields = ['id']
@@ -25,9 +27,9 @@ class InvestorViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[1][1]:
-            queryset = User.objects.filter(aggregator=user).order_by('-id')
+            queryset = User.objects.filter(aggregator=user, status=User.STATUS_CHOICES[3][1]).order_by('-id')
         else:
-            queryset = User.objects.filter(role=User.ROLE_CHOICES[0][1]).order_by('-id')
+            queryset = User.objects.filter(role=User.ROLE_CHOICES[0][1], status=User.STATUS_CHOICES[4][1]).order_by('-id')
         return queryset
     
     def get_serializer_class(self):
@@ -39,6 +41,8 @@ class InvestorViewSet(viewsets.ModelViewSet):
             return UserDetailSerializer
         elif self.action == 'investmentOptions':
             return InvestmentOptionsSerializer
+        elif self.action == 'riskLog' or self.action == 'updateRisk':
+            return RiskLogSerializer
         else:
             return InvestorSerializer   
     
@@ -135,8 +139,26 @@ class InvestorViewSet(viewsets.ModelViewSet):
 
         serializer = InvestmentPlanSerializer(queryset, many=True)
         return Response(serializer.data)
+
+    @action(methods=['POST'], detail=True)
+    def updateRisk(self, request, pk):
+        instance = self.get_object()
+        data = request.data
+        serializer = RiskLogSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            instance.rc_risk = serializer.validated_data['risk']
+            serializer.save()
+            return Response({"message": "Risk status Updated Successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors)
+    
+    @action(methods=['GET'], detail=True)
+    def riskLog(self, request, pk):
+        user=self.get_object()
+        queryset = RiskLog.objects.filter(owner=user).order_by('-id')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)     
         
-        
+
 class PartnerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
@@ -241,4 +263,35 @@ class PartnerViewSet(viewsets.ModelViewSet):
     def allPartners(self, request):
         queryset = User.objects.filter(role=User.ROLE_CHOICES[1][0])
         serializer = PartnerDetailSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BorrowerViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        queryset = User.objects.filter(role=User.ROLE_CHOICES[2][1], status=User.STATUS_CHOICES[4][1])
+        return queryset
+    
+    def get_serializer_class(self):
+        if self.action == 'riskLog':
+            return RiskLogSerializer
+        return InvestorGetSerializer
+    
+    @action(methods=['POST'], detail=True)
+    def updateRisk(self, request, pk):
+        instance = self.get_object()
+        data = request.data
+        serializer = RiskLogSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            instance.rc_risk = serializer.validated_data['risk']
+            serializer.save()
+            return Response({"message": "Risk status Updated Successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors)
+    
+    @action(methods=['GET'], detail=True)
+    def riskLog(self, request, pk):
+        user=self.get_object()
+        queryset = RiskLog.objects.filter(owner=user)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

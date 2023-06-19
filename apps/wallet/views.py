@@ -125,6 +125,10 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         return BankAccountSerializer
     
     def create(self, request, *args, **kwargs):
+        user = request.user
+        all_banks = BankAccount.objects.filter(owner=user).count()
+        if all_banks >= 4:
+            return Response({"message": "A user can have maximum 4 bank accounts."}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
