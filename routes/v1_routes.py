@@ -28,7 +28,7 @@ v1_router.register(r'my-investments', MyInvestmentViewSet, basename='my-investme
 v1_router.register(r'all-investments', AllInvestmentViewSet, basename='all-investments')
 v1_router.register(r'investment-request', InvestmentRequestViewSet, basename='investment-request')
 v1_router.register(r'notification', ActivityAppViewSet, basename='notification')
-v1_router.register(r'recent-activity', RecentActivityViewSet, basename='recent-activity')
+# v1_router.register(r'recent-activity', RecentActivityViewSet, basename='recent-activity')
 v1_router.register(r'helpline', ComplaintViewSet, basename='helpline')
 
 

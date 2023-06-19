@@ -124,7 +124,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         queryset = LoanApplication.objects.annotate(investor_count=Count('investors')).order_by('-investor_count')[0:4]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-# 
+ 
 
 class FixedROIViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -148,13 +148,20 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     def apply(self, request, pk):
         instance = self.get_object()
         user = request.user
+        serializer = InvestmentApplicationSerializer(data=request.data)
+        # if serializer.is_valid(raise_exception=True):
+        if instance.min_amount:
+            if not instance.min_amount < serializer.validated_data['amount'] < instance.amount:
+                return Response({"message": "Please enter the amount within the minimun and maximum limit."}, status=status.HTTP_400_BAD_REQUEST)
+        
 
         # Checking if user is Investor or not.
         if user.role != User.ROLE_CHOICES[0][1]:
             return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Checking if investor has already applied for this plan. If not then creating a request for this plan.
-        if user not in instance.investors.all():
+        # if user not in instance.investors.all():
+        if instance.investing_limit > Loan.objects.filter(investor=user).count():
             # instance.investors.add(user)
             # return Response({"message": "Success."}, status=status.HTTP_200_OK)
 
@@ -164,16 +171,16 @@ class FixedROIViewSet(viewsets.ModelViewSet):
                 return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
             
             # Creating request for this plan.
-            InvestmentRequest.objects.create(plan=instance, investor=user)
+            InvestmentRequest.objects.create(plan=instance, investor=user, remarks=serializer.validated_data['remarks'])
             LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
             return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
-        return Response({"message": "Already applied for this Investment plan."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Investing limit exceeded for this plan."}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['GET'], detail=False)
-    def bulkcreate(self, request):
-        for i in range(50):
-            InvestmentPlan.objects.create(amount=500000, interest_rate=15, tenure=2, type=InvestmentPlan.TYPE_CHOICES[0][1])
-        return Response({"message": "Done"})
+    # @action(methods=['GET'], detail=False)
+    # def bulkcreate(self, request):
+    #     for i in range(50):
+    #         InvestmentPlan.objects.create(amount=500000, interest_rate=15, tenure=2, type=InvestmentPlan.TYPE_CHOICES[0][1])
+    #     return Response({"message": "Done"})
 
 
 class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
@@ -215,13 +222,20 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
     def apply(self, request, pk):
         instance = self.get_object()
         user = request.user
+        serializer = InvestmentApplicationSerializer(data=request.data)
+        # if serializer.is_valid(raise_exception=True):
+        if instance.min_amount:
+            if not instance.min_amount < serializer.validated_data['amount'] < instance.amount:
+                return Response({"message": "Please enter the amount within the minimun and maximum limit."}, status=status.HTTP_400_BAD_REQUEST)
+        
 
         # Checking if user is Investor or not.
         if user.role != User.ROLE_CHOICES[0][1]:
             return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Checking if investor has already applied for this plan. If not then creating a request for this plan.
-        if user not in instance.investors.all():
+        # if user not in instance.investors.all():
+        if instance.investing_limit > Loan.objects.filter(investor=user).count():
             # instance.investors.add(user)
             # return Response({"message": "Success."}, status=status.HTTP_200_OK)
 
@@ -231,10 +245,10 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
                 return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
             
             # Creating request for this plan.
-            InvestmentRequest.objects.create(plan=instance, investor=user)
-            LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for investment plan.')
+            InvestmentRequest.objects.create(plan=instance, investor=user, remarks=serializer.validated_data['remarks'])
+            LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
             return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
-        return Response({"message": "Already applied for this Investment plan."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Investing limit exceeded for this plan."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MyInvestmentViewSet(viewsets.ModelViewSet):

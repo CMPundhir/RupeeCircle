@@ -31,7 +31,7 @@ class LoanApplication(BaseModel, models.Model):
 
     def __str__(self):
         return f'{self.id}'
-    
+
 
 class InvestmentPlan(BaseModel, models.Model):
     TYPE_CHOICES = (('FIXED ROI', 'FIXED ROI'), ('ANYTIME WITHDRAWAL', 'ANYTIME WITHDRAWAL'))
@@ -60,7 +60,7 @@ class Installment(BaseModel, models.Model):
     payment_reference = models.CharField(max_length=255)
     late_fee = models.CharField(max_length=255)
 
-    
+
 class Loan(BaseModel, models.Model):
     STATUS_CHOICES = (('APPLIED', 'APPLIED'), ('UNDER BIDDING', 'UNDER BIDDING'), ('CLOSED', 'CLOSED'))
     id = models.AutoField(primary_key=True)
@@ -105,6 +105,7 @@ class InvestmentRequest(BaseModel, models.Model):
     governing_law = models.CharField(max_length=255, null=True, blank=True)
     investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     borrower = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='loan_borrower', null=True, blank=True)
+    remarks = models.CharField(max_length=255, null=True, blank=True)
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def __str__(self):

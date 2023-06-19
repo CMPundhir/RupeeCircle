@@ -33,6 +33,11 @@ class InvestmentRequestSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class InvestmentApplicationSerializer(serializers.Serializer):
+    amount = serializers.IntegerField()
+    remarks = serializers.CharField()
+
+
 class InvestmentRequestGetSerializer(serializers.ModelSerializer):
     loan = LoanApplicationSerializer()
     plan = InvestmentPlanSerializer()
