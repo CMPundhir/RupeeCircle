@@ -12,6 +12,8 @@ from apps.mauth.models import CustomUser as User
 from apps.notification.services import LogService
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+import datetime
+from dateutil import relativedelta
 
 # Create your views here.
 
@@ -45,12 +47,12 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.validated_data['borrower'] = user
-        instance = self.perform_create(serializer)
-        data = self.get_serializer(instance)
+        instance = self.perform_create(serializer.data)
+        # data = self.get_serializer(instance)
         # instance.loan_id = f'LOAN{instance.id}'
         headers = self.get_success_headers(serializer.data)
         # return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({"result":instance}, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -142,39 +144,65 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self, *args, **kwargs):
+        # if self.action == 'apply':
+        #     return InvestmentApplicationSerializer
         return InvestmentPlanSerializer
     
-    @action(methods=['POST'], detail=True)
+    @action(methods=['GET', 'POST'], detail=True)
     def apply(self, request, pk):
         instance = self.get_object()
         user = request.user
-        serializer = InvestmentApplicationSerializer(data=request.data)
-        # if serializer.is_valid(raise_exception=True):
-        if instance.min_amount:
-            if not instance.min_amount < serializer.validated_data['amount'] < instance.amount:
-                return Response({"message": "Please enter the amount within the minimun and maximum limit."}, status=status.HTTP_400_BAD_REQUEST)
         
-
         # Checking if user is Investor or not.
         if user.role != User.ROLE_CHOICES[0][1]:
             return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Checking if investor has already applied for this plan. If not then creating a request for this plan.
-        # if user not in instance.investors.all():
-        if instance.investing_limit > Loan.objects.filter(investor=user).count():
-            # instance.investors.add(user)
-            # return Response({"message": "Success."}, status=status.HTTP_200_OK)
-
-            # Checking wallet balance is sufficient or not
-            wallet = Wallet.objects.get(owner=user)
-            if wallet.balance < instance.amount:
-                return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
-            
-            # Creating request for this plan.
-            InvestmentRequest.objects.create(plan=instance, investor=user, remarks=serializer.validated_data['remarks'])
-            LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
-            return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
-        return Response({"message": "Investing limit exceeded for this plan."}, status=status.HTTP_400_BAD_REQUEST)
+        # Checking serializer data is valid and within limit.
+        # serializer = InvestmentApplicationSerializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # if instance.principal_type == InvestmentPlan.PRINCIPAL_CHOICES[1][1]:
+        #     if not instance.min_amount <= serializer.validated_data['amount'] <= instance.amount or instance.investing_limit <= Loan.objects.filter(investor=user).count():
+        #         return Response({"message": "Ensure your amount is within the amount limit or you have exceeded the investment limit."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Checking wallet balance is equal or more than the investment amount.
+        wallet = Wallet.objects.get(owner=user)
+        if wallet.balance < instance.amount:
+            return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
+        
+        # Creating request for this plan.
+        # installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        # installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        # InvestmentRequest.objects.create(plan=instance, 
+        #                                  investor=user, 
+        #                                  remarks=serializer.validated_data['remarks'], 
+        #                                  installments=installment,
+        #                                  amount=serializer.validated_data['amount'],
+        #                                  interest_rate=serializer.validated_data['interest_rate'],
+        #                                  repayment_terms=serializer.validated_data['repayment_terms'],
+        #                                  collateral=serializer.validated_data['collateral'],
+        #                                  late_pay_penalties=serializer.validated_data['late_pay_penalties'],
+        #                                  prepayment_options=serializer.validated_data['prepayment_options'],
+        #                                  default_remedies=serializer.validated_data['default_remedies'],
+        #                                  privacy=serializer.validated_data['privacy'],
+        #                                  governing_law=serializer.validated_data['governing_law'],
+        #                                  )
+        InvestmentRequest.objects.create(plan=instance, 
+                                         investor=user, 
+                                        #  remarks=instance.remarks, 
+                                        #  installments=installment,
+                                         amount=instance.amount,
+                                         interest_rate=instance.interest_rate,
+                                         tenure=instance.tenure
+                                        #  repayment_terms=instance.repayment_terms,
+                                        #  collateral=instance.collateral,
+                                        #  late_pay_penalties=instance.late_pay_penalties,
+                                        #  prepayment_options=instance.prepayment_options,
+                                        #  default_remedies=instance.default_remedies,
+                                        #  privacy=instance.privacy,
+                                        #  governing_law=instance.governing_law,
+                                         )
+        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
+        return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
 
     # @action(methods=['GET'], detail=False)
     # def bulkcreate(self, request):
@@ -199,6 +227,8 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self, *args, **kwargs):
+        if self.action == 'apply':
+            return InvestmentApplicationSerializer
         return InvestmentPlanSerializer
     
     def create(self, request, *args, **kwargs):
@@ -222,34 +252,58 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
     def apply(self, request, pk):
         instance = self.get_object()
         user = request.user
-        serializer = InvestmentApplicationSerializer(data=request.data)
-        # if serializer.is_valid(raise_exception=True):
-        if instance.min_amount:
-            if not instance.min_amount < serializer.validated_data['amount'] < instance.amount:
-                return Response({"message": "Please enter the amount within the minimun and maximum limit."}, status=status.HTTP_400_BAD_REQUEST)
         
-
         # Checking if user is Investor or not.
         if user.role != User.ROLE_CHOICES[0][1]:
             return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Checking if investor has already applied for this plan. If not then creating a request for this plan.
-        # if user not in instance.investors.all():
-        if instance.investing_limit > Loan.objects.filter(investor=user).count():
-            # instance.investors.add(user)
-            # return Response({"message": "Success."}, status=status.HTTP_200_OK)
-
-            # Checking wallet balance is sufficient or not
-            wallet = Wallet.objects.get(owner=user)
-            if wallet.balance < instance.amount:
-                return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
-            
-            # Creating request for this plan.
-            InvestmentRequest.objects.create(plan=instance, investor=user, remarks=serializer.validated_data['remarks'])
-            LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
-            return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
-        return Response({"message": "Investing limit exceeded for this plan."}, status=status.HTTP_400_BAD_REQUEST)
-
+        # Checking serializer data is valid and within limit.
+        # serializer = InvestmentApplicationSerializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # if instance.principal_type == InvestmentPlan.PRINCIPAL_CHOICES[1][1]:
+        #     if not instance.min_amount <= serializer.validated_data['amount'] <= instance.amount or instance.investing_limit <= Loan.objects.filter(investor=user).count():
+        #         return Response({"message": "Ensure your amount is within the amount limit or you have exceeded the investment limit."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Checking wallet balance is equal or more than the investment amount.
+        wallet = Wallet.objects.get(owner=user)
+        if wallet.balance < instance.amount:
+            return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
+        
+        # Creating request for this plan.
+        # installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        # installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        # InvestmentRequest.objects.create(plan=instance, 
+        #                                  investor=user, 
+        #                                  remarks=serializer.validated_data['remarks'], 
+        #                                  installments=installment,
+        #                                  amount=serializer.validated_data['amount'],
+        #                                  interest_rate=serializer.validated_data['interest_rate'],
+        #                                  repayment_terms=serializer.validated_data['repayment_terms'],
+        #                                  collateral=serializer.validated_data['collateral'],
+        #                                  late_pay_penalties=serializer.validated_data['late_pay_penalties'],
+        #                                  prepayment_options=serializer.validated_data['prepayment_options'],
+        #                                  default_remedies=serializer.validated_data['default_remedies'],
+        #                                  privacy=serializer.validated_data['privacy'],
+        #                                  governing_law=serializer.validated_data['governing_law'],
+        #                                  )
+        InvestmentRequest.objects.create(plan=instance, 
+                                         investor=user, 
+                                        #  remarks=instance.remarks, 
+                                        #  installments=installment,
+                                         amount=instance.amount,
+                                         interest_rate=instance.interest_rate,
+                                         tenure=instance.tenure
+                                        #  repayment_terms=instance.repayment_terms,
+                                        #  collateral=instance.collateral,
+                                        #  late_pay_penalties=instance.late_pay_penalties,
+                                        #  prepayment_options=instance.prepayment_options,
+                                        #  default_remedies=instance.default_remedies,
+                                        #  privacy=instance.privacy,
+                                        #  governing_law=instance.governing_law,
+                                         )
+        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
+        return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
+        
 
 class MyInvestmentViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
@@ -378,6 +432,44 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
         LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=loan_or_role_amount, debit=True)
         LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {loan_or_role_amount}. Current Wallet balance is Rs. {wallet.balance}')
         
+        # Checking if it's loan or investment plan
+        if instance.borrower:
+            borrower_wallet = Wallet.objects.get(owner=instance.borrower)
+            borrower_wallet += loan_or_role_amount
+            borrower_wallet.save()
+
+            # Creating Loan object
+            loan_instance = Loan.objects.create(loan_amount=instance.amount,
+                                                interest_rate=instance.interest_rate,
+                                                tenure=instance.tenure,
+                                                repayment_terms=instance.repayment_terms,
+                                                collateral=instance.collateral,
+                                                late_pay_penalties=instance.late_pay_penalties,
+                                                prepayment_options=instance.prepayment_options,
+                                                default_remedies=instance.default_remedies,
+                                                privacy=instance.privacy,
+                                                governing_law=instance.governing_law,
+                                                borrower=instance.borrower,
+                                                investor=instance.investor,
+                                                type=instance.type)
+            # if loan_instance.type == InvestmentRequest.TYPE_CHOICES[2][1]:
+            for i in range(loan_instance.tenure*12):
+                month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
+                installment = Installment.objects.create(parent_loan=loan_instance,
+                                                            due_date=month,
+                                                            amount=loan_instance.installments,
+                                                            )
+                loan_instance.installments.add(installment)
+            LogService.transaction_log(owner=instance.borrower, wallet=borrower_wallet, amount=loan_or_role_amount, debit=False)
+            LogService.log(user=instance.borrower, msg=f'You accepted investor {instance.investor}\'s application.')
+        else:
+            Loan.objects.create(loan_amount=instance.amount,
+                                interest_rate=instance.interest_rate,
+                                tenure=instance.tenure,
+                                investor=instance.investor,
+                                type=instance.type
+                                )
+        
         # approving request
         instance.status = InvestmentRequest.STATUS_CHOICES[1][1]
         instance.save()
@@ -448,6 +540,44 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
     def destroy(self, request, pk):
         return Response({"message": "Something went wrong."}, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(methods=['POST'], detail=True)
+    def apply(self, request, pk):
+        instance = self.get_object()
+        user = request.user
+        
+        # Checking if user is Investor or not.
+        if user.role != User.ROLE_CHOICES[0][1]:
+            return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Checking serializer data is valid and within limit.
+        serializer = InvestmentApplicationSerializer(data=request.data)
+        if instance.min_amount and not instance.min_amount < serializer.validated_data['amount'] < instance.amount or instance.investing_limit <= Loan.objects.filter(investor=user).count():
+            return Response({"message": "Ensure your amount is within the amount limit or you have exceeded the investment limit."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Checking wallet balance is equal or more than the investment amount.
+        wallet = Wallet.objects.get(owner=user)
+        if wallet.balance < instance.amount:
+            return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
+        
+        # Creating request for this plan.
+        installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        InvestmentRequest.objects.create(plan=instance, 
+                                         investor=user, 
+                                         remarks=serializer.validated_data['remarks'], 
+                                         installments=installment,
+                                         amount=serializer.validated_data['amount'],
+                                         interest_rate=serializer.validated_data['interest_rate'],
+                                         repayment_terms=serializer.validated_data['repayment_terms'],
+                                         collateral=serializer.validated_data['collateral'],
+                                         late_pay_penalties=serializer.validated_data['late_pay_penalties'],
+                                         prepayment_options=serializer.validated_data['prepayment_options'],
+                                         default_remedies=serializer.validated_data['default_remedies'],
+                                         privacy=serializer.validated_data['privacy'],
+                                         governing_law=serializer.validated_data['governing_law'],
+                                         )
+        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
+        return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
+
     @action(methods=['GET'], detail=False)
     def getPrimary(self, request):
         instance = self.get_queryset().get(is_primary=True)
@@ -464,3 +594,19 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
         instance.is_primary=True
         instance.save()
         return Response({"message": "Made Primary Successfully."}, status=status.HTTP_200_OK)
+
+
+class LoanViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == User.ROLE_CHOICES[0][1]:
+            queryset = Loan.objects.filter(investor=user)
+        elif user.role == User.ROLE_CHOICES[2][1]:
+            queryset = Loan.objects.filter(borrower=user)
+        elif user.role == User.ROLE_CHOICES[3][1]:
+            queryset = Loan.objects.all()
+        return queryset
+    
+    def get_serializer_class(self):
+        return InvestmentSerializer

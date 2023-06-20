@@ -46,3 +46,10 @@ class InvestmentRequestGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = InvestmentRequest
         fields = '__all__'
+
+
+class InvestmentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Loan
+        fields = '__all__'

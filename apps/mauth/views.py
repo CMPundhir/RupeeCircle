@@ -3,6 +3,7 @@ import random, requests, json
 from utility.otputility import *
 from apps.mauth.models import CustomUser
 from apps.loans.models import InvestmentPlan
+from apps.wallet.models import Wallet
 # from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
 from apps.wallet.models import BankAccount
@@ -350,7 +351,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 user.status = CustomUser.STATUS_CHOICES[4][0]
                 user.save()
                 BankAccount.objects.create(bank=user.bank_name, owner=user, bankAccountacc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                # Wallet.objects.create(owner=user)
+                Wallet.objects.create(owner=user)
                 
                 return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

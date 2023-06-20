@@ -77,15 +77,14 @@ class WalletViewSet(viewsets.ModelViewSet):
             return Response({"message": "Funds withdrawn successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    # @action(methods=['GET'], detail=False)
-    # def addall(self, request):
-    #     users = User.objects.all()
-    #     for i in users:
-    #         wallet = Wallet.objects.filter(owner=i).exists()
-    #         if not wallet:
-    #             Wallet.objects.create(owner=i)
-    #         pass    
-    #     return Response("Added")
+    @action(methods=['GET'], detail=False)
+    def addall(self, request):
+        users = User.objects.all()
+        for i in users:
+            wallet = Wallet.objects.filter(owner=i).exists()
+            if not wallet:
+                Wallet.objects.create(owner=i)  
+        return Response("Added")
 
 
 class TransactionViewSet(viewsets.ModelViewSet):
@@ -95,11 +94,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
     filterset_fields = ['transaction_id', 'wallet', 'owner', 'amount']
 
     def get_queryset(self):
-        # user = self.request.user
-        # queryset = Transaction.objects.filter(owner=user).order_by('-id')
-        # return queryset
-        queryset = Transaction.objects.all().order_by('-id')
+        user = self.request.user
+        queryset = Transaction.objects.filter(owner=user).order_by('-id')
         return queryset
+        # queryset = Transaction.objects.all().order_by('-id')
+        # return queryset
     
     def get_serializer_class(self):
         return TransactionSerializer
