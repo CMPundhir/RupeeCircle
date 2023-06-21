@@ -38,6 +38,8 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         # return queryset
     
     def get_serializer_class(self):
+        if self.action == 'apply':
+            return InvestmentSerializer
         return LoanApplicationSerializer
         
     def create(self, request, *args, **kwargs):
@@ -70,6 +72,9 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
     def apply(self, request, pk):
         user = request.user
         loan_plan = self.get_object()
+        data = request.data
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
 
         # Checking if user is a investor
         if user.role != User.ROLE_CHOICES[0][1]:
@@ -80,6 +85,31 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         if wallet.balance < loan_plan.loan_amount:
             return Response({"message": "You do not have enough balance in your wallet. Add funds first."}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Creating New Loan
+        loan_instance = Loan.objects.create(loan_amount=serializer.validated_data['amount'],
+                                                interest_rate=serializer.validated_data['interest_rate'],
+                                                tenure=serializer.validated_data['tenure'],
+                                                repayment_terms=serializer.validated_data['repayment_terms'],
+                                                collateral=serializer.validated_data['collateral'],
+                                                late_pay_penalties=serializer.validated_data['late_pay_penalties'],
+                                                prepayment_options=serializer.validated_data['prepayment_options'],
+                                                default_remedies=serializer.validated_data['default_remedies'],
+                                                privacy=serializer.validated_data['privacy'],
+                                                governing_law=serializer.validated_data['governing_law'],
+                                                borrower=serializer.validated_data['borrower'],
+                                                investor=serializer.validated_data['investor'],
+                                                type=serializer.validated_data['type'])
+        installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*serializer.validated_data['interest_rate']/100)*serializer.validated_data['tenure']))/(serializer.validated_data['tenure']*12)
+        for i in range(loan_instance.tenure*12):
+                month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
+                installment = Installment.objects.create(parent_loan=loan_instance,
+                                                            due_date=month,
+                                                            amount=installment,
+                                                            )
+                loan_instance.installments.add(installment)
+        LogService.transaction_log(owner=serializer.validated_data['borrower'], amount=serializer.validated_data['amount'], debit=False)
+        LogService.log(user=serializer.validated_data['borrower'], msg=f"You accepted investor {serializer.validated_data['investor']}\'s application.")
+
         # Creating Investment Request
         InvestmentRequest.objects.create(loan=loan_plan, investor=user, borrower=loan_plan.borrower)
         LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for investment in {loan_plan}.')
@@ -89,7 +119,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
     # def invest(self, request, pk):
     #     # return Response({"message": "Work on progress."})
     #     user = request.user
-    #     instance = self.get_queryset().get(pk=pk)
+    #     serializer.validated_data['= self.get_queryset().get(pk=pk)
     #     if user in instance.investor.all():
     #         return Response({"message": "You have already invested in this loan."})
     #     instance.investor.add(user)
@@ -138,7 +168,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
-            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1], is_record_active=True, is_special_plan=False)
+            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[0][1], is_record_active=True, is_special_plan=False)
         else:
             queryset = []
         return queryset
@@ -146,7 +176,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self, *args, **kwargs):
         # if self.action == 'apply':
         #     return InvestmentApplicationSerializer
-        return InvestmentPlanSerializer
+        return InvestmentProductSerializer
     
     @action(methods=['GET', 'POST'], detail=True)
     def apply(self, request, pk):
@@ -160,7 +190,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         # Checking serializer data is valid and within limit.
         # serializer = InvestmentApplicationSerializer(data=request.data)
         # serializer.is_valid(raise_exception=True)
-        # if instance.principal_type == InvestmentPlan.PRINCIPAL_CHOICES[1][1]:
+        # if instance.principal_type == InvestmentProduct.PRINCIPAL_CHOICES[1][1]:
         #     if not instance.min_amount <= serializer.validated_data['amount'] <= instance.amount or instance.investing_limit <= Loan.objects.filter(investor=user).count():
         #         return Response({"message": "Ensure your amount is within the amount limit or you have exceeded the investment limit."}, status=status.HTTP_403_FORBIDDEN)
         
@@ -207,7 +237,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     # @action(methods=['GET'], detail=False)
     # def bulkcreate(self, request):
     #     for i in range(50):
-    #         InvestmentPlan.objects.create(amount=500000, interest_rate=15, tenure=2, type=InvestmentPlan.TYPE_CHOICES[0][1])
+    #         InvestmentProduct.objects.create(amount=500000, interest_rate=15, tenure=2, type=InvestmentProduct.TYPE_CHOICES[0][1])
     #     return Response({"message": "Done"})
 
 
@@ -221,7 +251,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
-            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1], is_record_active=True, is_special_plan=False)
+            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[1][1], is_record_active=True, is_special_plan=False)
         else:
             queryset = []
         return queryset
@@ -229,7 +259,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self, *args, **kwargs):
         if self.action == 'apply':
             return InvestmentApplicationSerializer
-        return InvestmentPlanSerializer
+        return InvestmentProductSerializer
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -239,7 +269,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
-        serializer.validated_data['type'] = InvestmentPlan.TYPE_CHOICES[1][1]
+        serializer.validated_data['type'] = InvestmentProduct.TYPE_CHOICES[1][1]
         serializer.save()
 
     def get_success_headers(self, data):
@@ -260,7 +290,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
         # Checking serializer data is valid and within limit.
         # serializer = InvestmentApplicationSerializer(data=request.data)
         # serializer.is_valid(raise_exception=True)
-        # if instance.principal_type == InvestmentPlan.PRINCIPAL_CHOICES[1][1]:
+        # if instance.principal_type == InvestmentProduct.PRINCIPAL_CHOICES[1][1]:
         #     if not instance.min_amount <= serializer.validated_data['amount'] <= instance.amount or instance.investing_limit <= Loan.objects.filter(investor=user).count():
         #         return Response({"message": "Ensure your amount is within the amount limit or you have exceeded the investment limit."}, status=status.HTTP_403_FORBIDDEN)
         
@@ -316,16 +346,16 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
         if self.action == 'marketplace':
             queryset = LoanApplication.objects.filter(investors__in=[user])
             return queryset
-        if self.action == 'investmentPlans':
-            queryset = InvestmentPlan.objects.filter(investors__in=[user])
+        if self.action == 'InvestmentProducts':
+            queryset = InvestmentProduct.objects.filter(investors__in=[user])
             return queryset
         return []
         
     def get_serializer_class(self):
         if self.action == 'marketplace':
             return LoanApplicationSerializer
-        if self.action == 'investmentPlans':
-            return InvestmentPlanSerializer
+        if self.action == 'InvestmentProducts':
+            return InvestmentProductSerializer
         return LoanApplicationSerializer
         
     @action(methods=['GET'], detail=False)
@@ -335,7 +365,7 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     @action(methods=['GET'], detail=False)
-    def investmentPlans(self, request):
+    def InvestmentProducts(self, request):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -355,10 +385,10 @@ class AllInvestmentViewSet(viewsets.ModelViewSet):
             queryset = LoanApplication.objects.filter(investors__in=all_users)
             return queryset
         if self.action == 'fixedRoi':
-            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[0][1], investors__in=all_users)
+            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[0][1], investors__in=all_users)
             return queryset
         if self.action == 'anytimeWithdraw':
-            queryset = InvestmentPlan.objects.filter(type=InvestmentPlan.TYPE_CHOICES[1][1], investors__in=all_users)
+            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[1][1], investors__in=all_users)
             return queryset
         return []
         
@@ -366,7 +396,7 @@ class AllInvestmentViewSet(viewsets.ModelViewSet):
         if self.action == 'marketplace':
             return LoanApplicationSerializer
         if self.action == 'anytimeWithdraw' or self.action == 'fixedRoi':
-            return InvestmentPlanSerializer
+            return InvestmentProductSerializer
         return LoanApplicationSerializer
         
     @action(methods=['GET'], detail=False)
@@ -476,7 +506,7 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
 
         # Adding investor in investment plan
         if instance.loan == None:
-            plan = InvestmentPlan.objects.get(id=instance.plan.id)
+            plan = InvestmentProduct.objects.get(id=instance.plan.id)
             plan.investors.add(instance.investor)
             plan.save()
         else:
@@ -503,9 +533,9 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user=self.request.user
         if user.is_superuser:
-            queryset = InvestmentPlan.objects.filter(is_special_plan=True, is_record_active=True)
+            queryset = InvestmentProduct.objects.filter(is_special_plan=True, is_record_active=True)
         elif user.role == User.ROLE_CHOICES[0][1]:
-            queryset = InvestmentPlan.objects.filter(is_special_plan=True, allowed_investor=user, is_record_active=True)
+            queryset = InvestmentProduct.objects.filter(is_special_plan=True, allowed_investor=user, is_record_active=True)
         else:
             queryset = []
         return queryset
@@ -514,7 +544,7 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         investor = serializer.validated_data['allowed_investor']
-        all_plans = InvestmentPlan.objects.filter(is_special_plan=True, is_record_active=True, allowed_investor=investor).count()
+        all_plans = InvestmentProduct.objects.filter(is_special_plan=True, is_record_active=True, allowed_investor=investor).count()
         if all_plans >= 4:
             return Response({"message": "An investor can be given maximum 4 special offers."}, status=status.HTTP_400_BAD_REQUEST)
         self.perform_create(serializer)
@@ -535,7 +565,7 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
             return {}
 
     def get_serializer_class(self):
-        return InvestmentPlanSerializer
+        return InvestmentProductSerializer
 
     def destroy(self, request, pk):
         return Response({"message": "Something went wrong."}, status=status.HTTP_400_BAD_REQUEST)

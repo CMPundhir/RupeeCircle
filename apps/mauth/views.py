@@ -2,7 +2,7 @@ from django.shortcuts import render
 import random, requests, json
 from utility.otputility import *
 from apps.mauth.models import CustomUser
-from apps.loans.models import InvestmentPlan
+from apps.loans.models import InvestmentProduct
 from apps.wallet.models import Wallet
 # from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
@@ -318,42 +318,44 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = BankDetailSerializer(data=data)
         # print("Validating Serializer")
         if serializer.is_valid(raise_exception=True):
-            # print("Serializer Validated")
-            if 'acc_holder_name' in serializer.validated_data and 'bank_acc' in serializer.validated_data and 'bank_ifsc' in serializer.validated_data:
-                # print("Getting User object.")
-                acc_holder_name = serializer.validated_data['acc_holder_name']
-                bank_acc = serializer.validated_data['bank_acc']
-                bank_ifsc = serializer.validated_data['bank_ifsc']
-                bank_acc_exists = User.objects.filter(bank_acc=bank_acc).exists()
-                if bank_acc_exists:
-                    return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
-                # Integrate Penny Drop Api below
-                bank_detail = {
-                    "bankAccount": serializer.validated_data['bank_acc'], 
-                    "ifsc": serializer.validated_data['bank_ifsc'], 
-                    "name": "", 
-                    "phone": "", 
-                    "traceId": ""}
-                url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
-                response = requests.post(url, json=bank_detail)
-                r = json.loads(response)
-                if r.status == 'FAILURE':
-                    return Response({"message": "Bank Verification Failed. Please try again."})
-                # Integrate Penny Drop Api above
-                
-                # Match the name here
-                user = User.objects.get(pk=pk)
-                user.acc_holder_name = acc_holder_name
-                # user.account_holder_name = 'Name'
-                user.bank_acc = bank_acc
-                user.bank_ifsc = bank_ifsc
-                user.is_bank_acc_verified = True
-                user.status = CustomUser.STATUS_CHOICES[4][0]
-                user.save()
-                BankAccount.objects.create(bank=user.bank_name, owner=user, bankAccountacc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                Wallet.objects.create(owner=user)
-                
-                return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
+            if serializer.is_valid(raise_exception=True):
+                # print("Serializer Validated")
+                if 'acc_holder_name' in serializer.validated_data and 'bank_acc' in serializer.validated_data and 'bank_ifsc' in serializer.validated_data:
+                    # print("Getting User object.")
+                    acc_holder_name = serializer.validated_data['acc_holder_name']
+                    bank_acc = serializer.validated_data['bank_acc']
+                    bank_ifsc = serializer.validated_data['bank_ifsc']
+                    bank_acc_exists = User.objects.filter(bank_acc=bank_acc).exists()
+                    if bank_acc_exists:
+                        return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
+                    # Integrate Penny Drop Api below
+                    bank_detail = {
+                        "bankAccount": serializer.validated_data['bank_acc'], 
+                        "ifsc": serializer.validated_data['bank_ifsc'], 
+                        "name": "", 
+                        "phone": "", 
+                        "traceId": ""}
+                    url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    response = requests.post(url, json=bank_detail)
+                    r = json.loads(response)
+                    return Response({"message": response.status})
+                    if r.status == 'FAILURE':
+                        return Response({"message": "Bank Verification Failed. Please try again."})
+                    # Integrate Penny Drop Api above
+                    
+                    # Match the name here
+                    user = User.objects.get(pk=pk)
+                    user.acc_holder_name = acc_holder_name
+                    # user.account_holder_name = 'Name'
+                    user.bank_acc = bank_acc
+                    user.bank_ifsc = bank_ifsc
+                    user.is_bank_acc_verified = True
+                    user.status = CustomUser.STATUS_CHOICES[4][0]
+                    user.save()
+                    BankAccount.objects.create(bank=user.bank_name, owner=user, bankAccountacc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+                    Wallet.objects.create(owner=user)
+                    
+                    return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
@@ -395,9 +397,15 @@ class UserViewSet(viewsets.ModelViewSet):
     def updateSpecialPlan(self, request):
         queryset = self.get_queryset()
         for i in queryset:
-            plan_exist = InvestmentPlan.objects.filter(allowed_investor=i).exists()
+            plan_exist = InvestmentProduct.objects.filter(allowed_investor=i).exists()
             if plan_exist:
                 i.special_plan_exist = True
                 i.save()
         return Response({"message": "Updateds"})
     
+    @action(methods=['GET'], detail=False)
+    def addId(self, request):
+        for i in User.objects.all():
+            i.user_id = f'{i.role[0]}{i.id}'
+            i.save()
+        return Response({"message": "Added to all."})

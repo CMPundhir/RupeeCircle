@@ -7,3 +7,9 @@ class ComplaintSerializer(serializers.ModelSerializer):
     class Meta:
         model = Complaint
         fields = '__all__'
+
+
+class MailComplaintSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    body = serializers.CharField()
+    nature = serializers.ChoiceField(Complaint.NATURE_CHOICES)

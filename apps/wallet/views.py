@@ -22,13 +22,16 @@ class WalletViewSet(viewsets.ModelViewSet):
     filterset_fields = ['owner', 'balance', 'invested_amount']
 
     def get_queryset(self):
-        # user = self.request.user
+        user = self.request.user
+        if user.role == User.ROLE_CHOICES[3][1]:
+            queryset = Wallet.objects.all()
         # if user.role == User.ROLE_CHOICES[3][1]:
         #     queryset = Wallet.objects.all()
         # else:
         #     queryset = []
         # return queryset
-        queryset = Wallet.objects.filter(owner=self.request.user.id)
+        else:
+            queryset = Wallet.objects.filter(owner=self.request.user.id)
         return queryset
     
     def get_serializer_class(self):

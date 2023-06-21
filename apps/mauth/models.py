@@ -47,6 +47,7 @@ class CustomUser(AbstractUser):
     RISK_CHOICES = (('LOW', 'LOW'), ('MODERATE', 'MODERATE'), ('HIGH', 'HIGH'))
 
     name = models.CharField(null=True, blank=True)
+    user_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     selfie = models.ImageField(upload_to=upload_selfie, blank=True, null=True)
     is_tnc_accepted = models.BooleanField(default=False)
     mobile = models.CharField(unique=True, null=True)

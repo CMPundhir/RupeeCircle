@@ -33,7 +33,7 @@ class LoanApplication(BaseModel, models.Model):
         return f'{self.id}'
 
 
-class InvestmentPlan(BaseModel, models.Model):
+class InvestmentProduct(BaseModel, models.Model):
     TYPE_CHOICES = (('FIXED ROI', 'FIXED ROI'), ('ANYTIME WITHDRAWAL', 'ANYTIME WITHDRAWAL'))
     PRINCIPAL_CHOICES = (('FIXED', 'FIXED'), ('VARIABLE', 'VARIABLE'))
     id = models.AutoField(primary_key=True)
@@ -74,7 +74,7 @@ class InvestmentRequest(BaseModel, models.Model):
     collateral = models.CharField(max_length=255, null=True, blank=True)
     late_pay_penalties = models.CharField(max_length=255, null=True, blank=True)
     prepayment_options = models.CharField(max_length=255, null=True, blank=True)
-    plan = models.ForeignKey(InvestmentPlan, on_delete=models.DO_NOTHING, null=True, blank=True)
+    plan = models.ForeignKey(InvestmentProduct, on_delete=models.DO_NOTHING, null=True, blank=True)
     loan = models.ForeignKey(LoanApplication, on_delete=models.DO_NOTHING, null=True, blank=True)
     default_remedies = models.CharField(max_length=255, null=True, blank=True)
     privacy = models.CharField(max_length=255, null=True, blank=True)

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status, filters
 from django_filters.rest_framework import DjangoFilterBackend
-from .serializers import ComplaintSerializer
+from .serializers import *
 from rest_framework.response import Response
 from apps.mauth.models import CustomUser as User
 from .models import Complaint
@@ -12,9 +12,9 @@ from rest_framework.settings import api_settings
 
 class ComplaintViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
-    search_fields = ['transaction_id', 'owner', 'amount', 'id', 'wallet']
+    search_fields = []
     ordering_fields = ['id']
-    filterset_fields = ['transaction_id', 'wallet', 'owner', 'amount']
+    filterset_fields = []
 
     def get_queryset(self):
         queryset = Complaint.objects.filter(status=Complaint.STATUS_CHOICES[0][1])
@@ -68,6 +68,24 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     
     @action(methods=['GET'], detail=False)
     def resolved(self, request):
-        queryset = Complaint.objects.filter(status=Complaint.STATUS_CHOICES[1][1])
+        user = request.user
+        if user.role == User.ROLE_CHOICES[3][1]:
+            queryset = Complaint.objects.filter(status=Complaint.STATUS_CHOICES[1][1])
+        else:
+            queryset = Complaint.objects.filter(complainant=user, status=Complaint.STATUS_CHOICES[1][1])
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=False)
+    def mailComplaint(self, request):
+        user = request.user
+        data = request.data
+        serializer = MailComplaintSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        Complaint.objects.create(complainant=user,
+                                 nature=serializer.validated_data['nature'],
+                                 body=serializer.validated_data['body'],
+                                 medium=Complaint.MEDIUM_CHOICES[0][1],
+                                 )
+        return Response({"message": "Complain Registered Successfully."}, status=status.HTTP_200_OK)
+        

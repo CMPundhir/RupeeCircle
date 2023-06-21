@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAdminUser
 from .serializers import *
 from apps.mauth.serializers import *
 from apps.loans.models import *
-from apps.loans.serializers import InvestmentPlanSerializer
+from apps.loans.serializers import InvestmentProductSerializer
 
 # Create your views here.
 
@@ -130,14 +130,14 @@ class InvestorViewSet(viewsets.ModelViewSet):
     @action(methods=['GET'], detail=True)
     def specialPlans(self, request, pk):
         user = self.get_object()
-        queryset = InvestmentPlan.objects.filter(allowed_investor=user)
-        # serializer = InvestmentPlanSerializer(queryset, many=True)
+        queryset = InvestmentProduct.objects.filter(allowed_investor=user)
+        # serializer = InvestmentProductSerializer(queryset, many=True)
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = InvestmentPlanSerializer(page, many=True)
+            serializer = InvestmentProductSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = InvestmentPlanSerializer(queryset, many=True)
+        serializer = InvestmentProductSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(methods=['POST'], detail=True)

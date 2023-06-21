@@ -19,10 +19,10 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
 #         fields = ['id', 'first_name', 'last_name', 'loan']
 
 
-class InvestmentPlanSerializer(serializers.ModelSerializer):
+class InvestmentProductSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = InvestmentPlan
+        model = InvestmentProduct
         fields = '__all__'
 
 
@@ -40,7 +40,7 @@ class InvestmentApplicationSerializer(serializers.Serializer):
 
 class InvestmentRequestGetSerializer(serializers.ModelSerializer):
     loan = LoanApplicationSerializer()
-    plan = InvestmentPlanSerializer()
+    plan = InvestmentProductSerializer()
     investor = InvestorGetSerializer()
 
     class Meta:
