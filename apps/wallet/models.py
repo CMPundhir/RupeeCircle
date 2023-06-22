@@ -15,6 +15,7 @@ class Wallet(BaseModel, models.Model):
     owner = models.OneToOneField(User, on_delete=models.DO_NOTHING)
     balance = models.DecimalField(max_digits=100, decimal_places=2, default=0)
     invested_amount = models.DecimalField(max_digits=100, decimal_places=2, default=0)
+    earnings = models.DecimalField(max_digits=100, decimal_places=2, default=0)
 
 
 class Transaction(BaseModel, models.Model):
@@ -23,6 +24,8 @@ class Transaction(BaseModel, models.Model):
     wallet = models.ForeignKey(Wallet, on_delete=models.DO_NOTHING)
     owner = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     amount = models.IntegerField()
+    # interest = models.DecimalField(max_digits=100, decimal_places=2, null=True)
+    # repayment = models.BooleanField(default=False)
     debit = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):

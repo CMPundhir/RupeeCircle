@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.db.models import Count
 from .models import *
 from .serializers import *
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, permissions
 from rest_framework.settings import api_settings
 from rest_framework.response import Response
@@ -85,55 +86,10 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         if wallet.balance < loan_plan.loan_amount:
             return Response({"message": "You do not have enough balance in your wallet. Add funds first."}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Creating New Loan
-        loan_instance = Loan.objects.create(loan_amount=serializer.validated_data['amount'],
-                                                interest_rate=serializer.validated_data['interest_rate'],
-                                                tenure=serializer.validated_data['tenure'],
-                                                repayment_terms=serializer.validated_data['repayment_terms'],
-                                                collateral=serializer.validated_data['collateral'],
-                                                late_pay_penalties=serializer.validated_data['late_pay_penalties'],
-                                                prepayment_options=serializer.validated_data['prepayment_options'],
-                                                default_remedies=serializer.validated_data['default_remedies'],
-                                                privacy=serializer.validated_data['privacy'],
-                                                governing_law=serializer.validated_data['governing_law'],
-                                                borrower=serializer.validated_data['borrower'],
-                                                investor=serializer.validated_data['investor'],
-                                                type=serializer.validated_data['type'])
-        installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*serializer.validated_data['interest_rate']/100)*serializer.validated_data['tenure']))/(serializer.validated_data['tenure']*12)
-        for i in range(loan_instance.tenure*12):
-                month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
-                installment = Installment.objects.create(parent_loan=loan_instance,
-                                                            due_date=month,
-                                                            amount=installment,
-                                                            )
-                loan_instance.installments.add(installment)
-        LogService.transaction_log(owner=serializer.validated_data['borrower'], amount=serializer.validated_data['amount'], debit=False)
-        LogService.log(user=serializer.validated_data['borrower'], msg=f"You accepted investor {serializer.validated_data['investor']}\'s application.")
-
         # Creating Investment Request
-        InvestmentRequest.objects.create(loan=loan_plan, investor=user, borrower=loan_plan.borrower)
-        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for investment in {loan_plan}.')
+        InvestmentRequest.objects.create(serializer.data)
+        LogService.log(user=user, is_activity=True, msg=f'You have successfully bid in {loan_plan}.')
         return Response({"message": "Applied Successfully."}, status=status.HTTP_200_OK)
-
-    # @action(methods=['GET'], detail=True)
-    # def invest(self, request, pk):
-    #     # return Response({"message": "Work on progress."})
-    #     user = request.user
-    #     serializer.validated_data['= self.get_queryset().get(pk=pk)
-    #     if user in instance.investor.all():
-    #         return Response({"message": "You have already invested in this loan."})
-    #     instance.investor.add(user)
-    #     instance.save()
-    #     wallet = Wallet.objects.get(owner=user)
-    #     if wallet.balance < instance.loan_amount:
-    #         return Response({"message": "You don't have enough wallet balance. Add amount to your wallet."})
-    #     wallet.balance -= instance.loan_amount
-    #     wallet.invested_amount += instance.loan_amount
-    #     wallet.save()
-    #     LogService.log(user=user, msg=f"Invested in loan{instance.id}.")
-    #     LogService.log(user=user, msg=f"Your wallet balance is debited with amount {instance.loan_amount}. Current wallet balance is {wallet.balance}.")
-    #     LogService.log(user=instance.borrower, msg=f"{user.first_name} {user.last_name} has invested in your loan.")
-    #     return Response({"message": "Invested Successfully."})
 
     @action(methods=['GET'], detail=True)
     def investors(self, request, pk):
@@ -187,18 +143,44 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         if user.role != User.ROLE_CHOICES[0][1]:
             return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Checking serializer data is valid and within limit.
-        # serializer = InvestmentApplicationSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # if instance.principal_type == InvestmentProduct.PRINCIPAL_CHOICES[1][1]:
-        #     if not instance.min_amount <= serializer.validated_data['amount'] <= instance.amount or instance.investing_limit <= Loan.objects.filter(investor=user).count():
-        #         return Response({"message": "Ensure your amount is within the amount limit or you have exceeded the investment limit."}, status=status.HTTP_403_FORBIDDEN)
-        
         # Checking wallet balance is equal or more than the investment amount.
         wallet = Wallet.objects.get(owner=user)
         if wallet.balance < instance.amount:
             return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
         
+        # Deducting Amount
+        wallet.balance -= instance.amount
+        wallet.invested_amount += instance.amount
+        wallet.save()
+        LogService.transaction_log(user=user, amount=instance.amount, debit=True)
+
+        # Creating Loan
+        loan_instance = Loan.objects.create(loan_amount=instance.amount,
+                                                interest_rate=instance.interest_rate,
+                                                tenure=instance.tenure,
+                                                repayment_terms=instance.repayment_terms,
+                                                collateral=instance.collateral,
+                                                late_pay_penalties=instance.late_pay_penalties,
+                                                prepayment_options=instance.prepayment_options,
+                                                default_remedies=instance.default_remedies,
+                                                privacy=instance.privacy,
+                                                governing_law=instance.governing_law,
+                                                # borrower=instance.borrower,
+                                                investor=instance.investor,
+                                                type=instance.type)
+        installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        principal = instance.amount/(instance.tenure*12)
+        interest = installment - principal
+        for i in range(loan_instance.tenure*12):
+                month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
+                installment = Installment.objects.create(parent_loan=loan_instance,
+                                                            due_date=month,
+                                                            principal=principal,
+                                                            interest=interest,
+                                                            total_amount=installment,
+                                                            )
+                loan_instance.installments.add(installment)
+        return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
         # Creating request for this plan.
         # installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
         # installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
@@ -216,13 +198,13 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         #                                  privacy=serializer.validated_data['privacy'],
         #                                  governing_law=serializer.validated_data['governing_law'],
         #                                  )
-        InvestmentRequest.objects.create(plan=instance, 
-                                         investor=user, 
+        # InvestmentRequest.objects.create(plan=instance, 
+        #                                  investor=user, 
                                         #  remarks=instance.remarks, 
                                         #  installments=installment,
-                                         amount=instance.amount,
-                                         interest_rate=instance.interest_rate,
-                                         tenure=instance.tenure
+                                        #  amount=instance.amount,
+                                        #  interest_rate=instance.interest_rate,
+                                        #  tenure=instance.tenure
                                         #  repayment_terms=instance.repayment_terms,
                                         #  collateral=instance.collateral,
                                         #  late_pay_penalties=instance.late_pay_penalties,
@@ -230,9 +212,9 @@ class FixedROIViewSet(viewsets.ModelViewSet):
                                         #  default_remedies=instance.default_remedies,
                                         #  privacy=instance.privacy,
                                         #  governing_law=instance.governing_law,
-                                         )
-        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
-        return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
+                                        #  )
+        # LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
+        # return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
 
     # @action(methods=['GET'], detail=False)
     # def bulkcreate(self, request):
@@ -287,52 +269,44 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
         if user.role != User.ROLE_CHOICES[0][1]:
             return Response({"message": "Only Investors can invest in Investment Plans."}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Checking serializer data is valid and within limit.
-        # serializer = InvestmentApplicationSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # if instance.principal_type == InvestmentProduct.PRINCIPAL_CHOICES[1][1]:
-        #     if not instance.min_amount <= serializer.validated_data['amount'] <= instance.amount or instance.investing_limit <= Loan.objects.filter(investor=user).count():
-        #         return Response({"message": "Ensure your amount is within the amount limit or you have exceeded the investment limit."}, status=status.HTTP_403_FORBIDDEN)
-        
         # Checking wallet balance is equal or more than the investment amount.
         wallet = Wallet.objects.get(owner=user)
         if wallet.balance < instance.amount:
             return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
         
-        # Creating request for this plan.
-        # installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
-        # installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
-        # InvestmentRequest.objects.create(plan=instance, 
-        #                                  investor=user, 
-        #                                  remarks=serializer.validated_data['remarks'], 
-        #                                  installments=installment,
-        #                                  amount=serializer.validated_data['amount'],
-        #                                  interest_rate=serializer.validated_data['interest_rate'],
-        #                                  repayment_terms=serializer.validated_data['repayment_terms'],
-        #                                  collateral=serializer.validated_data['collateral'],
-        #                                  late_pay_penalties=serializer.validated_data['late_pay_penalties'],
-        #                                  prepayment_options=serializer.validated_data['prepayment_options'],
-        #                                  default_remedies=serializer.validated_data['default_remedies'],
-        #                                  privacy=serializer.validated_data['privacy'],
-        #                                  governing_law=serializer.validated_data['governing_law'],
-        #                                  )
-        InvestmentRequest.objects.create(plan=instance, 
-                                         investor=user, 
-                                        #  remarks=instance.remarks, 
-                                        #  installments=installment,
-                                         amount=instance.amount,
-                                         interest_rate=instance.interest_rate,
-                                         tenure=instance.tenure
-                                        #  repayment_terms=instance.repayment_terms,
-                                        #  collateral=instance.collateral,
-                                        #  late_pay_penalties=instance.late_pay_penalties,
-                                        #  prepayment_options=instance.prepayment_options,
-                                        #  default_remedies=instance.default_remedies,
-                                        #  privacy=instance.privacy,
-                                        #  governing_law=instance.governing_law,
-                                         )
-        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
-        return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
+        # Deducting Amount
+        wallet.balance -= instance.amount
+        wallet.invested_amount += instance.amount
+        wallet.save()
+        LogService.transaction_log(user=user, amount=instance.amount, debit=True)
+
+        # Creating Loan
+        loan_instance = Loan.objects.create(loan_amount=instance.amount,
+                                                interest_rate=instance.interest_rate,
+                                                tenure=instance.tenure,
+                                                repayment_terms=instance.repayment_terms,
+                                                collateral=instance.collateral,
+                                                late_pay_penalties=instance.late_pay_penalties,
+                                                prepayment_options=instance.prepayment_options,
+                                                default_remedies=instance.default_remedies,
+                                                privacy=instance.privacy,
+                                                governing_law=instance.governing_law,
+                                                # borrower=instance.borrower,
+                                                investor=instance.investor,
+                                                type=instance.type)
+        installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        principal = instance.amount/(instance.tenure*12)
+        interest = installment - principal
+        for i in range(loan_instance.tenure*12):
+                month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
+                installment = Installment.objects.create(parent_loan=loan_instance,
+                                                            due_date=month,
+                                                            principal=principal,
+                                                            interest=interest,
+                                                            total_amount=installment,
+                                                            )
+                loan_instance.installments.add(installment)
+        return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
         
 
 class MyInvestmentViewSet(viewsets.ModelViewSet):
@@ -444,78 +418,53 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk):
         user=request.user
         instance = self.get_object()
-        if user.role == User.ROLE_CHOICES[2][1]:
-            loan_or_role_amount = instance.loan.loan_amount
-        elif user.role == User.ROLE_CHOICES[3][1]:
-            loan_or_role_amount = instance.plan.amount
-        print(f'Your amount => {loan_or_role_amount}')
+        loan_amount = instance.amount
         wallet = Wallet.objects.get(owner=instance.investor)
 
         # checking balance in the wallet
-        if wallet.balance < loan_or_role_amount:
+        if wallet.balance < loan_amount:
             LogService.log(user=instance.investor, msg=f'Your application for investment plan could not be approved due to insufficient balance in your wallet.')
             return Response({"message": "Investor doesn't have enough balance in their wallet."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Deducting amount from the wallet
-        wallet.balance -= loan_or_role_amount
+        wallet.balance -= loan_amount
+        wallet.invested_amount += loan_amount
         wallet.save()
-        LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=loan_or_role_amount, debit=True)
-        LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {loan_or_role_amount}. Current Wallet balance is Rs. {wallet.balance}')
-        
-        # Checking if it's loan or investment plan
-        if instance.borrower:
-            borrower_wallet = Wallet.objects.get(owner=instance.borrower)
-            borrower_wallet += loan_or_role_amount
-            borrower_wallet.save()
 
-            # Creating Loan object
-            loan_instance = Loan.objects.create(loan_amount=instance.amount,
-                                                interest_rate=instance.interest_rate,
-                                                tenure=instance.tenure,
-                                                repayment_terms=instance.repayment_terms,
-                                                collateral=instance.collateral,
-                                                late_pay_penalties=instance.late_pay_penalties,
-                                                prepayment_options=instance.prepayment_options,
-                                                default_remedies=instance.default_remedies,
-                                                privacy=instance.privacy,
-                                                governing_law=instance.governing_law,
-                                                borrower=instance.borrower,
-                                                investor=instance.investor,
-                                                type=instance.type)
-            # if loan_instance.type == InvestmentRequest.TYPE_CHOICES[2][1]:
-            for i in range(loan_instance.tenure*12):
+        borrower_wallet = Wallet.objects.get(owner=instance.borrower)
+        borrower_wallet.balance += loan_amount
+        borrower_wallet.save()
+        LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=loan_amount, debit=True)
+        LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {loan_amount}. Current Wallet balance is Rs. {wallet.balance}')
+        
+        # Creating Loan
+        loan_instance = Loan.objects.create(loan_amount=instance.amount,
+                                            interest_rate=instance.interest_rate,
+                                            tenure=instance.tenure,
+                                            repayment_terms=instance.repayment_terms,
+                                            collateral=instance.collateral,
+                                            late_pay_penalties=instance.late_pay_penalties,
+                                            prepayment_options=instance.prepayment_options,
+                                            default_remedies=instance.default_remedies,
+                                            privacy=instance.privacy,
+                                            governing_law=instance.governing_law,
+                                            borrower=instance.borrower,
+                                            investor=instance.investor,
+                                            type=instance.type)
+        
+        # Creating and adding installments to Loan
+        installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        principal = instance.amount/(instance.tenure*12)
+        interest = installment - principal
+        for i in range(loan_instance.tenure*12):
                 month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                 installment = Installment.objects.create(parent_loan=loan_instance,
                                                             due_date=month,
-                                                            amount=loan_instance.installments,
+                                                            principal=principal,
+                                                            interest=interest,
+                                                            total_amount=installment,
                                                             )
                 loan_instance.installments.add(installment)
-            LogService.transaction_log(owner=instance.borrower, wallet=borrower_wallet, amount=loan_or_role_amount, debit=False)
-            LogService.log(user=instance.borrower, msg=f'You accepted investor {instance.investor}\'s application.')
-        else:
-            Loan.objects.create(loan_amount=instance.amount,
-                                interest_rate=instance.interest_rate,
-                                tenure=instance.tenure,
-                                investor=instance.investor,
-                                type=instance.type
-                                )
-        
-        # approving request
-        instance.status = InvestmentRequest.STATUS_CHOICES[1][1]
-        instance.save()
-
-        # Adding investor in investment plan
-        if instance.loan == None:
-            plan = InvestmentProduct.objects.get(id=instance.plan.id)
-            plan.investors.add(instance.investor)
-            plan.save()
-        else:
-            loan = LoanApplication.objects.get(id=instance.loan.id)
-            loan.investors.add(instance.investor)
-            loan.save()
-        LogService.log(user=request.user, msg=f"You approved Investment Request of investor{instance.investor}", is_activity=True)
-        LogService.log(user=instance.investor, msg=f'Your Application for Investment Plan is approved.')
-        return Response({"message": "Application Approved."}, status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=False)
     def approvedRequests(self, request):
@@ -627,6 +576,10 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
 
 
 class LoanViewSet(viewsets.ModelViewSet):
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = ['borrower', 'investor', 'type']
 
     def get_queryset(self):
         user = self.request.user
@@ -640,3 +593,24 @@ class LoanViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         return InvestmentSerializer
+
+
+class InstallmentViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = ['parent_loan', 'borrower', 'investor']
+
+    def get_queryset(self):
+        queryset = Installment.objects.all()
+        return queryset
+    
+    def get_serializer_class(self):
+        return InstallmentSerializer
+    
+    @action(methods=['POST'], detail=True)
+    def pay(self, request, pk):
+        user = request.user
+        instance = self.get_object()
+        wallet = Wallet.objects.get(owner=user)

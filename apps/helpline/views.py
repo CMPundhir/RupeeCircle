@@ -4,6 +4,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .serializers import *
 from rest_framework.response import Response
 from apps.mauth.models import CustomUser as User
+from rest_framework.permissions import IsAuthenticated
 from .models import Complaint
 from rest_framework.decorators import action
 from rest_framework.settings import api_settings
@@ -11,6 +12,7 @@ from rest_framework.settings import api_settings
 # Create your views here.
 
 class ComplaintViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id']
@@ -21,6 +23,8 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self):
+        if self.action == 'markResolve':
+            return MarkResolveSerializer
         return ComplaintSerializer
     
     def create(self, request, *args, **kwargs):
@@ -61,7 +65,11 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         user = request.user
         if user.role != User.ROLE_CHOICES[3][1]:
             return Response({"message": "You are not authorized to perform this action."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         instance = self.get_object()
+        if 'remarks' in serializer.validated_data and serializer.validated_data['remarks']:
+            instance.remarks = serializer.validated_data['remarks']
         instance.status = Complaint.STATUS_CHOICES[1][1]
         instance.save()
         return Response({"message": "Complaint Resolved Successfully."}, status=status.HTTP_200_OK)

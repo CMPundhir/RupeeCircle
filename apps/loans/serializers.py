@@ -40,7 +40,7 @@ class InvestmentApplicationSerializer(serializers.Serializer):
 
 class InvestmentRequestGetSerializer(serializers.ModelSerializer):
     loan = LoanApplicationSerializer()
-    plan = InvestmentProductSerializer()
+    # plan = InvestmentProductSerializer()
     investor = InvestorGetSerializer()
 
     class Meta:
@@ -52,4 +52,11 @@ class InvestmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Loan
+        fields = '__all__'
+
+
+class InstallmentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Installment
         fields = '__all__'

@@ -13,3 +13,7 @@ class MailComplaintSerializer(serializers.Serializer):
     email = serializers.EmailField()
     body = serializers.CharField()
     nature = serializers.ChoiceField(Complaint.NATURE_CHOICES)
+
+
+class MarkResolveSerializer(serializers.Serializer):
+    remarks = serializers.CharField()

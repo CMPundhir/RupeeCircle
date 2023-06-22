@@ -7,9 +7,6 @@ import uuid
 
 # Create your models here.
 
-def get_loan_id(id):
-    loan_id = f'LOAN{id}'
-    return loan_id
 
 class LoanApplication(BaseModel, models.Model):
     STATUS_CHOICES = (('APPLIED', 'APPLIED'), ('UNDER BIDDING', 'UNDER BIDDING'), ('CLOSED', 'CLOSED'))
@@ -55,7 +52,9 @@ class Installment(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
     parent_loan = models.ForeignKey('Loan', on_delete=models.DO_NOTHING)
     due_date = models.DateField()
-    amount = models.CharField(max_length=255)
+    principal = models.CharField(max_length=255, null=True, blank=True)
+    interest = models.CharField(max_length=255, null=True, blank=True)
+    total_amount = models.CharField(max_length=255)
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
     paid_date = models.DateField(blank=True, null=True)
     payment_reference = models.CharField(max_length=255, null=True, blank=True)
@@ -74,7 +73,7 @@ class InvestmentRequest(BaseModel, models.Model):
     collateral = models.CharField(max_length=255, null=True, blank=True)
     late_pay_penalties = models.CharField(max_length=255, null=True, blank=True)
     prepayment_options = models.CharField(max_length=255, null=True, blank=True)
-    plan = models.ForeignKey(InvestmentProduct, on_delete=models.DO_NOTHING, null=True, blank=True)
+    # plan = models.ForeignKey(InvestmentProduct, on_delete=models.DO_NOTHING, null=True, blank=True)
     loan = models.ForeignKey(LoanApplication, on_delete=models.DO_NOTHING, null=True, blank=True)
     default_remedies = models.CharField(max_length=255, null=True, blank=True)
     privacy = models.CharField(max_length=255, null=True, blank=True)
@@ -118,8 +117,6 @@ class Loan(BaseModel, models.Model):
         return f'{self.id}'
     
     def save(self, *args, **kwargs):
-        self.loan_id = f'LOAN{self.id}'
+        last_object = Loan.objects.latest('id')#all().order_by('-id')[0]
+        self.loan_id = f"LOAN{last_object + 1}"
         super(Loan, self).save(*args, **kwargs)
-
-
-
