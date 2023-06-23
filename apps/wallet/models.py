@@ -29,9 +29,10 @@ class Transaction(BaseModel, models.Model):
     debit = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
-        s = datetime.now()
-        result = str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')
-        self.transaction_id = f'T{self.wallet.id}{result}'
+        if not self.transaction_id:
+            s = datetime.now()
+            result = str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')
+            self.transaction_id = f'T{self.wallet.id}{result}'
         super(Transaction, self).save(*args, **kwargs)
 
 

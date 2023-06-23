@@ -130,13 +130,14 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self, *args, **kwargs):
-        # if self.action == 'apply':
-        #     return InvestmentApplicationSerializer
+        if self.action == 'apply':
+            return InvestmentApplicationSerializer
         return InvestmentProductSerializer
     
     @action(methods=['GET', 'POST'], detail=True)
     def apply(self, request, pk):
         instance = self.get_object()
+        # print(instance.data)
         user = request.user
         
         # Checking if user is Investor or not.
@@ -152,26 +153,34 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         wallet.balance -= instance.amount
         wallet.invested_amount += instance.amount
         wallet.save()
-        LogService.transaction_log(user=user, amount=instance.amount, debit=True)
+        LogService.transaction_log(owner=user, wallet=wallet, amount=instance.amount, debit=True)
 
         # Creating Loan
+        print("creating loan")
         loan_instance = Loan.objects.create(loan_amount=instance.amount,
-                                                interest_rate=instance.interest_rate,
-                                                tenure=instance.tenure,
-                                                repayment_terms=instance.repayment_terms,
-                                                collateral=instance.collateral,
-                                                late_pay_penalties=instance.late_pay_penalties,
-                                                prepayment_options=instance.prepayment_options,
-                                                default_remedies=instance.default_remedies,
-                                                privacy=instance.privacy,
-                                                governing_law=instance.governing_law,
-                                                # borrower=instance.borrower,
-                                                investor=instance.investor,
-                                                type=instance.type)
-        installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+                            interest_rate=instance.interest_rate,
+                            tenure=instance.tenure,
+                            # repayment_terms=instance.repayment_terms,
+                            # collateral=instance.collateral,
+                            # late_pay_penalties=instance.late_pay_penalties,
+                            # prepayment_options=instance.prepayment_options,
+                            # default_remedies=instance.default_remedies,
+                            # privacy=instance.privacy,
+                            # governing_law=instance.governing_law,
+                            # borrower=instance.borrower,
+                            investor=user,
+                            type=instance.type)
+        # loan_instance.save()
+        # print(f'Calculating Installment => Now')
+        # loan = Loan.objects.get(id=loan_instance.id)
+
+        # Convert into integer or Float values and then calculate Installment amount. 
+        installment = (instance.amount + ((instance.amount*int(instance.interest_rate)/100)*instance.tenure))/(instance.tenure*12)
         principal = instance.amount/(instance.tenure*12)
         interest = installment - principal
+        print("entering loop")
         for i in range(loan_instance.tenure*12):
+                print("enterred loop")
                 month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                 installment = Installment.objects.create(parent_loan=loan_instance,
                                                             due_date=month,
@@ -179,16 +188,17 @@ class FixedROIViewSet(viewsets.ModelViewSet):
                                                             interest=interest,
                                                             total_amount=installment,
                                                             )
+                print("Adding in Loan_loan_instance")
                 loan_instance.installments.add(installment)
         return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
-        # Creating request for this plan.
-        # installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
-        # installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
-        # InvestmentRequest.objects.create(plan=instance, 
-        #                                  investor=user, 
-        #                                  remarks=serializer.validated_data['remarks'], 
-        #                                  installments=installment,
-        #                                  amount=serializer.validated_data['amount'],
+        # # Creating request for this plan.
+        # # installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        # # installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        # # InvestmentRequest.objects.create(plan=instance, 
+        # #                                  investor=user, 
+        # #                                  remarks=serializer.validated_data['remarks'], 
+        # #                                  installments=installment,
+        # #                                  amount=serializer.validated_data['amount'],
         #                                  interest_rate=serializer.validated_data['interest_rate'],
         #                                  repayment_terms=serializer.validated_data['repayment_terms'],
         #                                  collateral=serializer.validated_data['collateral'],
@@ -216,10 +226,33 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         # LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
         # return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
 
+    @action(methods=['GET'], detail=False)
+    def addPlanId(self, request):
+        for i in InvestmentProduct.objects.all():
+            print("adding")
+            i.plan_id = f'MP{i.id}'
+            print("added")
+            i.save()
+        return Response({"message": "Done."})
     # @action(methods=['GET'], detail=False)
     # def bulkcreate(self, request):
-    #     for i in range(50):
-    #         InvestmentProduct.objects.create(amount=500000, interest_rate=15, tenure=2, type=InvestmentProduct.TYPE_CHOICES[0][1])
+    #     for i in range(5):
+    #         InvestmentProduct.objects.create(min_amount=400000,
+    #                                          amount=500000, 
+    #                                          investing_limit=4,
+    #                                          principal_type=InvestmentProduct.PRINCIPAL_CHOICES[1][0],
+    #                                          interest_rate=15, 
+    #                                          tenure=2, 
+    #                                          type=InvestmentProduct.TYPE_CHOICES[1][1])
+    #                                         #  type=InvestmentProduct.TYPE_CHOICES[1][1])
+    #         InvestmentProduct.objects.create(#min_amount=400000,
+    #                                          amount=500000, 
+    #                                          investing_limit=4,
+    #                                          principal_type=InvestmentProduct.PRINCIPAL_CHOICES[0][0],
+    #                                          interest_rate=15, 
+    #                                          tenure=2, 
+    #                                         #  type=InvestmentProduct.TYPE_CHOICES[0][1],
+    #                                          type=InvestmentProduct.TYPE_CHOICES[0][1])
     #     return Response({"message": "Done"})
 
 
@@ -318,19 +351,19 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if self.action == 'marketplace':
-            queryset = LoanApplication.objects.filter(investors__in=[user])
+            queryset = Loan.objects.filter(investor=user)
             return queryset
         if self.action == 'InvestmentProducts':
-            queryset = InvestmentProduct.objects.filter(investors__in=[user])
+            queryset = InvestmentProduct.objects.filter(investor=user)
             return queryset
         return []
         
     def get_serializer_class(self):
         if self.action == 'marketplace':
-            return LoanApplicationSerializer
+            return InvestmentSerializer
         if self.action == 'InvestmentProducts':
             return InvestmentProductSerializer
-        return LoanApplicationSerializer
+        return InvestmentSerializer
         
     @action(methods=['GET'], detail=False)
     def marketplace(self, request):
@@ -355,16 +388,17 @@ class AllInvestmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         all_users = User.objects.all()
-        if self.action == 'marketplace':
-            queryset = LoanApplication.objects.filter(investors__in=all_users)
-            return queryset
-        if self.action == 'fixedRoi':
-            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[0][1], investors__in=all_users)
-            return queryset
-        if self.action == 'anytimeWithdraw':
-            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[1][1], investors__in=all_users)
-            return queryset
-        return []
+        # if self.action == 'marketplace':
+        #     queryset = Loan.objects.filter(investors__in=all_users)
+        #     return queryset
+        # if self.action == 'fixedRoi':
+        #     queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[0][1], investors__in=all_users)
+        #     return queryset
+        # if self.action == 'anytimeWithdraw':
+        #     queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[1][1], investors__in=all_users)
+        #     return queryset
+        queryset = Loan.objects.all()
+        return queryset#[]
         
     def get_serializer_class(self):
         if self.action == 'marketplace':

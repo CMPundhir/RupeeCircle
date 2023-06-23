@@ -7,7 +7,9 @@ from apps.wallet.models import Wallet
 # from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
 from apps.wallet.models import BankAccount
+from apps.notification.services import LogService
 from .serializers import *
+from datetime import datetime
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -315,6 +317,7 @@ class UserViewSet(viewsets.ModelViewSet):
         Takes bank details and verifies Bank with a Penny drop testing.
         '''
         data = request.data
+        user = request.user
         serializer = BankDetailSerializer(data=data)
         # print("Validating Serializer")
         if serializer.is_valid(raise_exception=True):
@@ -328,34 +331,38 @@ class UserViewSet(viewsets.ModelViewSet):
                     bank_acc_exists = User.objects.filter(bank_acc=bank_acc).exists()
                     if bank_acc_exists:
                         return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
+                    
                     # Integrate Penny Drop Api below
+                    wallet = Wallet.objects.create(owner=user)
+                    s = datetime.now()
+                    result = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
                     bank_detail = {
                         "bankAccount": serializer.validated_data['bank_acc'], 
                         "ifsc": serializer.validated_data['bank_ifsc'], 
                         "name": "", 
                         "phone": "", 
-                        "traceId": ""}
+                        "traceId": result}
                     url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
                     response = requests.post(url, json=bank_detail)
-                    r = json.loads(response)
+                    # r = json.loads(response)
                     return Response({"message": response.status})
-                    if r.status == 'FAILURE':
-                        return Response({"message": "Bank Verification Failed. Please try again."})
-                    # Integrate Penny Drop Api above
+                    # if r.status == 'FAILURE':
+                    #     return Response({"message": "Bank Verification Failed. Please try again."})
+                    # # Integrate Penny Drop Api above
                     
-                    # Match the name here
-                    user = User.objects.get(pk=pk)
-                    user.acc_holder_name = acc_holder_name
-                    # user.account_holder_name = 'Name'
-                    user.bank_acc = bank_acc
-                    user.bank_ifsc = bank_ifsc
-                    user.is_bank_acc_verified = True
-                    user.status = CustomUser.STATUS_CHOICES[4][0]
-                    user.save()
-                    BankAccount.objects.create(bank=user.bank_name, owner=user, bankAccountacc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                    Wallet.objects.create(owner=user)
+                    # # Match the name here
+                    # user = User.objects.get(pk=pk)
+                    # user.acc_holder_name = acc_holder_name
+                    # # user.account_holder_name = 'Name'
+                    # user.bank_acc = bank_acc
+                    # user.bank_ifsc = bank_ifsc
+                    # user.is_bank_acc_verified = True
+                    # user.status = CustomUser.STATUS_CHOICES[4][0]
+                    # user.save()
+                    # BankAccount.objects.create(bank=user.bank_name, owner=user, bankAccountacc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+                    # Wallet.objects.create(owner=user)
                     
-                    return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
+                    # return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
@@ -393,15 +400,15 @@ class UserViewSet(viewsets.ModelViewSet):
         partners = User.objects.filter(role=CustomUser.ROLE_CHOICES[1][1]).count()
         return Response({"investors": investors, "borrowers": borrowers, "partners": partners}, status=status.HTTP_200_OK)
 
-    @action(methods=['GET'], detail=False)
-    def updateSpecialPlan(self, request):
-        queryset = self.get_queryset()
-        for i in queryset:
-            plan_exist = InvestmentProduct.objects.filter(allowed_investor=i).exists()
-            if plan_exist:
-                i.special_plan_exist = True
-                i.save()
-        return Response({"message": "Updateds"})
+    # @action(methods=['GET'], detail=False)
+    # def updateSpecialPlan(self, request):
+    #     queryset = self.get_queryset()
+    #     for i in queryset:
+    #         plan_exist = InvestmentProduct.objects.filter(allowed_investor=i).exists()
+    #         if plan_exist:
+    #             i.special_plan_exist = True
+    #             i.save()
+    #     return Response({"message": "Updated"})
     
     @action(methods=['GET'], detail=False)
     def addId(self, request):

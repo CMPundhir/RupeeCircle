@@ -9,7 +9,7 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LoanApplication
-        fields = ['id', 'created', 'loan_amount', 'interest_rate', 'repayment_terms', 'installments', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law', 'borrower', 'investors']
+        fields = ['id', 'plan_id', 'tenure', 'created', 'loan_amount', 'interest_rate', 'repayment_terms', 'installments', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law', 'borrower', 'investors']
 
 
 # class RecentLoanSerializer(serializers.ModelSerializer):
@@ -60,3 +60,7 @@ class InstallmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Installment
         fields = '__all__'
+
+
+class ApplySerializer(serializers.Serializer):
+    amount = models.IntegerField()

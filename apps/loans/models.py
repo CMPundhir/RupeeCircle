@@ -10,11 +10,18 @@ import uuid
 
 class LoanApplication(BaseModel, models.Model):
     STATUS_CHOICES = (('APPLIED', 'APPLIED'), ('UNDER BIDDING', 'UNDER BIDDING'), ('CLOSED', 'CLOSED'))
+    REPAYMENT_CHOICES = (('DAILY', 'DAILY'), ('MONTHLY', 'MONTHLY'), ('QUARTERLY', 'QUARTELY'), ('ANNUALLY', 'ANNUALLY'))
+    TYPE_CHOICES = (('OPEN bID', 'OPEN BID'), ('CLOSE BID', 'CLOSE BID'))
+
     id = models.AutoField(primary_key=True)
     loan_amount = models.IntegerField(null=False, blank=False)
-    # loan_id = models.CharField(max_length=1000, blank=True, unique=True)
+    plan_id = models.CharField(max_length=1000, blank=True, unique=True)
     interest_rate = models.CharField(max_length=255, null=False, blank=False)
-    repayment_terms = models.CharField(max_length=1000, null=True, blank=True)
+    tenure = models.IntegerField(null=True, blank=True)
+    repayment_terms = models.CharField(max_length=1000, 
+                                       choices=REPAYMENT_CHOICES,
+                                       null=True, blank=True)
+    type = models.CharField(max_length=100, choices=TYPE_CHOICES, default=TYPE_CHOICES[0][1])
     installments = models.CharField(max_length=1000, null=True, blank=True)
     collateral = models.CharField(max_length=255, null=True, blank=True)
     late_pay_penalties = models.CharField(max_length=255, null=True, blank=True)
@@ -28,13 +35,23 @@ class LoanApplication(BaseModel, models.Model):
 
     def __str__(self):
         return f'{self.id}'
+    
+    def save(self, *args, **kwargs):
+        if Loan.objects.all().count() == 0:
+            self.loan_id = f'PLAN1'
+        else:
+            last_object = Loan.objects.latest('id')#all().order_by('-id')[0]
+            self.loan_id = f"PLAN{last_object.id + 1}"
+        super(Loan, self).save(*args, **kwargs)
 
 
 class InvestmentProduct(BaseModel, models.Model):
     TYPE_CHOICES = (('FIXED ROI', 'FIXED ROI'), ('ANYTIME WITHDRAWAL', 'ANYTIME WITHDRAWAL'))
     PRINCIPAL_CHOICES = (('FIXED', 'FIXED'), ('VARIABLE', 'VARIABLE'))
     id = models.AutoField(primary_key=True)
+    plan_id = models.CharField(max_length=255, null=True, blank=True, unique=True)
     min_amount = models.IntegerField(null=True, blank=True)
+    minimum_locking = models.CharField(max_length=255, null=True, blank=True)
     amount = models.IntegerField(null=False, blank=False)
     investing_limit = models.IntegerField(null=True)
     principal_type = models.CharField(max_length=255, choices=PRINCIPAL_CHOICES, default=PRINCIPAL_CHOICES[0][1])
@@ -45,6 +62,14 @@ class InvestmentProduct(BaseModel, models.Model):
     is_primary = models.BooleanField(default=False)
     allowed_investor = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='allowed_investor', null=True, blank=True)
     investors = models.ManyToManyField(User, blank=True)
+
+    def save(self, *args, **kwargs):
+        if InvestmentProduct.objects.all().count() == 0:
+            self.plan_id = f'PLAN1'
+        else:
+            last_object = InvestmentProduct.objects.latest('id')#all().order_by('-id')[0]
+            self.plan_id = f"PLAN{last_object.id + 1}"
+        super(InvestmentProduct, self).save(*args, **kwargs)
 
 
 class Installment(BaseModel, models.Model):
@@ -94,14 +119,21 @@ class InvestmentRequest(BaseModel, models.Model):
 
 
 class Loan(BaseModel, models.Model):
-    STATUS_CHOICES = (('APPLIED', 'APPLIED'), ('UNDER BIDDING', 'UNDER BIDDING'), ('CLOSED', 'CLOSED'))
+    STATUS_CHOICES = (('ONGOING', 'ONGOING'), ('PAID', 'PAID'))
+    
     id = models.AutoField(primary_key=True)
     loan_amount = models.IntegerField(null=False, blank=False)
     loan_id = models.CharField(max_length=1000, blank=True, unique=True)
+    minimum_locking = models.CharField(max_length=255, blank=True, null=True)
     tenure = models.IntegerField(null=True)
+    # interest_calculation_type = models.CharField(max_length=255, 
+    #                                              choices=REPAYMENT_CHOICES, 
+    #                                              default=REPAYMENT_CHOICES[1][0])
     interest_rate = models.CharField(max_length=255, null=False, blank=False)
-    repayment_terms = models.CharField(max_length=1000, null=True, blank=True)
-    installments = models.ManyToManyField(Installment)
+    repayment_terms = models.CharField(max_length=255, 
+                                      choices=LoanApplication.REPAYMENT_CHOICES, 
+                                      default=LoanApplication.REPAYMENT_CHOICES[1][0], null=True, blank=True)
+    installments = models.ManyToManyField(Installment, blank=True)
     collateral = models.CharField(max_length=255, null=True, blank=True)
     late_pay_penalties = models.CharField(max_length=255, null=True, blank=True)
     prepayment_options = models.CharField(max_length=255, null=True, blank=True)
@@ -114,9 +146,12 @@ class Loan(BaseModel, models.Model):
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def __str__(self):
-        return f'{self.id}'
+        return f'{self.loan_id}'
     
     def save(self, *args, **kwargs):
-        last_object = Loan.objects.latest('id')#all().order_by('-id')[0]
-        self.loan_id = f"LOAN{last_object + 1}"
+        if Loan.objects.all().count() == 0:
+            self.loan_id = f'LOAN1'
+        else:
+            last_object = Loan.objects.latest('id')#all().order_by('-id')[0]
+            self.loan_id = f"LOAN{last_object.id + 1}"
         super(Loan, self).save(*args, **kwargs)
