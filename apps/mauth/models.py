@@ -135,5 +135,5 @@ class BaseModel(models.Model):
 class RiskLog(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
     owner = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING)
-    updated_risk = models.CharField(max_length=255)
+    updated_risk = models.CharField(max_length=255, choices=CustomUser.RISK_CHOICES, default=CustomUser.RISK_CHOICES[0][1])
     comment = models.CharField(max_length=1000)

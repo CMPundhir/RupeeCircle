@@ -223,18 +223,28 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         # user = request.user
         data = request.data
-        serializer = PanSerializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            pan = serializer.validated_data['pan']
-            pan_already_exists = User.objects.filter(pan=pan).exists()
-            if pan_already_exists:
-                return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-            # user = User.objects.get(id=request.user.id)
-            # user = User.objects.get(pk=pk)
-            # user.pan = serializer.validated_data['pan']
-            # user.save()
-            return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        instance = self.get_object()
+        r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", json=data)
+        print(r.content)
+        if r['flag'] == True:
+            instance.pan = r['data']['pan']
+            instance.pan_name = r['data']['name']
+            instance.save()
+            return Response({"message": "Success", "name": r['data']['name']})
+        else:
+            return Response({"message": "Failed"})
+        # serializer = PanSerializer(data=data)
+        # if serializer.is_valid(raise_exception=True):
+        #     pan = serializer.validated_data['pan']
+        #     pan_already_exists = User.objects.filter(pan=pan).exists()
+        #     if pan_already_exists:
+        #         return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        #     # user = User.objects.get(id=request.user.id)
+        #     # user = User.objects.get(pk=pk)
+        #     # user.pan = serializer.validated_data['pan']
+        #     # user.save()
+        #     return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
     def panVerify(self, request, pk):
@@ -416,3 +426,4 @@ class UserViewSet(viewsets.ModelViewSet):
             i.user_id = f'{i.role[0]}{i.id}'
             i.save()
         return Response({"message": "Added to all."})
+    

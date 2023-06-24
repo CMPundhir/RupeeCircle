@@ -40,7 +40,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action == 'apply':
-            return InvestmentSerializer
+            return InvestmentRequestSerializer
         return LoanApplicationSerializer
         
     def create(self, request, *args, **kwargs):
@@ -74,8 +74,6 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         user = request.user
         loan_plan = self.get_object()
         data = request.data
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
 
         # Checking if user is a investor
         if user.role != User.ROLE_CHOICES[0][1]:
@@ -87,9 +85,25 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
             return Response({"message": "You do not have enough balance in your wallet. Add funds first."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Creating Investment Request
-        InvestmentRequest.objects.create(serializer.data)
-        LogService.log(user=user, is_activity=True, msg=f'You have successfully bid in {loan_plan}.')
-        return Response({"message": "Applied Successfully."}, status=status.HTTP_200_OK)
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            InvestmentRequest.objects.create(loan_amount=serializer.validated_data['loan_amount'],
+                                             tenure=serializer.validated_data['tenure'],
+                                             interest_rate=serializer.validated_data['interest_rate'],
+                                             repayment_terms=serializer.validated_data['repayment_terms'],
+                                             collateral=serializer.validated_data['collateral'],
+                                             late_pay_penalties=serializer.validated_data['late_pay_penalties'],
+                                             prepayment_options=serializer.validated_data['prepayment_options'],
+                                             default_remedies=serializer.validated_data['default_remedies'],
+                                             privacy=serializer.validated_data['privacy'],
+                                             governing_law=serializer.validated_data['governing_law'],
+                                             remarks=serializer.validated_data['remarks'],
+                                             loan=loan_plan,
+                                             investor=user,
+                                             borrower=loan_plan.borrower,
+                                             type=loan_plan.type)
+            LogService.log(user=user, is_activity=True, msg=f'You have successfully bid in {loan_plan}.')
+            return Response({"message": "Applied Successfully."}, status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=True)
     def investors(self, request, pk):
@@ -183,11 +197,11 @@ class FixedROIViewSet(viewsets.ModelViewSet):
                 print("enterred loop")
                 month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                 installment = Installment.objects.create(parent_loan=loan_instance,
-                                                            due_date=month,
-                                                            principal=principal,
-                                                            interest=interest,
-                                                            total_amount=installment,
-                                                            )
+                                                        due_date=month,
+                                                        principal=principal,
+                                                        interest=interest,
+                                                        total_amount=installment,
+                                                        )
                 print("Adding in Loan_loan_instance")
                 loan_instance.installments.add(installment)
         return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
@@ -487,6 +501,9 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
                                             type=instance.type)
         
         # Creating and adding installments to Loan
+        P = float(instance.amount)
+        R = float(instance.interest_rate)
+        
         installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
         principal = instance.amount/(instance.tenure*12)
         interest = installment - principal
@@ -648,3 +665,4 @@ class InstallmentViewSet(viewsets.ModelViewSet):
         user = request.user
         instance = self.get_object()
         wallet = Wallet.objects.get(owner=user)
+        pass

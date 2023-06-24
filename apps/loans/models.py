@@ -8,10 +8,15 @@ import uuid
 # Create your models here.
 
 
+class TermsAndCondition(models.Model):
+    id = models.AutoField(primary_key=True)
+    tnc = models.CharField(max_length=255)
+
+
 class LoanApplication(BaseModel, models.Model):
     STATUS_CHOICES = (('APPLIED', 'APPLIED'), ('UNDER BIDDING', 'UNDER BIDDING'), ('CLOSED', 'CLOSED'))
     REPAYMENT_CHOICES = (('DAILY', 'DAILY'), ('MONTHLY', 'MONTHLY'), ('QUARTERLY', 'QUARTELY'), ('ANNUALLY', 'ANNUALLY'))
-    TYPE_CHOICES = (('OPEN bID', 'OPEN BID'), ('CLOSE BID', 'CLOSE BID'))
+    TYPE_CHOICES = (('OPEN BID', 'OPEN BID'), ('CLOSE BID', 'CLOSE BID'))
 
     id = models.AutoField(primary_key=True)
     loan_amount = models.IntegerField(null=False, blank=False)
@@ -31,18 +36,19 @@ class LoanApplication(BaseModel, models.Model):
     governing_law = models.CharField(max_length=1000, null=True, blank=True)
     borrower = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='borrower')
     investors = models.ManyToManyField(User, blank=True)#, related_name='investor')
+    tnc = models.ForeignKey(TermsAndCondition, on_delete=models.DO_NOTHING, null=True, blank=True)
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def __str__(self):
         return f'{self.id}'
     
     def save(self, *args, **kwargs):
-        if Loan.objects.all().count() == 0:
+        if LoanApplication.objects.all().count() == 0:
             self.loan_id = f'PLAN1'
         else:
-            last_object = Loan.objects.latest('id')#all().order_by('-id')[0]
+            last_object = LoanApplication.objects.latest('id')#all().order_by('-id')[0]
             self.loan_id = f"PLAN{last_object.id + 1}"
-        super(Loan, self).save(*args, **kwargs)
+        super(LoanApplication, self).save(*args, **kwargs)
 
 
 class InvestmentProduct(BaseModel, models.Model):
@@ -62,6 +68,7 @@ class InvestmentProduct(BaseModel, models.Model):
     is_primary = models.BooleanField(default=False)
     allowed_investor = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='allowed_investor', null=True, blank=True)
     investors = models.ManyToManyField(User, blank=True)
+    tnc = models.ForeignKey(TermsAndCondition, on_delete=models.DO_NOTHING, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if InvestmentProduct.objects.all().count() == 0:
@@ -90,7 +97,7 @@ class InvestmentRequest(BaseModel, models.Model):
     STATUS_CHOICES = (('PENDING', 'PENDING'), ('APPROVED', 'APPROVED'))
     TYPE_CHOICES = (('FIXED ROI', 'FIXED ROI'), ('ANYTIME WITHDRAWAL', 'ANYTIME WITHDRAWAL'), ('LOAN', 'LOAN'))
     id = models.AutoField(primary_key=True)
-    amount = models.IntegerField(default=0)
+    loan_amount = models.IntegerField(default=0)
     tenure = models.IntegerField(null=True)
     interest_rate = models.IntegerField(null=True, blank=True)
     repayment_terms = models.CharField(max_length=255, null=True, blank=True)
@@ -144,6 +151,7 @@ class Loan(BaseModel, models.Model):
     investor = models.ForeignKey(User, on_delete=models.DO_NOTHING, blank=True, related_name='final_loan_investor',null=True)
     type = models.CharField(max_length=255, choices=InvestmentRequest.TYPE_CHOICES, default=InvestmentRequest.TYPE_CHOICES[0][1])
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
+    tnc = models.ForeignKey(TermsAndCondition, on_delete=models.DO_NOTHING, null=True, blank=True)
 
     def __str__(self):
         return f'{self.loan_id}'

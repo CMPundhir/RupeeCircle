@@ -3,13 +3,21 @@ from apps.mauth.serializers import UserSerializer
 from apps.dashboard.serializers import InvestorGetSerializer
 from .models import *
 
+
+class BorrowerDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name']
+
+
 class LoanApplicationSerializer(serializers.ModelSerializer):
-    # borrower = UserSerializer()
+    borrower = BorrowerDetailSerializer()
     # investors = UserSerializer(many=True)
 
     class Meta:
         model = LoanApplication
-        fields = ['id', 'plan_id', 'tenure', 'created', 'loan_amount', 'interest_rate', 'repayment_terms', 'installments', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law', 'borrower', 'investors']
+        fields = ['id', 'plan_id', 'tenure', 'type', 'created', 'loan_amount', 'interest_rate', 'repayment_terms', 'installments', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law', 'borrower', 'investors']
 
 
 # class RecentLoanSerializer(serializers.ModelSerializer):
@@ -30,7 +38,8 @@ class InvestmentRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InvestmentRequest
-        fields = '__all__'
+        # fields = '__all__'
+        fields = ['loan_amount', 'tenure', 'interest_rate', 'repayment_terms', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law', 'remarks']
 
 
 class InvestmentApplicationSerializer(serializers.Serializer):

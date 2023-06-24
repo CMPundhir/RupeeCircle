@@ -25,11 +25,6 @@ class WalletViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1]:
             queryset = Wallet.objects.all()
-        # if user.role == User.ROLE_CHOICES[3][1]:
-        #     queryset = Wallet.objects.all()
-        # else:
-        #     queryset = []
-        # return queryset
         else:
             queryset = Wallet.objects.filter(owner=self.request.user.id)
         return queryset
@@ -42,11 +37,7 @@ class WalletViewSet(viewsets.ModelViewSet):
         else:
             return WalletSerializer
 
-    def list(self, request):
-        user = request.user    
-        instance = self.get_queryset().get(owner=user)
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+    # def list(self, rserializer.data)
     
     @action(methods=['POST'], detail=False)
     def addFunds(self, request):

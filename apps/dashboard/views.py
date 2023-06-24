@@ -146,8 +146,15 @@ class InvestorViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = RiskLogSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            instance.rc_risk = serializer.validated_data['risk']
-            serializer.save()
+            instance.rc_risk = serializer.validated_data['updated_risk']
+            instance.save()
+            RiskLog.objects.create(is_record_active=True,
+                                   created_by=request.user,
+                                   updated_risk=serializer.validated_data['updated_risk'],
+                                   comment = serializer.validated_data['comment'],
+                                   last_modified_by=request.user,
+                                   owner=instance)
+            # serializer.save()
             return Response({"message": "Risk status Updated Successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors)
     
@@ -176,8 +183,8 @@ class PartnerViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self):
-        if self.action == 'linkInvestor':
-            return LinkAggregatorSerializer
+        if self.action == 'addInvestor':
+            return AddInvestorSerializer
         elif self.action == 'create':
             return PartnerRegistrationSerializer
         elif self.action == 'list' or self.action == 'retrieve':
@@ -246,15 +253,16 @@ class PartnerViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
-    def linkAggregator(self, request, pk):
+    def addInvestor(self, request, pk):
         '''
         Links Investigator to an Aggregator.
         '''
+        partner=self.get_object()
         data = request.data
-        serializer = LinkAggregatorSerializer(data=data)
+        serializer = AddInvestorSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            instance = User.objects.get(pk=pk)
-            instance.aggregator = serializer.validated_data['aggregator']
+            instance = User.objects.get(id=serializer.validated_data['investor'].id)
+            instance.partner = partner
             instance.save()
             return Response({"message": "Investor linked successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -288,14 +296,21 @@ class BorrowerViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = RiskLogSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            instance.rc_risk = serializer.validated_data['risk']
-            serializer.save()
+            instance.rc_risk = serializer.validated_data['updated_risk']
+            instance.save()
+            RiskLog.objects.create(is_record_active=True,
+                                   created_by=request.user,
+                                   updated_risk=serializer.validated_data['updated_risk'],
+                                   comment = serializer.validated_data['comment'],
+                                   last_modified_by=request.user,
+                                   owner=instance)
+            # serializer.save()
             return Response({"message": "Risk status Updated Successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors)
     
     @action(methods=['GET'], detail=True)
     def riskLog(self, request, pk):
         user=self.get_object()
-        queryset = RiskLog.objects.filter(owner=user)
+        queryset = RiskLog.objects.filter(owner=user).order_by('-id')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
