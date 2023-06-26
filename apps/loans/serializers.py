@@ -4,6 +4,13 @@ from apps.dashboard.serializers import InvestorGetSerializer
 from .models import *
 
 
+class TermsAndConditionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TermsAndCondition
+        fields = '__all__'
+
+
 class BorrowerDetailSerializer(serializers.ModelSerializer):
 
     class Meta:

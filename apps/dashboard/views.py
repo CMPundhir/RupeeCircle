@@ -114,17 +114,19 @@ class InvestorViewSet(viewsets.ModelViewSet):
     @action(methods=['POST'], detail=True)
     def investmentOptions(self, request, pk):
         # data = request.data
-        instance = self.get_object()
+        print(request.data)
+        instance = User.objects.get(pk=pk)
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             data = serializer.validated_data
-            if 'is_fixedroi_allowed' in data and data['is_fixedroi_allowed']:
-                instance.is_fixedroi_allowed = data['is_fixedroi_allowed']
-            if 'is_anytime_withdrawal_allowed' in data and data['is_anytime_withdrawal_allowed']:
-                instance.is_anytime_withdrawal_allowed = data['is_anytime_withdrawal_allowed']
-            if 'is_marketplace_allowed' in data and data['is_marketplace_allowed']:
-                instance.is_marketplace_allowed = data['is_marketplace_allowed']
+            instance.is_fixedroi_allowed = data['is_fixedroi_allowed']
+            instance.is_anytime_withdrawal_allowed = data['is_anytime_withdrawal_allowed']
+            instance.is_marketplace_allowed = data['is_marketplace_allowed']
             instance.save()
+            print(instance.is_marketplace_allowed)
+            print(instance.is_fixedroi_allowed)
+            print(instance.is_anytime_withdrawal_allowed)
+        # instance.save()
         return Response({"message": "Investment Options updated Successfully."}, status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=True)

@@ -50,7 +50,7 @@ class PartnerDetailSerializer(serializers.ModelSerializer):
 
 
 class InvestmentOptionsSerializer(serializers.Serializer):
-    is_fiexedroi_allowed = serializers.BooleanField()
+    is_fixedroi_allowed = serializers.BooleanField()
     is_anytime_withdrawal_allowed = serializers.BooleanField()
     is_marketplace_allowed = serializers.BooleanField()
 

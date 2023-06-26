@@ -6,7 +6,7 @@ from apps.loans.models import InvestmentProduct
 from apps.wallet.models import Wallet
 # from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
-from apps.wallet.models import BankAccount
+from apps.wallet.models import BankAccount, Transaction
 from apps.notification.services import LogService
 from .serializers import *
 from datetime import datetime
@@ -193,7 +193,11 @@ class UserViewSet(viewsets.ModelViewSet):
     filterset_fields = ['role', 'partner', 'mobile']
 
     def get_queryset(self):
-        queryset = User.objects.all().order_by('-id')
+        user = self.request.user
+        if user.role == User.ROLE_CHOICES[3][1]:
+            queryset = User.objects.all().order_by('-id')
+        else:
+            queryset = User.objects.filter(id=user.id)
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
@@ -225,12 +229,13 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         instance = self.get_object()
         r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", json=data)
+        res = r.json()
         print(r.content)
-        if r['flag'] == True:
-            instance.pan = r['data']['pan']
-            instance.pan_name = r['data']['name']
+        if res['flag'] == True:
+            instance.pan = res['data']['pan']
+            instance.pan_name = res['data']['name']
             instance.save()
-            return Response({"message": "Success", "name": r['data']['name']})
+            return Response({"message": "Success", "name": res['data']['name']})
         else:
             return Response({"message": "Failed"})
         # serializer = PanSerializer(data=data)
@@ -345,17 +350,33 @@ class UserViewSet(viewsets.ModelViewSet):
                     # Integrate Penny Drop Api below
                     wallet = Wallet.objects.create(owner=user)
                     s = datetime.now()
-                    result = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
+                    traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
+                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False)
                     bank_detail = {
                         "bankAccount": serializer.validated_data['bank_acc'], 
-                        "ifsc": serializer.validated_data['bank_ifsc'], 
+                        "ifsc": serializer.validated_data['bank_ifsc'],
                         "name": "", 
                         "phone": "", 
-                        "traceId": result}
+                        "traceId": traceId}
                     url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
-                    response = requests.post(url, json=bank_detail)
+                    response = requests.post(url, data=bank_detail)
                     # r = json.loads(response)
-                    return Response({"message": response.status})
+                    res = response.json()
+                    transaction.status = res['status']
+                    if res['status'] == 'SUCCESS':
+                        user.bank_acc = serializer.validated_data['bank_acc']
+                        user.bank_ifsc = serializer.validated_data['bank_ifsc']
+                        user.bank_name = res['data']['nameAtBank']
+                        user.is_bank_acc_verified = True
+                        user.save()
+                        transaction.penny_drop_utr = res['data']['utr']
+                        transaction.ref_id = res['data']['ref_id']
+                        transaction.save()
+                        return Response({"message": response.status, "name": res['data'['nameAtBank']]})
+                    else:
+                        transaction.ref_id = res['data']['ref_id']
+                        transaction.save()
+                        return Response({"message": res['status']}, status=status.HTTP_400_BAD_REQUEST)
                     # if r.status == 'FAILURE':
                     #     return Response({"message": "Bank Verification Failed. Please try again."})
                     # # Integrate Penny Drop Api above

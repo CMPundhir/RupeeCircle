@@ -11,7 +11,7 @@ class LogService():
         instance = ActivityTracker.objects.create(user=user, msg=msg, is_activity=is_activity)
         return print("Notification Created.")
     
-    def transaction_log(owner, wallet, amount, debit=False, url="NA", ref="NA"):
+    def transaction_log(owner, wallet, amount, debit=False, url="NA", ref="NA", *args, **kwargs):
         owner=owner
         wallet=wallet
         amount=amount

@@ -19,11 +19,15 @@ class Wallet(BaseModel, models.Model):
 
 
 class Transaction(BaseModel, models.Model):
+    STATUS_CHOICES = (('SUCCESS', 'SUCCESS'), ('PENDING', 'PENDING'), ('FAILED', 'FAILED'))
     id = models.AutoField(primary_key=True)
     transaction_id = models.CharField(max_length=1000, unique=True, blank=True)
     wallet = models.ForeignKey(Wallet, on_delete=models.DO_NOTHING)
     owner = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     amount = models.IntegerField()
+    ref_id = models.CharField(max_length=100, blank=True, null=True)
+    penny_drop_utr = models.CharField(max_length=100, blank=True, null=True)
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES, blank=True, null=True)
     # interest = models.DecimalField(max_digits=100, decimal_places=2, null=True)
     # repayment = models.BooleanField(default=False)
     debit = models.BooleanField(default=False)

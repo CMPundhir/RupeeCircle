@@ -19,6 +19,16 @@ from dateutil import relativedelta
 # Create your views here.
 
 
+class TermsAndConditionViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        queryset = TermsAndCondition.objects.all()
+        return queryset
+    
+    def get_serializer_class(self):
+        return TermsAndConditionSerializer
+
+
 class LoanApplicationViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['loan_amount', 'loan_id', 'interest_rate', 'repayment_terms', 'installments', 'borrower', 'investors', 'status']
@@ -32,7 +42,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         elif user.role == User.ROLE_CHOICES[2][1]:
             queryset = LoanApplication.objects.filter(borrower=user)
         else:
-            queryset = []
+            queryset = LoanApplication.objects.none()
         return queryset
         
         # queryset = Loan.objects.all()
@@ -140,7 +150,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
             queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[0][1], is_record_active=True, is_special_plan=False)
         else:
-            queryset = []
+            queryset = InvestmentProduct.objects.none()
         return queryset
     
     def get_serializer_class(self, *args, **kwargs):
@@ -282,7 +292,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
             queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[1][1], is_record_active=True, is_special_plan=False)
         else:
-            queryset = []
+            queryset = InvestmentProduct.objects.none()
         return queryset
     
     def get_serializer_class(self, *args, **kwargs):
@@ -471,7 +481,7 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
 
         # checking balance in the wallet
         if wallet.balance < loan_amount:
-            LogService.log(user=instance.investor, msg=f'Your application for investment plan could not be approved due to insufficient balance in your wallet.')
+            LogService.log(user=instance.investor, msg=f'Your application for investment plan could not be approved due to insufficient balance.')
             return Response({"message": "Investor doesn't have enough balance in their wallet."}, status=status.HTTP_400_BAD_REQUEST)
         
         # Deducting amount from the wallet
@@ -501,21 +511,50 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
                                             type=instance.type)
         
         # Creating and adding installments to Loan
-        P = float(instance.amount)
-        R = float(instance.interest_rate)
         
-        installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
-        principal = instance.amount/(instance.tenure*12)
-        interest = installment - principal
-        for i in range(loan_instance.tenure*12):
-                month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
-                installment = Installment.objects.create(parent_loan=loan_instance,
-                                                            due_date=month,
-                                                            principal=principal,
-                                                            interest=interest,
-                                                            total_amount=installment,
-                                                            )
-                loan_instance.installments.add(installment)
+        # Calculating Installment when repayment is monthly
+        if instance.repayment_terms == LoanApplication.REPAYMENT_CHOICES[1][1]:
+            P = float(instance.amount)               #Principal
+            R = float(instance.interest_rate/12*100) #Rate of interest
+            T = int(instance.tenure*12)              #Tenure
+            installment = P*((R*((1+R)**T))/(((1+R)**T)-1))
+            # principal = instance.amount/(instance.tenure*12)
+            # interest = installment - principal
+            for i in range(loan_instance.tenure*12):
+                    month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
+                    interest = P*R
+                    paid_P = installment - interest
+                    installment = Installment.objects.create(parent_loan=loan_instance,
+                                                                due_date=month,
+                                                                principal=paid_P,
+                                                                interest=interest,
+                                                                total_amount=installment,
+                                                                )
+                    loan_instance.installments.add(installment)
+                    P = P - paid_P
+                
+        # Calculating installment when repayment period is daily.
+        if instance.repayment_terms == LoanApplication.REPAYMENT_CHOICES[0][1]:
+            P = float(instance.amount)                    #Principal
+            R = float(instance.interest_rate/(12*100*30)) #Rate of interest
+            T = int(instance.tenure*12*30)                #Tenure
+            installment = P*((R*((1+R)**T))/(((1+R)**T)-1))
+            # principal = instance.amount/(instance.tenure*12)
+            # interest = installment - principal
+            for i in range(T):
+                    # month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
+                    day = datetime. datetime. today() + datetime. timedelta(days=1)
+                    interest = P*R
+                    paid_P = installment - interest
+                    installment = Installment.objects.create(parent_loan=loan_instance,
+                                                                due_date=day,
+                                                                principal=paid_P,
+                                                                interest=interest,
+                                                                total_amount=installment,
+                                                                )
+                    loan_instance.installments.add(installment)
+                    P = P - paid_P
+
 
     @action(methods=['GET'], detail=False)
     def approvedRequests(self, request):

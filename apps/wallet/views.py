@@ -37,7 +37,19 @@ class WalletViewSet(viewsets.ModelViewSet):
         else:
             return WalletSerializer
 
-    # def list(self, rserializer.data)
+    def list(self, request):
+        user = request.user
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset[0])
+        if user.role != User.ROLE_CHOICES[3][1]:
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
     
     @action(methods=['POST'], detail=False)
     def addFunds(self, request):
