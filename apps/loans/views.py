@@ -451,7 +451,7 @@ class AllInvestmentViewSet(viewsets.ModelViewSet):
 
 
 class InvestmentRequestViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id', 'created']
@@ -460,7 +460,7 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[2][1]:
-            queryset = InvestmentRequest.objects.filter(plan=None, borrower=user)
+            queryset = InvestmentRequest.objects.filter(borrower=user)
         elif user.role == User.ROLE_CHOICES[3][1]:
             queryset = InvestmentRequest.objects.all()#filter(loan=None)
         else:

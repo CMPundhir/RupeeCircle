@@ -64,7 +64,7 @@ class InvestmentApplicationSerializer(serializers.Serializer):
 
 
 class InvestmentRequestGetSerializer(serializers.ModelSerializer):
-    loan = LoanApplicationSerializer()
+    # loan = LoanApplicationSerializer()
     # plan = InvestmentProductSerializer()
     investor = InvestorGetSerializer()
 
