@@ -351,7 +351,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     wallet = Wallet.objects.create(owner=user)
                     s = datetime.now()
                     traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
-                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False)
+                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False, transaction_id=traceId)
                     bank_detail = {
                         "bankAccount": serializer.validated_data['bank_acc'], 
                         "ifsc": serializer.validated_data['bank_ifsc'],
@@ -448,3 +448,12 @@ class UserViewSet(viewsets.ModelViewSet):
             i.save()
         return Response({"message": "Added to all."})
     
+    # @action(methods=['GET'], detail=False)
+    # def updateBorrower(self, request):
+    #     all_b = User.objects.filter(role=User.ROLE_CHOICES[2][1])
+    #     for i in all_b:
+    #         i.is_fixedroi_allowed = False
+    #         i.is_anytime_withdrawal_allowed = False
+    #         i.is_marketplace_allowed = True
+    #         i.save()
+    #     return Response({"message": "Done"})
