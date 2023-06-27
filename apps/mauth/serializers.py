@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import CustomUser as User
+from .models import RiskLog
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
@@ -19,6 +20,21 @@ class GetOTPSerializer(serializers.ModelSerializer):
         fields = ['mobile']
 
 
+class DedupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['mobile', 'pan', 'aadhaar', 'bank_acc']
+
+
+class SelfieUploadSerializer(serializers.ModelSerializer):
+    selfie = serializers.ImageField()
+
+    class Meta:
+        model = User
+        fields = ['selfie']
+
+
 class VerifyOTPSerializer(serializers.ModelSerializer):
     mobile = serializers.CharField()
     is_tnc_accepted = serializers.BooleanField()
@@ -26,7 +42,7 @@ class VerifyOTPSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['mobile', 'is_tnc_accepted', 'otp']
+        fields = ['mobile', 'role', 'is_tnc_accepted', 'otp']
 
 
 class PanSerializer(serializers.ModelSerializer):
@@ -48,6 +64,7 @@ class PanVerifySerializer(serializers.ModelSerializer):
         model = User
         fields = ['pan', 'name', 'is_verified']
 
+
 class AadharSerializer(serializers.ModelSerializer):
     # mobile = serializers.CharField()
     aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
@@ -59,22 +76,31 @@ class AadharSerializer(serializers.ModelSerializer):
 
 class AadharVerifySerializer(serializers.ModelSerializer):
     aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
-    name = serializers.CharField()
+    # name = serializers.CharField()
     otp = serializers.IntegerField()
 
     class Meta:
         model = User
-        fields = ['aadhaar', 'name', 'otp']
+        fields = ['aadhaar', 'otp']
 
 
 class BankDetailSerializer(serializers.ModelSerializer):
-    acc_holder_name = serializers.CharField()
+    # acc_holder_name = serializers.CharField()
     bank_ifsc = serializers.CharField()
     bank_acc = serializers.CharField()
 
     class Meta:
         model = User
-        fields = ['acc_holder_name', 'bank_ifsc', 'bank_acc']
+        fields = ['bank_ifsc', 'bank_acc']
+
+# include
+class AddInvestorSerializer(serializers.Serializer):
+    investor = serializers.ChoiceField(choices=User.objects.filter(role=User.ROLE_CHOICES[0][1],
+                                                                   partner=None))
+
+    # class Meta:
+    #     model = User
+    #     fields = ['partner']
 
 
 class EmailDetailSerializer(serializers.ModelSerializer):
@@ -93,9 +119,23 @@ class EmailVerifySerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'otp']
 
-
+# include
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status']
+        fields = ['id', 'user_id', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'rc_risk', 'role']
+ 
+
+class UserDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['id', 'selfie', 'rc_risk', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'special_plan_exist']
+
+
+class RiskLogSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = RiskLog
+        fields = '__all__'

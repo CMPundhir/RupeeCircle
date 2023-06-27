@@ -1,17 +1,24 @@
 from django.shortcuts import render
-import random
+import random, requests, json
 from utility.otputility import *
 from apps.mauth.models import CustomUser
+from apps.loans.models import InvestmentProduct
+from apps.wallet.models import Wallet
+# from apps.dashboard.models import Wallet
 from django.contrib.auth import authenticate, logout
+from apps.wallet.models import BankAccount, Transaction
+from apps.notification.services import LogService
 from .serializers import *
+from datetime import datetime
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import CustomUser as User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -36,6 +43,8 @@ class AuthViewSet(viewsets.ModelViewSet):
             return LogInSerializer
         elif self.action == 'registerApi':
             return VerifyOTPSerializer
+        elif self.action == 'dedup':
+            return DedupSerializer
         else:
             return UserSerializer
     
@@ -103,6 +112,7 @@ class AuthViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             otp = serializer.validated_data['otp']
             is_tnc_accepted = serializer.validated_data['is_tnc_accepted']
+            role = serializer.validated_data['role']
             mobile = serializer.validated_data['mobile']
             if f'{mobile}' in OTP_DICT:
                 print(OTP_DICT[f'{mobile}'])
@@ -123,6 +133,7 @@ class AuthViewSet(viewsets.ModelViewSet):
                     user.is_mobile_verified = True
                     # user.tnc = True
                     user.status = CustomUser.STATUS_CHOICES[1][0]
+                    user.role = role
                     user.save()
                     id = user.id
                     del OTP_DICT[f'{mobile}']
@@ -137,12 +148,56 @@ class AuthViewSet(viewsets.ModelViewSet):
             return Response({"message": "Please generate OTP first."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=['POST'], detail=False)
+    def dedup(self, request):
+        '''
+        API verifies whether user detail already exists.
+        '''
+        data = request.data
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            mobile_exist = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
+            email_exist = User.objects.filter(email=serializer.validated_data['email']).exists()
+            pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
+            aadhaar_exist = User.objects.filter(aadhaar=serializer.validated_data['aadhaar']).exists()
+            bank_acc_exist = User.objects.filter(bank_acc=serializer.validated_data['bank_acc']).exists()
+
+            response = dict()
+
+            if mobile_exist:
+                response['mobile'] = "Mobile Number already exist."
+            if email_exist:
+                response['email'] = "Email already exist."
+            if pan_exist:
+                response['pan'] = "PAN Number already exist."
+            if aadhaar_exist:
+                response['aadhaar'] = "AADHAAR Number already exist."
+            if bank_acc_exist:
+                response['bank_acc'] = "Bank account already exist."
+
+            return Response(response, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=['GET'], detail=False)
+    def getRoles(self, request):
+        result = [i[1] for i in CustomUser.ROLE_CHOICES[0:3]]
+        print(result)
+        return Response(result)
+    
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['first_name', 'mobile', 'email', 'pan', 'aadhaar', 'bank_acc', 'role', 'partner']
+    ordering_fields = ['id']
+    filterset_fields = ['role', 'partner', 'mobile']
 
     def get_queryset(self):
-        queryset = User.objects.all()
+        user = self.request.user
+        if user.role == User.ROLE_CHOICES[3][1]:
+            queryset = User.objects.all().order_by('-id')
+        else:
+            queryset = User.objects.filter(id=user.id)
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
@@ -160,6 +215,8 @@ class UserViewSet(viewsets.ModelViewSet):
             return EmailDetailSerializer
         elif self.action == 'verifyEmail':
             return EmailVerifySerializer
+        elif self.action == 'updateRisk':
+            return RiskLogSerializer
         else:
             return UserSerializer
 
@@ -170,18 +227,29 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         # user = request.user
         data = request.data
-        serializer = PanSerializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            pan = serializer.validated_data['pan']
-            pan_already_exists = User.objects.filter(pan=pan).exists()
-            if pan_already_exists:
-                return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-            # user = User.objects.get(id=request.user.id)
-            # user = User.objects.get(pk=pk)
-            # user.pan = serializer.validated_data['pan']
-            # user.save()
-            return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        instance = self.get_object()
+        r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", json=data)
+        res = r.json()
+        print(r.content)
+        if res['flag'] == True:
+            instance.pan = res['data']['pan']
+            instance.pan_name = res['data']['name']
+            instance.save()
+            return Response({"message": "Success", "name": res['data']['name']})
+        else:
+            return Response({"message": "Failed"})
+        # serializer = PanSerializer(data=data)
+        # if serializer.is_valid(raise_exception=True):
+        #     pan = serializer.validated_data['pan']
+        #     pan_already_exists = User.objects.filter(pan=pan).exists()
+        #     if pan_already_exists:
+        #         return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        #     # user = User.objects.get(id=request.user.id)
+        #     # user = User.objects.get(pk=pk)
+        #     # user.pan = serializer.validated_data['pan']
+        #     # user.save()
+        #     return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
     def panVerify(self, request, pk):
@@ -203,6 +271,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
                 user.pan = pan
                 user.pan_name = name
+                user.first_name = name
                 user.is_pan_verified = True
                 user.status = CustomUser.STATUS_CHOICES[2][0]
                 user.save()
@@ -224,7 +293,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             otp = random.randint(100000, 999999)
             OTP_DICT[f'{aadhaar}'] = otp
-            return Response({"message": "OTP sent successfully.", "otp": otp})
+            return Response({"message": "OTP sent to AADHAAR registered mobile number.", "otp": otp})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
@@ -239,18 +308,18 @@ class UserViewSet(viewsets.ModelViewSet):
             # user = User.objects.get(id=request.user.id)
             user = User.objects.get(pk=pk)
             aadhaar = serializer.validated_data['aadhaar']
-            name = serializer.validated_data['name']
+            # name = serializer.validated_data['name']
             otp = serializer.validated_data['otp']
             # global AADHAR_OTP
             if otp == OTP_DICT[f'{aadhaar}']:
                 aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
                 if aadhaar_already_exists:
                     return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-                if user.pan_name != name:
-                    return Response({'message': 'Aadhaar name doesn\'t match with PAN name.'}, status=status.HTTP_400_BAD_REQUEST)
+                # if user.pan_name != name:
+                #     return Response({'message': 'Aadhaar name doesn\'t match with PAN name.'}, status=status.HTTP_400_BAD_REQUEST)
                 user.aadhaar = aadhaar
-                user.aadhaar_name = name
-                user.is_aadhar_verified = True
+                # user.aadhaar_name = name
+                user.is_aadhaar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
                 user.save()
                 return Response({'message': 'Aadhar Verification successful', 'step': user.status})
@@ -263,24 +332,68 @@ class UserViewSet(viewsets.ModelViewSet):
         Takes bank details and verifies Bank with a Penny drop testing.
         '''
         data = request.data
+        user = request.user
         serializer = BankDetailSerializer(data=data)
         # print("Validating Serializer")
         if serializer.is_valid(raise_exception=True):
-            # print("Serializer Validated")
-            if 'acc_holder_name' in serializer.validated_data and 'bank_acc' in serializer.validated_data and 'bank_ifsc' in serializer.validated_data:
-                # print("Getting User object.")
-                acc_holder_name = serializer.validated_data['acc_holder_name']
-                bank_acc = serializer.validated_data['bank_acc']
-                bank_ifsc = serializer.validated_data['bank_ifsc']
-                # Match the name here
-                user = User.objects.get(pk=pk)
-                user.acc_holder_name = acc_holder_name
-                # user.account_holder_name = 'Name'
-                user.bank_acc = bank_acc
-                user.bank_ifsc = bank_ifsc
-                user.status = CustomUser.STATUS_CHOICES[4][0]
-                user.save()
-                return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
+            if serializer.is_valid(raise_exception=True):
+                # print("Serializer Validated")
+                if 'acc_holder_name' in serializer.validated_data and 'bank_acc' in serializer.validated_data and 'bank_ifsc' in serializer.validated_data:
+                    # print("Getting User object.")
+                    acc_holder_name = serializer.validated_data['acc_holder_name']
+                    bank_acc = serializer.validated_data['bank_acc']
+                    bank_ifsc = serializer.validated_data['bank_ifsc']
+                    bank_acc_exists = User.objects.filter(bank_acc=bank_acc).exists()
+                    if bank_acc_exists:
+                        return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Integrate Penny Drop Api below
+                    wallet = Wallet.objects.create(owner=user)
+                    s = datetime.now()
+                    traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
+                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False)
+                    bank_detail = {
+                        "bankAccount": serializer.validated_data['bank_acc'], 
+                        "ifsc": serializer.validated_data['bank_ifsc'],
+                        "name": "", 
+                        "phone": "", 
+                        "traceId": traceId}
+                    url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    response = requests.post(url, data=bank_detail)
+                    # r = json.loads(response)
+                    res = response.json()
+                    transaction.status = res['status']
+                    if res['status'] == 'SUCCESS':
+                        user.bank_acc = serializer.validated_data['bank_acc']
+                        user.bank_ifsc = serializer.validated_data['bank_ifsc']
+                        user.bank_name = res['data']['nameAtBank']
+                        user.is_bank_acc_verified = True
+                        user.save()
+                        transaction.penny_drop_utr = res['data']['utr']
+                        transaction.ref_id = res['data']['ref_id']
+                        transaction.save()
+                        return Response({"message": response.status, "name": res['data'['nameAtBank']]})
+                    else:
+                        transaction.ref_id = res['data']['ref_id']
+                        transaction.save()
+                        return Response({"message": res['status']}, status=status.HTTP_400_BAD_REQUEST)
+                    # if r.status == 'FAILURE':
+                    #     return Response({"message": "Bank Verification Failed. Please try again."})
+                    # # Integrate Penny Drop Api above
+                    
+                    # # Match the name here
+                    # user = User.objects.get(pk=pk)
+                    # user.acc_holder_name = acc_holder_name
+                    # # user.account_holder_name = 'Name'
+                    # user.bank_acc = bank_acc
+                    # user.bank_ifsc = bank_ifsc
+                    # user.is_bank_acc_verified = True
+                    # user.status = CustomUser.STATUS_CHOICES[4][0]
+                    # user.save()
+                    # BankAccount.objects.create(bank=user.bank_name, owner=user, bankAccountacc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+                    # Wallet.objects.create(owner=user)
+                    
+                    # return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
@@ -311,3 +424,27 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"message": "Invalid OTP. Please enter valid OTP."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=['GET'], detail=False)
+    def count(self, request):
+        investors = User.objects.filter(role=CustomUser.ROLE_CHOICES[0][1]).count()
+        borrowers = User.objects.filter(role=CustomUser.ROLE_CHOICES[2][1]).count()
+        partners = User.objects.filter(role=CustomUser.ROLE_CHOICES[1][1]).count()
+        return Response({"investors": investors, "borrowers": borrowers, "partners": partners}, status=status.HTTP_200_OK)
+
+    # @action(methods=['GET'], detail=False)
+    # def updateSpecialPlan(self, request):
+    #     queryset = self.get_queryset()
+    #     for i in queryset:
+    #         plan_exist = InvestmentProduct.objects.filter(allowed_investor=i).exists()
+    #         if plan_exist:
+    #             i.special_plan_exist = True
+    #             i.save()
+    #     return Response({"message": "Updated"})
+    
+    @action(methods=['GET'], detail=False)
+    def addId(self, request):
+        for i in User.objects.all():
+            i.user_id = f'{i.role[0]}{i.id}'
+            i.save()
+        return Response({"message": "Added to all."})
+    
