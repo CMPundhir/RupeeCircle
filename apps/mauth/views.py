@@ -98,9 +98,10 @@ class AuthViewSet(viewsets.ModelViewSet):
             otp = random.randint(100000, 999999)
             message = f'OTP for login into your RupeeCircle account is {otp}. Please do not share this OTP with anyone to ensure account\'s security.'
             r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
+            res = r.json()
             OTP_DICT[f'{mobile}'] = otp
             print(OTP_DICT[f'{mobile}'])
-            return Response({"message": f"Your OTP is {otp}."})
+            return Response({"message": res['type']})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
