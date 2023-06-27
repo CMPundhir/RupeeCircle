@@ -13,7 +13,7 @@ from datetime import datetime
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import CustomUser as User
+# from .models import CustomUser as User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
@@ -33,7 +33,7 @@ class AuthViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     
     def get_queryset(self):
-        queryset = User.objects.all()
+        queryset = CustomUser.objects.all()
         return queryset
     
     def get_serializer_class(self):
@@ -70,10 +70,10 @@ class AuthViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             mobile = serializer.validated_data['mobile']
             otp = serializer.validated_data['otp']
-            instance = User.objects.filter(mobile=mobile).exists()
+            instance = CustomUser.objects.filter(mobile=mobile).exists()
             if instance:
                 if mobile in OTP_DICT and OTP_DICT[f'{mobile}'] == otp:
-                    user = User.objects.get(mobile=mobile)
+                    user = CustomUser.objects.get(mobile=mobile)
                     # if user.status == CustomUser.STATUS_CHOICES[4][0]:
                     token = get_tokens_for_user(user)
                     if user.status == CustomUser.STATUS_CHOICES[4][0]:
@@ -117,18 +117,18 @@ class AuthViewSet(viewsets.ModelViewSet):
             if f'{mobile}' in OTP_DICT:
                 print(OTP_DICT[f'{mobile}'])
                 if OTP_DICT[f'{mobile}'] == otp:
-                    instance = User.objects.filter(mobile=mobile).exists()
+                    instance = CustomUser.objects.filter(mobile=mobile).exists()
                     print(instance)
                     if instance:
-                        user = User.objects.get(mobile=mobile)
+                        user = CustomUser.objects.get(mobile=mobile)
                         print(user)
                         verification = f'{user.status}'.replace('_',' ')
                         token = get_tokens_for_user(user)
                         return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
                     if is_tnc_accepted != True:
                         return Response({"message": "Please accept Terms & Conditions."}, status=status.HTTP_400_BAD_REQUEST)
-                    user = User.objects.create(username=mobile, mobile=mobile, is_mobile_verified=True, is_tnc_accepted=is_tnc_accepted, status=CustomUser.STATUS_CHOICES[1][0])
-                    # user = User.objects.get(pk=pk)
+                    user = CustomUser.objects.create(username=mobile, mobile=mobile, is_mobile_verified=True, is_tnc_accepted=is_tnc_accepted, status=CustomUser.STATUS_CHOICES[1][0])
+                    # user = CustomUser.objects.get(pk=pk)
                     # if user.status == CustomUser.STATUS_CHOICES[0][0]:
                     user.is_mobile_verified = True
                     # user.tnc = True
@@ -139,9 +139,9 @@ class AuthViewSet(viewsets.ModelViewSet):
                     del OTP_DICT[f'{mobile}']
                         # return Response({"msg": "OTP Verified", "step": user.is_active})
                     # try:
-                    #     user = User.objects.get(mobile=mobile)
+                    #     user = CustomUser.objects.get(mobile=mobile)
                     # except:
-                    #     user = User.objects.create(username=mobile, mobile=mobile)
+                    #     user = CustomUser.objects.create(username=mobile, mobile=mobile)
                     token = get_tokens_for_user(user)
                     return Response({"id": id, "message": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
                 return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
@@ -156,11 +156,11 @@ class AuthViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            mobile_exist = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
-            email_exist = User.objects.filter(email=serializer.validated_data['email']).exists()
-            pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
-            aadhaar_exist = User.objects.filter(aadhaar=serializer.validated_data['aadhaar']).exists()
-            bank_acc_exist = User.objects.filter(bank_acc=serializer.validated_data['bank_acc']).exists()
+            mobile_exist = CustomUser.objects.filter(mobile=serializer.validated_data['mobile']).exists()
+            email_exist = CustomUser.objects.filter(email=serializer.validated_data['email']).exists()
+            pan_exist = CustomUser.objects.filter(pan=serializer.validated_data['pan']).exists()
+            aadhaar_exist = CustomUser.objects.filter(aadhaar=serializer.validated_data['aadhaar']).exists()
+            bank_acc_exist = CustomUser.objects.filter(bank_acc=serializer.validated_data['bank_acc']).exists()
 
             response = dict()
 
@@ -194,10 +194,10 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == User.ROLE_CHOICES[3][1]:
-            queryset = User.objects.all().order_by('-id')
+        if user.role == CustomUser.ROLE_CHOICES[3][1]:
+            queryset = CustomUser.objects.all().order_by('-id')
         else:
-            queryset = User.objects.filter(id=user.id)
+            queryset = CustomUser.objects.filter(id=user.id)
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
@@ -241,11 +241,11 @@ class UserViewSet(viewsets.ModelViewSet):
         # serializer = PanSerializer(data=data)
         # if serializer.is_valid(raise_exception=True):
         #     pan = serializer.validated_data['pan']
-        #     pan_already_exists = User.objects.filter(pan=pan).exists()
+        #     pan_already_exists = CustomUser.objects.filter(pan=pan).exists()
         #     if pan_already_exists:
         #         return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-        #     # user = User.objects.get(id=request.user.id)
-        #     # user = User.objects.get(pk=pk)
+        #     # user = CustomUser.objects.get(id=request.user.id)
+        #     # user = CustomUser.objects.get(pk=pk)
         #     # user.pan = serializer.validated_data['pan']
         #     # user.save()
         #     return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
@@ -260,13 +260,13 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = PanVerifySerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(pk=pk)
+            # user = CustomUser.objects.get(id=request.user.id)
+            user = CustomUser.objects.get(pk=pk)
             pan = serializer.validated_data['pan']
             name = serializer.validated_data['name']
             is_verified = serializer.validated_data['is_verified']
             if is_verified == True:
-                pan_already_exists = User.objects.filter(pan=pan).exists()
+                pan_already_exists = CustomUser.objects.filter(pan=pan).exists()
                 if pan_already_exists:
                     return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
                 user.pan = pan
@@ -288,7 +288,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = AadharSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             aadhaar = serializer.validated_data['aadhaar']
-            aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
+            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
             if aadhaar_already_exists:
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             otp = random.randint(100000, 999999)
@@ -305,14 +305,14 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = AadharVerifySerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            # user = User.objects.get(id=request.user.id)
-            user = User.objects.get(pk=pk)
+            # user = CustomUser.objects.get(id=request.user.id)
+            user = CustomUser.objects.get(pk=pk)
             aadhaar = serializer.validated_data['aadhaar']
             # name = serializer.validated_data['name']
             otp = serializer.validated_data['otp']
             # global AADHAR_OTP
             if otp == OTP_DICT[f'{aadhaar}']:
-                aadhaar_already_exists = User.objects.filter(aadhaar=aadhaar).exists()
+                aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
                 if aadhaar_already_exists:
                     return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
                 # if user.pan_name != name:
@@ -343,7 +343,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     acc_holder_name = serializer.validated_data['acc_holder_name']
                     bank_acc = serializer.validated_data['bank_acc']
                     bank_ifsc = serializer.validated_data['bank_ifsc']
-                    bank_acc_exists = User.objects.filter(bank_acc=bank_acc).exists()
+                    bank_acc_exists = CustomUser.objects.filter(bank_acc=bank_acc).exists()
                     if bank_acc_exists:
                         return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
                     
@@ -351,7 +351,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     wallet = Wallet.objects.create(owner=user)
                     s = datetime.now()
                     traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
-                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False)
+                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False, transaction_id=traceId)
                     bank_detail = {
                         "bankAccount": serializer.validated_data['bank_acc'], 
                         "ifsc": serializer.validated_data['bank_ifsc'],
@@ -382,7 +382,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     # # Integrate Penny Drop Api above
                     
                     # # Match the name here
-                    # user = User.objects.get(pk=pk)
+                    # user = CustomUser.objects.get(pk=pk)
                     # user.acc_holder_name = acc_holder_name
                     # # user.account_holder_name = 'Name'
                     # user.bank_acc = bank_acc
@@ -415,7 +415,7 @@ class UserViewSet(viewsets.ModelViewSet):
             email = serializer.validated_data['email']
             otp = serializer.validated_data['otp']
             if f'{email}' in EMAIL_OTP and EMAIL_OTP[f'{email}'] == otp:
-                user = User.objects.get(pk=pk)
+                user = CustomUser.objects.get(pk=pk)
                 user.email = email
                 user.is_email_verified = True
                 user.save()
@@ -426,9 +426,9 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(methods=['GET'], detail=False)
     def count(self, request):
-        investors = User.objects.filter(role=CustomUser.ROLE_CHOICES[0][1]).count()
-        borrowers = User.objects.filter(role=CustomUser.ROLE_CHOICES[2][1]).count()
-        partners = User.objects.filter(role=CustomUser.ROLE_CHOICES[1][1]).count()
+        investors = CustomUser.objects.filter(role=CustomUser.ROLE_CHOICES[0][1]).count()
+        borrowers = CustomUser.objects.filter(role=CustomUser.ROLE_CHOICES[2][1]).count()
+        partners = CustomUser.objects.filter(role=CustomUser.ROLE_CHOICES[1][1]).count()
         return Response({"investors": investors, "borrowers": borrowers, "partners": partners}, status=status.HTTP_200_OK)
 
     # @action(methods=['GET'], detail=False)
@@ -443,8 +443,17 @@ class UserViewSet(viewsets.ModelViewSet):
     
     @action(methods=['GET'], detail=False)
     def addId(self, request):
-        for i in User.objects.all():
+        for i in CustomUser.objects.all():
             i.user_id = f'{i.role[0]}{i.id}'
             i.save()
         return Response({"message": "Added to all."})
     
+    # @action(methods=['GET'], detail=False)
+    # def updateBorrower(self, request):
+    #     all_b = CustomUser.objects.filter(role=CustomUser.ROLE_CHOICES[2][1])
+    #     for i in all_b:
+    #         i.is_fixedroi_allowed = False
+    #         i.is_anytime_withdrawal_allowed = False
+    #         i.is_marketplace_allowed = True
+    #         i.save()
+    #     return Response({"message": "Done"})

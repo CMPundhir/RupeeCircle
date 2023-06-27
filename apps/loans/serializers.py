@@ -27,6 +27,15 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
         fields = ['id', 'plan_id', 'tenure', 'type', 'created', 'loan_amount', 'interest_rate', 'repayment_terms', 'installments', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law', 'borrower', 'investors']
 
 
+class LoanApplicationCreateSerializer(serializers.ModelSerializer):
+    # borrower = BorrowerDetailSerializer()
+    # investors = UserSerializer(many=True)
+
+    class Meta:
+        model = LoanApplication
+        fields = ['id', 'plan_id', 'tenure', 'type', 'created', 'loan_amount', 'interest_rate', 'repayment_terms', 'installments', 'collateral', 'late_pay_penalties', 'prepayment_options', 'default_remedies', 'privacy', 'governing_law']
+
+
 # class RecentLoanSerializer(serializers.ModelSerializer):
 
 #     class Meta:

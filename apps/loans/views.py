@@ -51,6 +51,8 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'apply':
             return InvestmentRequestSerializer
+        elif self.action == 'create':
+            return LoanApplicationCreateSerializer
         return LoanApplicationSerializer
         
     def create(self, request, *args, **kwargs):
@@ -60,18 +62,16 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.validated_data['borrower'] = user
-        instance = self.perform_create(serializer.data)
-        # data = self.get_serializer(instance)
-        # instance.loan_id = f'LOAN{instance.id}'
+        self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        # return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        return Response({"result":instance}, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({"message": "LoanApplication created Successfully."}, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
-        instance = serializer.save()
-        instance.loan_id = f'LOAN{instance.id}'
-        instance.save()
-        return instance
+        serializer.save()
+        # new_app = LoanApplication.objects.get(id=serializer.data['id'])
+        # new_app.loan_id = f'LOAN{instance.id}'
+        # new_app.save()
+        # return instance
         
     def get_success_headers(self, data):
         try:
@@ -454,7 +454,7 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
-    ordering_fields = ['id']
+    ordering_fields = ['id', 'created']
     filterset_fields = []
 
     def get_queryset(self):
@@ -462,7 +462,7 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
         if user.role == User.ROLE_CHOICES[2][1]:
             queryset = InvestmentRequest.objects.filter(plan=None, borrower=user)
         elif user.role == User.ROLE_CHOICES[3][1]:
-            queryset = InvestmentRequest.objects.filter(loan=None)
+            queryset = InvestmentRequest.objects.all()#filter(loan=None)
         else:
             return Response({"message": "You are not authorized to access Investment Requests."}, status=status.HTTP_401_UNAUTHORIZED)
         return queryset
@@ -542,8 +542,8 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
             # principal = instance.amount/(instance.tenure*12)
             # interest = installment - principal
             for i in range(T):
-                    # month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
-                    day = datetime. datetime. today() + datetime. timedelta(days=1)
+                    day = datetime.date.today() + relativedelta.relativedelta(days=i+1)
+                    # day = datetime. datetime. today() + datetime. timedelta(days=i+1)
                     interest = P*R
                     paid_P = installment - interest
                     installment = Installment.objects.create(parent_loan=loan_instance,
@@ -554,7 +554,6 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
                                                                 )
                     loan_instance.installments.add(installment)
                     P = P - paid_P
-
 
     @action(methods=['GET'], detail=False)
     def approvedRequests(self, request):

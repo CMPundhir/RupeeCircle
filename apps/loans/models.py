@@ -44,10 +44,10 @@ class LoanApplication(BaseModel, models.Model):
     
     def save(self, *args, **kwargs):
         if LoanApplication.objects.all().count() == 0:
-            self.loan_id = f'PLAN1'
+            self.plan_id = f'PLAN1'
         else:
             last_object = LoanApplication.objects.latest('id')#all().order_by('-id')[0]
-            self.loan_id = f"PLAN{last_object.id + 1}"
+            self.plan_id = f"PLAN{last_object.id + 1}"
         super(LoanApplication, self).save(*args, **kwargs)
 
 

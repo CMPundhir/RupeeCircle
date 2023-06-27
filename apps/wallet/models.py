@@ -28,6 +28,7 @@ class Transaction(BaseModel, models.Model):
     ref_id = models.CharField(max_length=100, blank=True, null=True)
     penny_drop_utr = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=100, choices=STATUS_CHOICES, blank=True, null=True)
+    bank = models.ForeignKey('BankAccount', on_delete=models.DO_NOTHING, blank=True, null=True)
     # interest = models.DecimalField(max_digits=100, decimal_places=2, null=True)
     # repayment = models.BooleanField(default=False)
     debit = models.BooleanField(default=False)

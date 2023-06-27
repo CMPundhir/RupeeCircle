@@ -95,8 +95,8 @@ class BankDetailSerializer(serializers.ModelSerializer):
 
 # include
 class AddInvestorSerializer(serializers.Serializer):
-    investor = serializers.ChoiceField(choices=User.objects.filter(role=User.ROLE_CHOICES[0][1],
-                                                                   partner=None))
+    pass
+    # investor = serializers.ChoiceField(choices=User.objects.filter(role=User.ROLE_CHOICES[0][1], partner=None))
 
     # class Meta:
     #     model = User

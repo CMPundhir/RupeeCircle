@@ -123,11 +123,14 @@ class BankAccountViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id']
-    filterset_fields = []
+    filterset_fields = ['owner']
 
     def get_queryset(self):
         user = self.request.user
-        queryset = BankAccount.objects.filter(owner=user)
+        if user.role == User.ROLE_CHOICES[3][1]:
+            queryset = BankAccount.objects.all()
+        else:
+            queryset = BankAccount.objects.filter(owner=user)
         return queryset
     
     def get_serializer_class(self):
@@ -140,12 +143,18 @@ class BankAccountViewSet(viewsets.ModelViewSet):
             return Response({"message": "A user can have maximum 4 bank accounts."}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        if serializer.validated_data['is_primary'] == True:
+            all_banks = BankAccount.objects.filter(owner=user)
+            for bank in all_banks:
+                bank.is_primary = False
+                bank.save()
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
         serializer.validated_data['owner'] = self.request.user
+        serializer.validated_data['is_primary'] = False
         serializer.save()
 
     def get_success_headers(self, data):
@@ -154,14 +163,38 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         except (TypeError, KeyError):
             return {}
 
-    @action(methods=['GET'], detail=False)
-    def createAll(self, request):
-        all_users = User.objects.all()
-        for user in all_users:
-            already_exist = BankAccount.objects.filter(owner=user).exists()
-            if not already_exist:
-                if user.status == User.STATUS_CHOICES[4][1]:
-                    BankAccount.objects.create(bank='SBI',  owner=user, bankAccount=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-            else:
-                pass
-        return Response({"message": "Created for all."})
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        # first_bank = queryset.get(is_primary=True)
+        # queryset[0] = first_bank
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    # @action(methods=['GET'], detail=False)
+    # def createAll(self, request):
+    #     all_users = User.objects.all()
+    #     for user in all_users:
+    #         already_exist = BankAccount.objects.filter(owner=user).exists()
+    #         if not already_exist:
+    #             if user.status == User.STATUS_CHOICES[4][1]:
+    #                 BankAccount.objects.create(bank='SBI',  owner=user, bankAccount=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+    #         else:
+    #             pass
+    #     return Response({"message": "Created for all."})
+
+    @action(methods=['GET'], detail=True)
+    def makePrimary(self, request, pk):
+        user = request.user
+        all_banks = BankAccount.objects.filter(owner=user)
+        for bank in all_banks:
+            bank.is_primary = False
+            bank.save()
+        instance = self.get_object()
+        instance.is_primary = True
+        instance.save()
+        return Response({"message": "Made Bank primary successfully."}, status=status.HTTP_200_OK)
