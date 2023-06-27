@@ -372,7 +372,7 @@ class UserViewSet(viewsets.ModelViewSet):
                         transaction.penny_drop_utr = res['data']['utr']
                         transaction.ref_id = res['data']['ref_id']
                         transaction.save()
-                        return Response({"message": response.status, "name": res['data'['nameAtBank']]})
+                        return Response({"message": response.status, "name": res['data']['nameAtBank']})
                     else:
                         transaction.ref_id = res['data']['ref_id']
                         transaction.save()
