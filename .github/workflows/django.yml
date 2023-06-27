@@ -29,20 +29,31 @@ jobs:
     - name: Run Tests
       run: |
         python manage.py test
-    - name: Django aws eb deployment
-      uses: joel-hanson/django-aws-eb-deploy@V1.1
-      with:
-        python_version: ${{ matrix.python_version }}
-        flake8: true
-        aws_access_key_id: ${{ secrets.aws_access_key_id }}
-        aws_secret_access_key: ${{ secrets.aws_secret_access_key }}
-        django_path: sample_project
-        unit_testing: true
-        deploy: true
-        min_coverage: 10
-        postgresql_required: true
-        security_check: true
-        flake8_config_file: ".flake8"
+
+    - name: Set up AWS credentials
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        echo "[default]" > ~/.aws/credentials
+        echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
+        echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+        chmod 600 ~/.aws/credentials
+
+    # - name: Django aws eb deployment
+    #   uses: joel-hanson/django-aws-eb-deploy@V1.1
+    #   with:
+    #     python_version: ${{ matrix.python_version }}
+    #     flake8: true
+    #     aws_access_key_id: ${{ secrets.aws_access_key_id }}
+    #     aws_secret_access_key: ${{ secrets.aws_secret_access_key }}
+    #     django_path: sample_project
+    #     unit_testing: true
+    #     deploy: true
+    #     min_coverage: 10
+    #     postgresql_required: true
+    #     security_check: true
+    #     flake8_config_file: ".flake8"
 
     # - name: Coverage report artifacts
     #   uses: actions/upload-artifact@v1
