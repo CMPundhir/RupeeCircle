@@ -26,7 +26,8 @@ class WalletViewSet(viewsets.ModelViewSet):
         if user.role == User.ROLE_CHOICES[3][1]:
             queryset = Wallet.objects.all()
         else:
-            queryset = Wallet.objects.filter(owner=self.request.user.id)
+            queryset = Wallet.objects.filter(owner=user.id)
+        # queryset = Wallet.objects.all()
         return queryset
     
     def get_serializer_class(self):
@@ -55,7 +56,7 @@ class WalletViewSet(viewsets.ModelViewSet):
     def addFunds(self, request):
         data = request.data
         user = request.user
-        instance = self.get_queryset()[0]
+        instance = self.get_queryset().get(owner=user)
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             instance.balance += serializer.validated_data['value']
@@ -131,6 +132,7 @@ class BankAccountViewSet(viewsets.ModelViewSet):
             queryset = BankAccount.objects.all()
         else:
             queryset = BankAccount.objects.filter(owner=user)
+        # queryset = BankAccount.objects.all()
         return queryset
     
     def get_serializer_class(self):
@@ -163,18 +165,18 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         except (TypeError, KeyError):
             return {}
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        # first_bank = queryset.get(is_primary=True)
-        # queryset[0] = first_bank
+    # def list(self, request, *args, **kwargs):
+    #     queryset = self.filter_queryset(self.get_queryset())
+    #     # first_bank = queryset.get(is_primary=True)
+    #     # queryset[0] = first_bank
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+    #     page = self.paginate_queryset(queryset)
+    #     if page is not None:
+    #         serializer = self.get_serializer(page, many=True)
+    #         return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
     # @action(methods=['GET'], detail=False)
     # def createAll(self, request):
     #     all_users = User.objects.all()
@@ -182,7 +184,7 @@ class BankAccountViewSet(viewsets.ModelViewSet):
     #         already_exist = BankAccount.objects.filter(owner=user).exists()
     #         if not already_exist:
     #             if user.status == User.STATUS_CHOICES[4][1]:
-    #                 BankAccount.objects.create(bank='SBI',  owner=user, bankAccount=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+    #                 BankAccount.objects.create(bank='SBI',  owner=user, acc_number='1542365214524587', ifsc='SBIN00007', is_primary=True)
     #         else:
     #             pass
     #     return Response({"message": "Created for all."})

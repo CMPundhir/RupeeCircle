@@ -96,12 +96,12 @@ class AuthViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             mobile=serializer.validated_data['mobile']
             otp = random.randint(100000, 999999)
-            message = f'OTP for login into your RupeeCircle account is {otp}. Please do not share this OTP with anyone to ensure account\'s security.'
-            r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
-            res = r.json()
+            # message = f'OTP for login into your RupeeCircle account is {otp}. Please do not share this OTP with anyone to ensure account\'s security.'
+            # r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
+            # res = r.json()
             OTP_DICT[f'{mobile}'] = otp
             print(OTP_DICT[f'{mobile}'])
-            return Response({"message": res['type']})
+            return Response({"message": f'Your OTP is {otp}'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -197,6 +197,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # queryset = User.objects.filter(pk=self.request.user.id)
         if user.role == CustomUser.ROLE_CHOICES[3][1]:
             queryset = CustomUser.objects.all().order_by('-id')
         else:
@@ -231,28 +232,28 @@ class UserViewSet(viewsets.ModelViewSet):
         # user = request.user
         data = request.data
         instance = self.get_object()
-        r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", json=data)
-        res = r.json()
-        print(r.content)
-        if res['flag'] == True:
-            instance.pan = res['data']['pan']
-            instance.pan_name = res['data']['name']
-            instance.save()
-            return Response({"message": "Success", "name": res['data']['name']})
-        else:
-            return Response({"message": "Failed"})
-        # serializer = PanSerializer(data=data)
-        # if serializer.is_valid(raise_exception=True):
-        #     pan = serializer.validated_data['pan']
-        #     pan_already_exists = CustomUser.objects.filter(pan=pan).exists()
-        #     if pan_already_exists:
-        #         return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-        #     # user = CustomUser.objects.get(id=request.user.id)
-        #     # user = CustomUser.objects.get(pk=pk)
-        #     # user.pan = serializer.validated_data['pan']
-        #     # user.save()
-        #     return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", json=data)
+        # res = r.json()
+        # print(r.content)
+        # if res['flag'] == True:
+        #     instance.pan = res['data']['pan']
+        #     instance.pan_name = res['data']['name']
+        #     instance.save()
+        #     return Response({"message": "Success", "name": res['data']['name']})
+        # else:
+        #     return Response({"message": "Failed"})
+        serializer = PanSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            pan = serializer.validated_data['pan']
+            pan_already_exists = CustomUser.objects.filter(pan=pan).exists()
+            if pan_already_exists:
+                return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            # user = CustomUser.objects.get(id=request.user.id)
+            # user = CustomUser.objects.get(pk=pk)
+            # user.pan = serializer.validated_data['pan']
+            # user.save()
+            return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
     def panVerify(self, request, pk):
@@ -351,52 +352,53 @@ class UserViewSet(viewsets.ModelViewSet):
                         return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
                     
                     # Integrate Penny Drop Api below
-                    wallet = Wallet.objects.create(owner=user)
-                    s = datetime.now()
-                    traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
-                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False, transaction_id=traceId)
-                    bank_detail = {
-                        "bankAccount": serializer.validated_data['bank_acc'], 
-                        "ifsc": serializer.validated_data['bank_ifsc'],
-                        "name": "", 
-                        "phone": "", 
-                        "traceId": traceId}
-                    url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
-                    response = requests.post(url, data=bank_detail)
-                    # r = json.loads(response)
-                    res = response.json()
-                    transaction.status = res['status']
-                    if res['status'] == 'SUCCESS':
-                        user.bank_acc = serializer.validated_data['bank_acc']
-                        user.bank_ifsc = serializer.validated_data['bank_ifsc']
-                        user.bank_name = res['data']['nameAtBank']
-                        user.is_bank_acc_verified = True
-                        user.save()
-                        transaction.penny_drop_utr = res['data']['utr']
-                        transaction.ref_id = res['data']['ref_id']
-                        transaction.save()
-                        return Response({"message": response.status, "name": res['data']['nameAtBank']})
-                    else:
-                        transaction.ref_id = res['data']['ref_id']
-                        transaction.save()
-                        return Response({"message": res['status']}, status=status.HTTP_400_BAD_REQUEST)
+                    # wallet = Wallet.objects.create(owner=user)
+                    # s = datetime.now()
+                    # traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
+                    # transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False, transaction_id=traceId)
+                    # bank_detail = {
+                    #     "bankAccount": serializer.validated_data['bank_acc'], 
+                    #     "ifsc": serializer.validated_data['bank_ifsc'],
+                    #     "name": "", 
+                    #     "phone": "", 
+                    #     "traceId": traceId}
+                    # url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    # response = requests.post(url, data=bank_detail)
+                    # # r = json.loads(response)
+                    # res = response.json()
+                    # transaction.status = res['status']
+                    # if res['status'] == 'SUCCESS':
+                    #     user.bank_acc = serializer.validated_data['bank_acc']
+                    #     user.bank_ifsc = serializer.validated_data['bank_ifsc']
+                    #     user.bank_name = res['data']['nameAtBank']
+                    #     user.is_bank_acc_verified = True
+                    #     user.save()
+                    #     transaction.penny_drop_utr = res['data']['utr']
+                    #     transaction.ref_id = res['data']['ref_id']
+                    #     transaction.save()
+                    #     return Response({"message": response.status, "name": res['data']['nameAtBank']})
+                    # else:
+                    #     transaction.ref_id = res['data']['ref_id']
+                    #     transaction.save()
+                    #     return Response({"message": res['status']}, status=status.HTTP_400_BAD_REQUEST)
                     # if r.status == 'FAILURE':
                     #     return Response({"message": "Bank Verification Failed. Please try again."})
                     # # Integrate Penny Drop Api above
                     
-                    # # Match the name here
-                    # user = CustomUser.objects.get(pk=pk)
-                    # user.acc_holder_name = acc_holder_name
-                    # # user.account_holder_name = 'Name'
-                    # user.bank_acc = bank_acc
-                    # user.bank_ifsc = bank_ifsc
-                    # user.is_bank_acc_verified = True
-                    # user.status = CustomUser.STATUS_CHOICES[4][0]
-                    # user.save()
-                    # BankAccount.objects.create(bank=user.bank_name, owner=user, bankAccountacc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                    # Wallet.objects.create(owner=user)
+                    # Match the name here
+                    print('getting user')
+                    user = CustomUser.objects.get(pk=pk)
+                    user.acc_holder_name = acc_holder_name
+                    # user.account_holder_name = 'Name'
+                    user.bank_acc = bank_acc
+                    user.bank_ifsc = bank_ifsc
+                    user.is_bank_acc_verified = True
+                    user.status = CustomUser.STATUS_CHOICES[4][0]
+                    user.save()
+                    BankAccount.objects.create(bank=user.bank_name, owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
+                    Wallet.objects.create(owner=user)
                     
-                    # return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
+                    return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)

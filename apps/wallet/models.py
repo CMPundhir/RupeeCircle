@@ -43,7 +43,7 @@ class Transaction(BaseModel, models.Model):
 
 class BankAccount(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
-    bank = models.CharField(max_length=255)
+    bank = models.CharField(max_length=255, null=True, blank=True)
     owner = models.ForeignKey(User, on_delete=models.DO_NOTHING, blank=True)
     acc_number = models.CharField(max_length=255, unique=True)
     ifsc = models.CharField(max_length=255)

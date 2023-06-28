@@ -62,6 +62,10 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.validated_data['borrower'] = user
+        if serializer.validated_data['type'] == InvestmentProduct.TYPE_CHOICES[0][1]:
+            serializer.validated_data['minimum_locking'] = '3 Months'
+        if serializer.validated_data['type'] == InvestmentProduct.TYPE_CHOICES[1][1]:
+            serializer.validated_data['minimum_locking'] = '12 days'
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response({"message": "LoanApplication created Successfully."}, status=status.HTTP_201_CREATED, headers=headers)

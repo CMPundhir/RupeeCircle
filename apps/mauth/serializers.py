@@ -91,7 +91,7 @@ class BankDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['bank_ifsc', 'bank_acc']
+        fields = ['bank_ifsc', 'bank_acc', 'acc_holder_name']
 
 # include
 class AddInvestorSerializer(serializers.Serializer):
