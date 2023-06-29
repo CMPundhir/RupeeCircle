@@ -20,6 +20,15 @@ class InvestorGetSerializer(serializers.ModelSerializer):
         # fields = '__all__'
 
 
+class BorrowerGetSerializer(serializers.ModelSerializer):
+    # partner = UserDetailSerializer()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'credit_score', 'first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode', 'partner']
+        
+
+
 class PartnerRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:

@@ -290,8 +290,8 @@ class BorrowerViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'riskLog':
             return RiskLogSerializer
-        return InvestorGetSerializer
-    
+        return BorrowerGetSerializer
+     
     @action(methods=['POST'], detail=True)
     def updateRisk(self, request, pk):
         instance = self.get_object()

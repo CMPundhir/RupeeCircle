@@ -157,7 +157,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
             queryset = InvestmentProduct.objects.none()
         return queryset
     
-    def get_serializer_class(self, *args, **kwargs):
+    def get_serializer_class(self, *args, **kwargs):    
         if self.action == 'apply':
             return InvestmentApplicationSerializer
         return InvestmentProductSerializer
@@ -185,35 +185,24 @@ class FixedROIViewSet(viewsets.ModelViewSet):
 
         # Creating Loan
         print("creating loan")
-        loan_instance = Loan.objects.create(loan_amount=instance.amount,
+        loan_instance = Loan.objects.create(loan_amount=int(instance.amount),
                             interest_rate=instance.interest_rate,
                             tenure=instance.tenure,
-                            # repayment_terms=instance.repayment_terms,
-                            # collateral=instance.collateral,
-                            # late_pay_penalties=instance.late_pay_penalties,
-                            # prepayment_options=instance.prepayment_options,
-                            # default_remedies=instance.default_remedies,
-                            # privacy=instance.privacy,
-                            # governing_law=instance.governing_law,
-                            # borrower=instance.borrower,
                             investor=user,
                             type=instance.type)
-        # loan_instance.save()
-        # print(f'Calculating Installment => Now')
-        # loan = Loan.objects.get(id=loan_instance.id)
-
-        # Convert into integer or Float values and then calculate Installment amount. 
-        installment = (instance.amount + ((instance.amount*int(instance.interest_rate)/100)*instance.tenure))/(instance.tenure*12)
-        principal = instance.amount/(instance.tenure*12)
-        interest = installment - principal
+        P = int(loan_instance.loan_amount)
+        R = int(loan_instance.interest_rate)
+        T = int(loan_instance.tenure)
+        installment = ((P*R)/100)/T
         print("entering loop")
-        for i in range(loan_instance.tenure*12):
+        period = int(loan_instance.tenure)
+        for i in range(period):
                 print("enterred loop")
                 month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                 installment = Installment.objects.create(parent_loan=loan_instance,
                                                         due_date=month,
-                                                        principal=principal,
-                                                        interest=interest,
+                                                        principal=loan_instance.loan_amount,
+                                                        interest=installment,
                                                         total_amount=installment,
                                                         )
                 print("Adding in Loan_loan_instance")
@@ -262,6 +251,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
             print("added")
             i.save()
         return Response({"message": "Done."})
+    
     # @action(methods=['GET'], detail=False)
     # def bulkcreate(self, request):
     #     for i in range(5):
@@ -271,7 +261,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     #                                          principal_type=InvestmentProduct.PRINCIPAL_CHOICES[1][0],
     #                                          interest_rate=15, 
     #                                          tenure=2, 
-    #                                          type=InvestmentProduct.TYPE_CHOICES[1][1])
+    #                                          type=InvestmentProduct.TYPE_CHOICES[0][1])
     #                                         #  type=InvestmentProduct.TYPE_CHOICES[1][1])
     #         InvestmentProduct.objects.create(#min_amount=400000,
     #                                          amount=500000, 
@@ -279,8 +269,8 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     #                                          principal_type=InvestmentProduct.PRINCIPAL_CHOICES[0][0],
     #                                          interest_rate=15, 
     #                                          tenure=2, 
-    #                                         #  type=InvestmentProduct.TYPE_CHOICES[0][1],
-    #                                          type=InvestmentProduct.TYPE_CHOICES[0][1])
+    #                                         #  type=InvestmentProduct.TYPE_CHOICES[0][1])
+    #                                          type=InvestmentProduct.TYPE_CHOICES[1][1])
     #     return Response({"message": "Done"})
 
 
@@ -368,7 +358,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
                                                             )
                 loan_instance.installments.add(installment)
         return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
-        
+
 
 class MyInvestmentViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
@@ -591,7 +581,7 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
             return Response({"message": "An investor can be given maximum 4 special offers."}, status=status.HTTP_400_BAD_REQUEST)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        updated_investor = User.objects.get(id=investor)
+        updated_investor = User.objects.get(id=investor.id)
         updated_investor.special_plan_exist = True
         updated_investor.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -693,7 +683,7 @@ class InstallmentViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id']
-    filterset_fields = ['parent_loan', 'borrower', 'investor']
+    filterset_fields = ['parent_loan']
 
     def get_queryset(self):
         queryset = Installment.objects.all()
@@ -708,3 +698,7 @@ class InstallmentViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         wallet = Wallet.objects.get(owner=user)
         pass
+
+    
+def DataFormViewSet(request):
+    return render(request, 'dataform.html')

@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from routes.v1_routes import v1_router
 from apps.mauth.views import *
+from apps.wallet.views import dataform
 from django.conf.urls.static import static
 from rupeecircle import settings
 
@@ -26,6 +27,7 @@ from rupeecircle import settings
 urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('admin/', admin.site.urls),
+    path('dataform/', dataform),
     # path('login/', LogInView.as_view(), name='login'),
     # path('logout/', LogOutView.as_view(), name='logout'),
     # path('get-otp/', GetOTPView.as_view(), name='get-otp'),

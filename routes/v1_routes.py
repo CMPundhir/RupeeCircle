@@ -27,8 +27,10 @@ v1_router.register(r'anytime-withdrawal', AnytimeWithdrawalViewSet, basename='an
 v1_router.register(r'portfolio', LoanViewSet, basename='portfolio')
 v1_router.register(r'all-investments', LoanViewSet, basename='all-investments')
 v1_router.register(r'bid', InvestmentRequestViewSet, basename='bid')
+v1_router.register(r'installment', InstallmentViewSet, basename='installment')
 v1_router.register(r'notification', ActivityAppViewSet, basename='notification')
 v1_router.register(r'helpline', ComplaintViewSet, basename='helpline')
+v1_router.register(r'tnc', TermsAndConditionViewSet, basename='tnc')
 
 
 

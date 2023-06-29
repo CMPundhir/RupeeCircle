@@ -15,7 +15,7 @@ class BorrowerDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name']
+        fields = ['first_name', 'last_name', 'credit_score']
 
 
 class LoanApplicationSerializer(serializers.ModelSerializer):
@@ -59,7 +59,7 @@ class InvestmentRequestSerializer(serializers.ModelSerializer):
 
 
 class InvestmentApplicationSerializer(serializers.Serializer):
-    amount = serializers.IntegerField()
+    amount = serializers.CharField()
     remarks = serializers.CharField()
 
 
@@ -73,17 +73,18 @@ class InvestmentRequestGetSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class InvestmentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Loan
-        fields = '__all__'
-
-
 class InstallmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Installment
+        fields = '__all__'
+
+
+class InvestmentSerializer(serializers.ModelSerializer):
+    installments = InstallmentSerializer(many=True)
+
+    class Meta:
+        model = Loan
         fields = '__all__'
 
 

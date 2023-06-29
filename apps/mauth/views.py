@@ -137,6 +137,13 @@ class AuthViewSet(viewsets.ModelViewSet):
                     # user.tnc = True
                     user.status = CustomUser.STATUS_CHOICES[1][0]
                     user.role = role
+
+                    # Integrate Credit Score fetch api below
+                    if role == User.ROLE_CHOICES[2][1]:
+                        user.credit_score = serializer.validated_data['credit_score']
+
+                    # Integrate Credit Score fetch api above
+                    
                     user.save()
                     id = user.id
                     del OTP_DICT[f'{mobile}']
@@ -232,16 +239,21 @@ class UserViewSet(viewsets.ModelViewSet):
         # user = request.user
         data = request.data
         instance = self.get_object()
-        # r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", json=data)
-        # res = r.json()
-        # print(r.content)
-        # if res['flag'] == True:
-        #     instance.pan = res['data']['pan']
-        #     instance.pan_name = res['data']['name']
-        #     instance.save()
-        #     return Response({"message": "Success", "name": res['data']['name']})
-        # else:
-        #     return Response({"message": "Failed"})
+
+        # Below is pan integration
+        r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", json=data)
+        res = r.json()
+        print(r.content)
+        if res['flag'] == True:
+            instance.pan = res['data']['pan']
+            instance.pan_name = res['data']['name']
+            instance.save()
+            return Response({"message": "Success", "name": res['data']['name']})
+        else:
+            print(request.data)
+            print(res)
+            return Response({"message": "Failed", "response": res})
+        # Above is PAN integration
         serializer = PanSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             pan = serializer.validated_data['pan']
@@ -436,6 +448,13 @@ class UserViewSet(viewsets.ModelViewSet):
         partners = CustomUser.objects.filter(role=CustomUser.ROLE_CHOICES[1][1]).count()
         return Response({"investors": investors, "borrowers": borrowers, "partners": partners}, status=status.HTTP_200_OK)
 
+    @action(methods=['GET'], detail=False)
+    def addcs(self, request):
+        borrowers = User.objects.filter(role=User.ROLE_CHOICES[2][1])
+        for i in borrowers:
+            i.credit_score = 600
+            i.save()
+        return Response({"message": "Done"})
     # @action(methods=['GET'], detail=False)
     # def updateSpecialPlan(self, request):
     #     queryset = self.get_queryset()
@@ -446,12 +465,12 @@ class UserViewSet(viewsets.ModelViewSet):
     #             i.save()
     #     return Response({"message": "Updated"})
     
-    @action(methods=['GET'], detail=False)
-    def addId(self, request):
-        for i in CustomUser.objects.all():
-            i.user_id = f'{i.role[0]}{i.id}'
-            i.save()
-        return Response({"message": "Added to all."})
+    # @action(methods=['GET'], detail=False)
+    # def addId(self, request):
+    #     for i in CustomUser.objects.all():
+    #         i.user_id = f'{i.role[0]}{i.id}'
+    #         i.save()
+    #     return Response({"message": "Added to all."})
     
     # @action(methods=['GET'], detail=False)
     # def updateBorrower(self, request):

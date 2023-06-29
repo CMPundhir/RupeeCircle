@@ -64,7 +64,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     "corsheaders",
     'sslserver',
-    'django_filters', 
+    'django_filters',
+    'Cryptodome'
     # 'apps.mauth.apps.MauthConfig.name',
 ]
 
@@ -84,7 +85,7 @@ ROOT_URLCONF = 'rupeecircle.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

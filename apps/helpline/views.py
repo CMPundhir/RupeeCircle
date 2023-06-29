@@ -31,6 +31,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         user = request.user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # print(A)
         serializer.validated_data['complainant'] = user
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)

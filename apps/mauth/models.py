@@ -80,7 +80,7 @@ class CustomUser(AbstractUser):
     role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])   
     rc_risk = models.CharField(max_length=255, choices=RISK_CHOICES, default=RISK_CHOICES[0][1])
     partner = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)
-    # credit_score = models.IntegerField(blank=True, null=True)
+    credit_score = models.IntegerField(blank=True, null=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []

@@ -10,7 +10,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rest_framework.settings import api_settings
 from .serializers import *
+from utility.ccavutil import encrypt,decrypt
+from django.views.decorators.csrf import csrf_exempt
 
+
+accessCode = 'AVSA23KB49BS35ASSB' 	
+workingKey = '8AEBE08197C1C01D3F141A122A3A7E51'
 
 # Create your views here.
 
@@ -92,6 +97,46 @@ class WalletViewSet(viewsets.ModelViewSet):
             if not wallet:
                 Wallet.objects.create(owner=i)  
         return Response("Added")
+    
+    @csrf_exempt
+    @action(methods=['GET', 'POST'], detail=False)
+    def addByCcav(self, request):
+        p_merchant_id = '2954' # request.form['merchant_id']
+        p_order_id = "466555992256  " # request.form['order_id']
+        p_currency = 'INR' # request.form['currency']
+        p_amount = '1.00' # request.form['amount']
+        p_redirect_url = "http://192.168.2.49:8086/ccavResponseHandler" # request.form['redirect_url']
+        p_cancel_url = "http://192.168.2.49:8086/ccavResponseHandler" # request.form['cancel_url']
+        p_language = "EN" # request.form['language']
+        p_billing_name = "Peter" # request.form['billing_name']
+        p_billing_address = "billing_address" # request.form['billing_address']
+        p_billing_city = "Mumbai" # request.form['billing_city']
+        p_billing_state = "MH" # request.form['billing_state']
+        p_billing_zip = "400054" # request.form['billing_zip']
+        p_billing_country = "India" # request.form['billing_country']
+        p_billing_tel = "0229874789" # request.form['billing_tel']
+        p_billing_email = "testing@domain.com"# request.form['billing_email']
+        p_delivery_name = "Sam"# request.form['delivery_name']
+        p_delivery_address = "Vile Parle"# request.form['delivery_address']
+        p_delivery_city = "Mumbai"# request.form['delivery_city']
+        p_delivery_state = "Maharashtra"# request.form['delivery_state']
+        p_delivery_zip = "400038"# request.form['delivery_zip']
+        p_delivery_country = "India"# request.form['delivery_country']
+        p_delivery_tel = "0221234321"# request.form['delivery_tel']
+        p_merchant_param1 = "additional Info."# request.form['merchant_param1']
+        p_merchant_param2 = "additional Info." # request.form['merchant_param2']
+        p_merchant_param3 = "additional Info."# request.form['merchant_param3']
+        p_merchant_param4 = "additional Info."# request.form['merchant_param4']
+        p_merchant_param5 = "additional Info."# request.form['merchant_param5']
+        p_promo_code = ""# request.form['promo_code']
+        p_customer_identifier = ""# request.form['customer_identifier']
+        
+        
+
+        merchant_data='merchant_id='+p_merchant_id+'&'+'order_id='+p_order_id + '&' + "currency=" + p_currency + '&' + 'amount=' + p_amount+'&'+'redirect_url='+p_redirect_url+'&'+'cancel_url='+p_cancel_url+'&'+'language='+p_language+'&'+'billing_name='+p_billing_name+'&'+'billing_address='+p_billing_address+'&'+'billing_city='+p_billing_city+'&'+'billing_state='+p_billing_state+'&'+'billing_zip='+p_billing_zip+'&'+'billing_country='+p_billing_country+'&'+'billing_tel='+p_billing_tel+'&'+'billing_email='+p_billing_email+'&'+'delivery_name='+p_delivery_name+'&'+'delivery_address='+p_delivery_address+'&'+'delivery_city='+p_delivery_city+'&'+'delivery_state='+p_delivery_state+'&'+'delivery_zip='+p_delivery_zip+'&'+'delivery_country='+p_delivery_country+'&'+'delivery_tel='+p_delivery_tel+'&'+'merchant_param1='+p_merchant_param1+'&'+'merchant_param2='+p_merchant_param2+'&'+'merchant_param3='+p_merchant_param3+'&'+'merchant_param4='+p_merchant_param4+'&'+'merchant_param5='+p_merchant_param5+'&'+'promo_code='+p_promo_code+'&'+'customer_identifier='+p_customer_identifier+'&'
+            
+        encryption = encrypt(merchant_data,workingKey)
+        return Response({"data": encryption})
 
 
 class TransactionViewSet(viewsets.ModelViewSet):
@@ -102,10 +147,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Transaction.objects.filter(owner=user).order_by('-id')
-        return queryset
-        # queryset = Transaction.objects.all().order_by('-id')
+        # queryset = Transaction.objects.filter(owner=user).order_by('-id')
         # return queryset
+        queryset = Transaction.objects.all().order_by('-id')
+        return queryset
     
     def get_serializer_class(self):
         return TransactionSerializer
@@ -120,7 +165,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     # def graphDetail(self, request):
 
 
-class BankAccountViewSet(viewsets.ModelViewSet):
+class BankAccountViewSet(viewsets.ModelViewSet):    
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id']
@@ -200,3 +245,7 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         instance.is_primary = True
         instance.save()
         return Response({"message": "Made Bank primary successfully."}, status=status.HTTP_200_OK)
+
+
+def dataform(request):
+    return render(request, 'dataform.html')

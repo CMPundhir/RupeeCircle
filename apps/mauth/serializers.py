@@ -94,8 +94,8 @@ class BankDetailSerializer(serializers.ModelSerializer):
         fields = ['bank_ifsc', 'bank_acc', 'acc_holder_name']
 
 # include
-class AddInvestorSerializer(serializers.Serializer):
-    pass
+# class AddInvestorSerializer(serializers.Serializer):
+    # pass
     # investor = serializers.ChoiceField(choices=User.objects.filter(role=User.ROLE_CHOICES[0][1], partner=None))
 
     # class Meta:
@@ -124,14 +124,14 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'user_id', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'rc_risk', 'role']
+        fields = ['id', 'user_id', 'credit_score', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'rc_risk', 'role']
  
 
 class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'selfie', 'rc_risk', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'special_plan_exist']
+        fields = ['id', 'selfie', 'rc_risk', 'credit_score', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'special_plan_exist']
 
 
 class RiskLogSerializer(serializers.ModelSerializer):
