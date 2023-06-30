@@ -67,7 +67,8 @@ class InvestmentProduct(BaseModel, models.Model):
     is_special_plan = models.BooleanField(default=False)
     is_primary = models.BooleanField(default=False)
     allowed_investor = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='allowed_investor', null=True, blank=True)
-    investors = models.ManyToManyField(User, blank=True)
+    investors = models.IntegerField(default=0)
+    invested_amount = models.BigIntegerField(default=0)
     tnc = models.ForeignKey(TermsAndCondition, on_delete=models.DO_NOTHING, null=True, blank=True)
 
     def save(self, *args, **kwargs):

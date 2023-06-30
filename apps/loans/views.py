@@ -8,7 +8,7 @@ from rest_framework.settings import api_settings
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
-from apps.wallet.models import Wallet
+from apps.wallet.models import Wallet, Transaction
 from apps.mauth.models import CustomUser as User
 from apps.notification.services import LogService
 from django_filters.rest_framework import DjangoFilterBackend
@@ -181,7 +181,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         wallet.balance -= instance.amount
         wallet.invested_amount += instance.amount
         wallet.save()
-        LogService.transaction_log(owner=user, wallet=wallet, amount=instance.amount, debit=True)
+        LogService.transaction_log(owner=user, wallet=wallet, amount=instance.amount, debit=True, type=Transaction.TYPE_CHOICES[2][1])
 
         # Creating Loan
         print("creating loan")
@@ -325,14 +325,22 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
         if wallet.balance < instance.amount:
             return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
         
+        # Checking principle type of Investment plan
+        if instance.principal_type == InvestmentProduct.PRINCIPAL_CHOICES[1][1]:
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                final_loan_amount = serializer.validated_data['amount']
+        else:
+            final_loan_amount = instance.amount
+
         # Deducting Amount
-        wallet.balance -= instance.amount
-        wallet.invested_amount += instance.amount
+        wallet.balance -= final_loan_amount
+        wallet.invested_amount += final_loan_amount
         wallet.save()
-        LogService.transaction_log(user=user, amount=instance.amount, debit=True)
+        LogService.transaction_log(user=user, amount=final_loan_amount, debit=True, type=Transaction.TYPE_CHOICES[2][1])
 
         # Creating Loan
-        loan_instance = Loan.objects.create(loan_amount=instance.amount,
+        loan_instance = Loan.objects.create(loan_amount=final_loan_amount,
                                                 interest_rate=instance.interest_rate,
                                                 tenure=instance.tenure,
                                                 repayment_terms=instance.repayment_terms,
@@ -345,18 +353,20 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
                                                 # borrower=instance.borrower,
                                                 investor=instance.investor,
                                                 type=instance.type)
-        installment = (instance.amount + ((instance.amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
-        principal = instance.amount/(instance.tenure*12)
-        interest = installment - principal
+        installment_amount = (final_loan_amount + ((final_loan_amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        principal = final_loan_amount/(instance.tenure*12)
+        # interest = installment - principal
         for i in range(loan_instance.tenure*12):
                 month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                 installment = Installment.objects.create(parent_loan=loan_instance,
                                                             due_date=month,
                                                             principal=principal,
-                                                            interest=interest,
-                                                            total_amount=installment,
+                                                            interest=installment_amount,
+                                                            total_amount=installment_amount,
                                                             )
                 loan_instance.installments.add(installment)
+        instance.investors += 1
+        instance.invested_amount += final_loan_amount
         return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
 
 
@@ -486,7 +496,7 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
         borrower_wallet = Wallet.objects.get(owner=instance.borrower)
         borrower_wallet.balance += loan_amount
         borrower_wallet.save()
-        LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=loan_amount, debit=True)
+        LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=loan_amount, debit=True, type=Transaction.TYPE_CHOICES[5][1])
         LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {loan_amount}. Current Wallet balance is Rs. {wallet.balance}')
         
         # Creating Loan

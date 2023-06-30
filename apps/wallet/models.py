@@ -20,7 +20,12 @@ class Wallet(BaseModel, models.Model):
 
 class Transaction(BaseModel, models.Model):
     STATUS_CHOICES = (('SUCCESS', 'SUCCESS'), ('PENDING', 'PENDING'), ('FAILED', 'FAILED'))
-    TYPE_CHOICES = (('ADD FUNDS', 'ADD FUNDS'), ('WITHDREW FUNDS', 'WITHDREW FUNDS'), ('INVESTMENT', 'INVESTMET'), ('INTEREST', 'INTEREST'), ('REPAYMENT', 'REPAYMENT'))
+    TYPE_CHOICES = (('FUNDS ADDED', 'FUNDS ADDED'), 
+                    ('FUNDS WITHDRAWN', 'FUNDS WITHDRAWN'), 
+                    ('INVESTMENT', 'INVESTMENT'), 
+                    ('INTEREST', 'INTEREST'), 
+                    ('REPAYMENT', 'REPAYMENT'),
+                    ('LOAN', 'LOAN'))
     id = models.AutoField(primary_key=True)
     transaction_id = models.CharField(max_length=1000, unique=True, blank=True)
     wallet = models.ForeignKey(Wallet, on_delete=models.DO_NOTHING)

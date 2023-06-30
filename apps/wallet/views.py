@@ -68,7 +68,7 @@ class WalletViewSet(viewsets.ModelViewSet):
             instance.save()
             LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} credited to  your wallet. Your wallet balance is Rs.{instance.balance}.",
                            is_activity=True)
-            LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'])
+            LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'], type=Transaction.TYPE_CHOICES[0][1])
             return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -85,7 +85,7 @@ class WalletViewSet(viewsets.ModelViewSet):
             instance.save()
             LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} debited to your wallet. Your wallet balance is Rs.{instance.balance}.",
                            is_activity=True)
-            LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'], debit=True)
+            LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'], debit=True, type=Transaction.TYPE_CHOICES[1][1])
             return Response({"message": "Funds withdrawn successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -143,7 +143,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['transaction_id', 'owner', 'amount', 'id', 'wallet']
     ordering_fields = ['id']
-    filterset_fields = ['transaction_id', 'wallet', 'owner', 'amount']
+    filterset_fields = ['transaction_id', 'wallet', 'owner', 'amount', 'type']
 
     def get_queryset(self):
         user = self.request.user
