@@ -54,15 +54,15 @@ class PanSerializer(serializers.ModelSerializer):
         fields = ['pan']
 
 
-class PanVerifySerializer(serializers.ModelSerializer):
+class PanVerifySerializer(serializers.Serializer):
     # mobile = serializers.CharField()
-    pan = serializers.RegexField(regex=r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$')
-    name = serializers.CharField()
+    # pan = serializers.RegexField(regex=r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$')
+    # name = serializers.CharField()
     is_verified = serializers.BooleanField()
 
-    class Meta:
-        model = User
-        fields = ['pan', 'name', 'is_verified']
+    # class Meta:
+    #     model = User
+    #     fields = ['is_verified']
 
 
 class AadharSerializer(serializers.ModelSerializer):
@@ -124,6 +124,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
+        # fields = '__all__'
         fields = ['id', 'user_id', 'credit_score', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'rc_risk', 'role']
  
 

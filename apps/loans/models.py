@@ -66,10 +66,15 @@ class InvestmentProduct(BaseModel, models.Model):
     type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=TYPE_CHOICES[0][1])
     is_special_plan = models.BooleanField(default=False)
     is_primary = models.BooleanField(default=False)
-    allowed_investor = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='allowed_investor', null=True, blank=True)
+    allowed_investor = models.ManyToManyField(User, related_name='allowed_investor')
+    investors_detail = models.ManyToManyField(User, related_name='investor_detail')
     investors = models.IntegerField(default=0)
     invested_amount = models.BigIntegerField(default=0)
     tnc = models.ForeignKey(TermsAndCondition, on_delete=models.DO_NOTHING, null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.plan_id}'
+
 
     def save(self, *args, **kwargs):
         if InvestmentProduct.objects.all().count() == 0:
@@ -134,6 +139,7 @@ class Loan(BaseModel, models.Model):
     loan_id = models.CharField(max_length=1000, blank=True, unique=True)
     minimum_locking = models.CharField(max_length=255, blank=True, null=True)
     tenure = models.IntegerField(null=True)
+    product = models.ForeignKey(InvestmentProduct, on_delete=models.DO_NOTHING, null=True, blank=True)
     # interest_calculation_type = models.CharField(max_length=255, 
     #                                              choices=REPAYMENT_CHOICES, 
     #                                              default=REPAYMENT_CHOICES[1][0])
@@ -151,6 +157,7 @@ class Loan(BaseModel, models.Model):
     borrower = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='final_loan_borrower')
     investor = models.ForeignKey(User, on_delete=models.DO_NOTHING, blank=True, related_name='final_loan_investor',null=True)
     type = models.CharField(max_length=255, choices=InvestmentRequest.TYPE_CHOICES, default=InvestmentRequest.TYPE_CHOICES[0][1])
+    is_tnc_accepted = models.BooleanField(default=True)
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
     tnc = models.ForeignKey(TermsAndCondition, on_delete=models.DO_NOTHING, null=True, blank=True)
 

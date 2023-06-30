@@ -147,9 +147,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # queryset = Transaction.objects.filter(owner=user).order_by('-id')
+        queryset = Transaction.objects.filter(owner=user).order_by('-id')
         # return queryset
-        queryset = Transaction.objects.all().order_by('-id')
+        # queryset = Transaction.objects.all().order_by('-id')
         return queryset
     
     def get_serializer_class(self):

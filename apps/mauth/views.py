@@ -81,7 +81,7 @@ class AuthViewSet(viewsets.ModelViewSet):
                     verification = f'{user.status}'.replace('_', ' ')
                     return Response({"id": user.id, "token": token, "message": f"Kindly complete your registration from {verification}", "step": user.status}, status=status.HTTP_200_OK)
                 return Response({"message": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
-            return Response({"message": "User does not exist.", "step": CustomUser.STATUS_CHOICES[0][0]}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "User does not exist. Please Register First.", "step": CustomUser.STATUS_CHOICES[0][0]}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -104,7 +104,7 @@ class AuthViewSet(viewsets.ModelViewSet):
             OTP_DICT[f'{mobile}'] = otp
             print(OTP_DICT[f'{mobile}'])
             # return Response({"message": f'Your OTP is {otp}'})
-            return Response({"message": f"{res['type']}"})
+            return Response({"message": f"{res['type']}, {otp}"})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -234,28 +234,49 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             return UserSerializer
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        balance = Wallet.objects.filter(owner=instance)
+        serializer.data['balance'] = balance
+        return Response(serializer.data)
+    
     @action(methods=['POST'], detail=True)
     def panDetail(self, request, pk):
         '''
         Takes PAN number and obtains response from PAN database if matches return owner Name in response
         '''
         # user = request.user
-        data = request.data
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
+        if pan_exist:
+            return Response({"message": "PAN already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        data = {"access_token": "9dECoXkSlurJQs8C", "panId": serializer.validated_data['pan']}
+        # data = json.load({
+        # "access_token":"9dECoXkSlurJQs8C",
+        # "panId": "AAIPM3854E"
+        # })
         instance = self.get_object()
 
         # Below is pan integration
-        r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", json=data)
+        r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", 
+                          json=data,
+                          headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6IitzUFFuXC9NckdvWGgreHAxSU1uUFNRPT0iLCJ2YWx1ZSI6ImFpNjhoeTlrK29ZbVplK0tPS2pZNXJSS2hZUURkVHk3ZWhYVHJFZmdwbUlpSkkyZCtwYjZWbytsMVppMjE3OUxlamEzeWFYb0ZzdDMrbWpOa0oyQVR3PT0iLCJtYWMiOiJhZjYxYmFmNTFiMzgyY2IyN2Y1N2I0MTcyOTI0MDAzYWEwMmQ0NDcwYWU4Y2E3MzBkNTRiODU5OWZhOTgxMTI2In0%3D; RupeeCircle=eyJpdiI6IldHYlFLRldNc2lmdnh6OWdSb1RKMlE9PSIsInZhbHVlIjoicEJ2anBianhSZW9Ia3U5TUFiaGpORjVYUDE0QlhVZm9wTDYyS1M1V2tjQjZCNXpMR2dHNVZWWW1vOWxGS1g4Mk9EQ2tjbllVV0dHWWpNSWk2MjNxckE9PSIsIm1hYyI6ImViYmEwOTIwYjExYzY1NGFmNDI5MTQ3YTYxYTU1MjE3NGQ5NWExNmU1MGQ5YzlhNjJkOTBiYTdlNDBmNWRkNGQifQ%3D%3D"})
         res = r.json()
         print(r.content)
         if res['flag'] == True:
             instance.pan = res['data']['pan']
             instance.pan_name = res['data']['name']
+            instance.first_name = res['data']['name']
+            instance.is_pan_verified = True
+            instance.pan_api_response = f"{res}"
             instance.save()
             return Response({"message": "Success", "name": res['data']['name']})
         else:
             print(request.data)
             print(res)
-            return Response({"message": "Failed", "response": res})
+            return Response({"message": "Failed", "response": res}, status=status.HTTP_403_FORBIDDEN)
         # Above is PAN integration
         serializer = PanSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
@@ -281,16 +302,16 @@ class UserViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             # user = CustomUser.objects.get(id=request.user.id)
             user = CustomUser.objects.get(pk=pk)
-            pan = serializer.validated_data['pan']
-            name = serializer.validated_data['name']
+            # pan = serializer.validated_data['pan']
+            # name = serializer.validated_data['name']
             is_verified = serializer.validated_data['is_verified']
             if is_verified == True:
-                pan_already_exists = CustomUser.objects.filter(pan=pan).exists()
-                if pan_already_exists:
-                    return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-                user.pan = pan
-                user.pan_name = name
-                user.first_name = name
+                # pan_already_exists = CustomUser.objects.filter(pan=pan).exists()
+                # if pan_already_exists:
+                #     return Response({'message': 'PAN is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+                # user.pan = pan
+                # user.pan_name = name
+                # user.first_name = name
                 user.is_pan_verified = True
                 user.status = CustomUser.STATUS_CHOICES[2][0]
                 user.save()
@@ -312,6 +333,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             otp = random.randint(100000, 999999)
             OTP_DICT[f'{aadhaar}'] = otp
+            print(otp)
             return Response({"message": "OTP sent to AADHAAR registered mobile number.", "otp": otp})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -410,6 +432,9 @@ class UserViewSet(viewsets.ModelViewSet):
                     user.is_bank_acc_verified = True
                     user.status = CustomUser.STATUS_CHOICES[4][0]
                     user.save()
+                    special_plan = InvestmentProduct.objects.get(id=22)
+                    special_plan.allowed_investor.add(user)
+                    special_plan.save()
                     BankAccount.objects.create(bank=user.bank_name, owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
                     Wallet.objects.create(owner=user)
                     

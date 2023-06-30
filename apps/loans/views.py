@@ -165,7 +165,6 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     @action(methods=['GET', 'POST'], detail=True)
     def apply(self, request, pk):
         instance = self.get_object()
-        # print(instance.data)
         user = request.user
         
         # Checking if user is Investor or not.
@@ -177,36 +176,57 @@ class FixedROIViewSet(viewsets.ModelViewSet):
         if wallet.balance < instance.amount:
             return Response({"message": "You don't have enough balance to apply for this Investment plan. Kindly add funds to your wallet."})
         
+        # Checking principle type of Investment plan
+        if instance.principal_type == InvestmentProduct.PRINCIPAL_CHOICES[1][1]:
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                final_loan_amount = serializer.validated_data['amount']
+                is_tnc_accepted = serializer.validated_data['tnc']
+            else:
+                final_loan_amount = instance.amount
+                is_tnc_accepted = False
+
+        if is_tnc_accepted == False:
+            return Response({"message": "Please accept T&C."})
+
         # Deducting Amount
-        wallet.balance -= instance.amount
-        wallet.invested_amount += instance.amount
+        wallet.balance -= final_loan_amount
+        wallet.invested_amount += final_loan_amount
         wallet.save()
-        LogService.transaction_log(owner=user, wallet=wallet, amount=instance.amount, debit=True, type=Transaction.TYPE_CHOICES[2][1])
+        LogService.transaction_log(user=user, amount=final_loan_amount, debit=True, type=Transaction.TYPE_CHOICES[2][1])
 
         # Creating Loan
-        print("creating loan")
-        loan_instance = Loan.objects.create(loan_amount=int(instance.amount),
-                            interest_rate=instance.interest_rate,
-                            tenure=instance.tenure,
-                            investor=user,
-                            type=instance.type)
-        P = int(loan_instance.loan_amount)
-        R = int(loan_instance.interest_rate)
-        T = int(loan_instance.tenure)
-        installment = ((P*R)/100)/T
-        print("entering loop")
-        period = int(loan_instance.tenure)
-        for i in range(period):
-                print("enterred loop")
+        loan_instance = Loan.objects.create(loan_amount=final_loan_amount,
+                                                interest_rate=instance.interest_rate,
+                                                tenure=instance.tenure,
+                                                repayment_terms=instance.repayment_terms,
+                                                collateral=instance.collateral,
+                                                late_pay_penalties=instance.late_pay_penalties,
+                                                prepayment_options=instance.prepayment_options,
+                                                default_remedies=instance.default_remedies,
+                                                privacy=instance.privacy,
+                                                governing_law=instance.governing_law,
+                                                tnc=instance.tnc,
+                                                is_tnc_accepted = is_tnc_accepted,
+                                                # borrower=instance.borrower,
+                                                investor=instance.investor,
+                                                type=instance.type)
+        installment_amount = (final_loan_amount + ((final_loan_amount*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
+        principal = final_loan_amount/(instance.tenure*12)
+        # interest = installment - principal
+        for i in range(loan_instance.tenure*12):
                 month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                 installment = Installment.objects.create(parent_loan=loan_instance,
-                                                        due_date=month,
-                                                        principal=loan_instance.loan_amount,
-                                                        interest=installment,
-                                                        total_amount=installment,
-                                                        )
-                print("Adding in Loan_loan_instance")
+                                                            due_date=month,
+                                                            principal=principal,
+                                                            interest=installment_amount,
+                                                            total_amount=installment_amount,
+                                                            )
                 loan_instance.installments.add(installment)
+        instance.investors += 1
+        instance.invested_amount += final_loan_amount
+        instance.investors_detail.add(user)
+        instance.save()
         return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
         # # Creating request for this plan.
         # # installment = (serializer.validated_data['amount'] + ((serializer.validated_data['amount']*instance.interest_rate/100)*instance.tenure))/(instance.tenure*12)
@@ -252,6 +272,23 @@ class FixedROIViewSet(viewsets.ModelViewSet):
             i.save()
         return Response({"message": "Done."})
     
+    @action(methods=['GET'], detail=True)
+    def allInvestors(self, request, pk):
+        instance = self.get_object()
+        all_plans = Loan.objects.filter(product__plan_id=instance.plan_id)
+        serializer = InvestmentSerializer(all_plans, many=True)
+        # return Response(serializer.data)
+        page = self.paginate_queryset(all_plans)
+        if page is not None:
+            serializer = InvestmentSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = InvestmentSerializer(all_plans, many=True)
+        return Response(serializer.data)
+        
+        # return Response(all_investors)
+
+        investors = instance.investors_detail
     # @action(methods=['GET'], detail=False)
     # def bulkcreate(self, request):
     #     for i in range(5):
@@ -330,8 +367,13 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(data=request.data)
             if serializer.is_valid(raise_exception=True):
                 final_loan_amount = serializer.validated_data['amount']
+                is_tnc_accepted = serializer.validated_data['tnc']
         else:
             final_loan_amount = instance.amount
+            is_tnc_accepted = False
+
+        if is_tnc_accepted == False:
+            return Response({"message": "Please accept T&C."})
 
         # Deducting Amount
         wallet.balance -= final_loan_amount
@@ -350,6 +392,8 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
                                                 default_remedies=instance.default_remedies,
                                                 privacy=instance.privacy,
                                                 governing_law=instance.governing_law,
+                                                tnc=instance.tnc,
+                                                is_tnc_accepted = is_tnc_accepted,
                                                 # borrower=instance.borrower,
                                                 investor=instance.investor,
                                                 type=instance.type)
@@ -367,6 +411,8 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
                 loan_instance.installments.add(installment)
         instance.investors += 1
         instance.invested_amount += final_loan_amount
+        instance.investors_detail.add(user)
+        instance.save()
         return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
 
 
@@ -577,6 +623,12 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             queryset = InvestmentProduct.objects.filter(is_special_plan=True, is_record_active=True)
         elif user.role == User.ROLE_CHOICES[0][1]:
+            if user.special_plan_exist == False:
+                user.special_plan_exist = True
+                user.save()
+            special_plan = InvestmentProduct.objects.get(id=22)
+            special_plan.allowed_investor.add(user)
+            special_plan.save()
             queryset = InvestmentProduct.objects.filter(is_special_plan=True, allowed_investor=user, is_record_active=True)
         else:
             queryset = []
@@ -666,13 +718,17 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
         instance.is_primary=True
         instance.save()
         return Response({"message": "Made Primary Successfully."}, status=status.HTTP_200_OK)
+    
+    @action(methods=['GET', 'POST'], detail=False)
+    def addall(self, request):
+        all_users = User.objects.all()
 
 
 class LoanViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id']
-    filterset_fields = ['borrower', 'investor', 'type']
+    filterset_fields = ['borrower', 'investor', 'type', 'product']
 
     def get_queryset(self):
         user = self.request.user
@@ -709,6 +765,6 @@ class InstallmentViewSet(viewsets.ModelViewSet):
         wallet = Wallet.objects.get(owner=user)
         pass
 
-    
+
 def DataFormViewSet(request):
     return render(request, 'dataform.html')

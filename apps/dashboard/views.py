@@ -27,7 +27,7 @@ class InvestorViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[1][1]:
-            queryset = User.objects.filter(aggregator=user, status=User.STATUS_CHOICES[3][1]).order_by('-id')
+            queryset = User.objects.filter(partner=user, status=User.STATUS_CHOICES[3][1]).order_by('-id')
         else:
             queryset = User.objects.filter(role=User.ROLE_CHOICES[0][1], status=User.STATUS_CHOICES[4][1]).order_by('-id')
         return queryset
@@ -186,7 +186,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action == 'addInvestor':
-            return AddInvestorSerializer
+            return UserSerializer
         elif self.action == 'create':
             return PartnerRegistrationSerializer
         elif self.action == 'list' or self.action == 'retrieve':
@@ -261,7 +261,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
         '''
         partner=self.get_object()
         data = request.data
-        serializer = AddInvestorSerializer(data=data)
+        serializer = UserSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             instance = User.objects.get(id=serializer.validated_data['investor'].id)
             instance.partner = partner

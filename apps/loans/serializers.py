@@ -60,7 +60,7 @@ class InvestmentRequestSerializer(serializers.ModelSerializer):
 
 class InvestmentApplicationSerializer(serializers.Serializer):
     amount = serializers.CharField()
-    remarks = serializers.CharField()
+    tnc = serializers.BooleanField()
 
 
 class InvestmentRequestGetSerializer(serializers.ModelSerializer):
