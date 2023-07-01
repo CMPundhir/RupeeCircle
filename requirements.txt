@@ -1,9 +1,7 @@
 Django==4.2.1
 django_filter==22.1
 djangorestframework==3.14.0
-psycopg2-binary==2.8.5
 djangorestframework_simplejwt==5.2.2
 python_dateutil==2.8.2
 requests==2.29.0
 rest_framework_simplejwt==0.0.2
-urllib3==1.26.16
