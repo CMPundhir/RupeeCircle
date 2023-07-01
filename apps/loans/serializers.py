@@ -81,7 +81,8 @@ class InstallmentSerializer(serializers.ModelSerializer):
 
 
 class InvestmentSerializer(serializers.ModelSerializer):
-    installments = InstallmentSerializer(many=True)
+    # installments = InstallmentSerializer(many=True)
+    investor = InvestorGetSerializer()
 
     class Meta:
         model = Loan
@@ -90,3 +91,35 @@ class InvestmentSerializer(serializers.ModelSerializer):
 
 class ApplySerializer(serializers.Serializer):
     amount = models.IntegerField()
+
+
+class ProductCreationSerializer(serializers.Serializer):
+    min_amount = serializers.IntegerField()
+    max_amount = serializers.IntegerField()
+    min_tenure = serializers.IntegerField()
+    max_tenure = serializers.IntegerField()
+    interest_rate = serializers.FloatField()
+    # type = serializers.CharField()
+
+    # class Meta:
+    #     model = Product
+    #     fields = ['min_amount', 'max_amount', 'min_tenure', 'max_tenure', 'interest_rate', 'type']
+
+
+class ProductInputSerializer(serializers.Serializer):
+    all_data = ProductCreationSerializer(many=True)
+    type = serializers.ChoiceField(choices=Product.TYPE_CHOICES)
+
+
+class ProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+
+class LoanExcelSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Loan
+        fields = '__all__'

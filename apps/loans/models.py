@@ -171,3 +171,51 @@ class Loan(BaseModel, models.Model):
             last_object = Loan.objects.latest('id')#all().order_by('-id')[0]
             self.loan_id = f"LOAN{last_object.id + 1}"
         super(Loan, self).save(*args, **kwargs)
+
+
+class Product(BaseModel, models.Model):
+    TYPE_CHOICES = (('FIXED ROI', 'FIXED ROI'), ('ANYTIME WITHDRAWAL', 'ANYTIME WITHDRAWAL'), ('SIP', 'SIP'))
+    PRINCIPAL_CHOICES = (('FIXED', 'FIXED'), ('VARIABLE', 'VARIABLE'))
+    id = models.AutoField(primary_key=True)
+    plan_id = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    min_amount = models.IntegerField(null=True, blank=True)
+    max_amount = models.IntegerField(null=True, blank=True)
+    minimum_locking = models.CharField(max_length=255, null=True, blank=True)
+    # investing_limit = models.IntegerField(null=True)
+    # principal_type = models.CharField(max_length=255, choices=PRINCIPAL_CHOICES, default=PRINCIPAL_CHOICES[0][1])
+    interest_rate = models.FloatField()
+    min_tenure = models.IntegerField(null=True, blank=True)
+    max_tenure = models.IntegerField(null=True, blank=True)
+    type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=TYPE_CHOICES[0][1])
+    is_special_plan = models.BooleanField(default=False)
+    is_primary = models.BooleanField(default=False)
+    # allowed_investor = models.ManyToManyField(User, related_name='product_allowed_investors')
+    # investors_detail = models.ManyToManyField(User, related_name='investor_detail')
+    investors = models.IntegerField(default=0)
+    invested_amount = models.BigIntegerField(default=0)
+    tnc = models.ForeignKey(TermsAndCondition, on_delete=models.DO_NOTHING, null=True, blank=True)
+
+    def __str__(self):
+        return self.plan_id
+    
+    def save(self, *args, **kwargs):
+        # if InvestmentProduct.objects.all().count() == 0:
+        if len(str(self.min_tenure)) < 2:
+            min_tenure_in_id = f'0{self.min_tenure}'
+        else:
+            min_tenure_in_id = f'{self.min_tenure}'
+        if len(str(self.max_tenure)) < 2:
+            max_tenure_in_id = f'0{self.max_tenure}'
+        else:
+            max_tenure_in_id = f'{self.max_tenure}'
+        rate = str(self.interest_rate)
+        if len(rate) < 5:
+            rate_in_id = f"0{rate.replace('.', '')}"
+        else:
+            rate_in_id = f"{rate.replace('.', '')}"
+        # rate_in_id = f'{self.interest_rate}'
+        self.plan_id = f'{self.type[0:2]}{min_tenure_in_id}{max_tenure_in_id}{rate_in_id}'
+        # else:
+        #     last_object = InvestmentProduct.objects.latest('id')#all().order_by('-id')[0]
+        #     self.plan_id = f"PLAN{last_object.id + 1}"
+        super(Product, self).save(*args, **kwargs)

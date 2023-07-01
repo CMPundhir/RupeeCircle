@@ -63,3 +63,10 @@ class InvestmentOptionsSerializer(serializers.Serializer):
     is_anytime_withdrawal_allowed = serializers.BooleanField()
     is_marketplace_allowed = serializers.BooleanField()
 
+
+class InvestorExcelSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = '__all__'
+

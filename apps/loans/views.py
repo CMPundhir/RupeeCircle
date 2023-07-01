@@ -275,15 +275,17 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     @action(methods=['GET'], detail=True)
     def allInvestors(self, request, pk):
         instance = self.get_object()
-        all_plans = Loan.objects.filter(product__plan_id=instance.plan_id)
-        serializer = InvestmentSerializer(all_plans, many=True)
+        all_plans = Loan.objects.filter(product__plan_id=instance.plan_id).values_list('investor')
+        print(all_plans)
+        all_investors = User.objects.filter(id__in=all_plans)
+        print(f"your all investors => {all_investors}")
         # return Response(serializer.data)
-        page = self.paginate_queryset(all_plans)
+        page = self.paginate_queryset(all_investors)
         if page is not None:
-            serializer = InvestmentSerializer(page, many=True)
+            serializer = InvestorGetSerializer(all_investors, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = InvestmentSerializer(all_plans, many=True)
+        serializer = InvestorGetSerializer(all_investors, many=True)
         return Response(serializer.data)
         
         # return Response(all_investors)
@@ -742,6 +744,12 @@ class LoanViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         return InvestmentSerializer
+    
+    @action(methods=['GET'], detail=False)
+    def excel(self, request):
+        queryset = Loan.objects.all()
+        serializer = LoanExcelSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class InstallmentViewSet(viewsets.ModelViewSet):
@@ -766,5 +774,45 @@ class InstallmentViewSet(viewsets.ModelViewSet):
         pass
 
 
-def DataFormViewSet(request):
-    return render(request, 'dataform.html')
+class ProductViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        queryset = Product.objects.all().order_by('-id')
+        return queryset
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ProductInputSerializer
+        return ProductSerializer
+    
+    def create(self, request, *args, **kwargs):
+        serializer = ProductInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        print(serializer.validated_data['all_data'])
+        for i in serializer.validated_data['all_data']:
+            all_products = Product.objects.all()
+            if len(all_products) > 0:
+                for j in all_products:
+                    if int(j.min_tenure) <= int(i['min_tenure']) <= int(j.max_tenure) and j.type == serializer.validated_data['type']:
+                        return Response({"message": "Slab Already Exists."}, status=status.HTTP_400_BAD_REQUEST)
+                    if int(j.min_tenure) <= int(i['max_tenure']) <= int(j.max_tenure) and j.type == serializer.validated_data['type']:
+                        return Response({"message": "Slab Already Exists."}, status=status.HTTP_400_BAD_REQUEST)
+        for i in serializer.validated_data['all_data']:
+            print(f'This is your {i}')
+            Product.objects.create(min_amount=i['min_amount'],
+                                   max_amount=i['max_amount'],
+                                   min_tenure=i['min_tenure'],
+                                   max_tenure=i['max_tenure'],
+                                   type=serializer.validated_data['type'],
+                                   interest_rate=i['interest_rate'],
+                                   )
+        return Response({"message": "Created."}, status=status.HTTP_201_CREATED)#, headers=headers)
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def get_success_headers(self, data):
+        try:
+            return {'Location': str(data[api_settings.URL_FIELD_NAME])}
+        except (TypeError, KeyError):
+            return {}

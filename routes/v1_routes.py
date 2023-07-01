@@ -31,6 +31,7 @@ v1_router.register(r'installment', InstallmentViewSet, basename='installment')
 v1_router.register(r'notification', ActivityAppViewSet, basename='notification')
 v1_router.register(r'helpline', ComplaintViewSet, basename='helpline')
 v1_router.register(r'tnc', TermsAndConditionViewSet, basename='tnc')
+v1_router.register(r'product', ProductViewSet, basename='product')
 
 
 

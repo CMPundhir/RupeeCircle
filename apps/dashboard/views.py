@@ -166,7 +166,12 @@ class InvestorViewSet(viewsets.ModelViewSet):
         queryset = RiskLog.objects.filter(owner=user).order_by('-id')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)     
-        
+
+    @action(methods=['GET'], detail=False)
+    def excel(self, request):
+        queryset = User.objects.filter(role=User.ROLE_CHOICES[0][1])
+        serializer = InvestorExcelSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)  
 
 class PartnerViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAdminUser]
