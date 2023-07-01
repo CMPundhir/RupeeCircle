@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from Crypto.Cipher import AES
+# from Crypto.Cipher import AES
 import hashlib
 
 def pad(data):
@@ -26,9 +26,9 @@ def encrypt(plainText, workingKey):
         # iv = Random.new().read(AES.block_size)
         iv = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'.encode('utf-8') 
 
-        obj = AES.new(key1, AES.MODE_CBC, iv)
-        encrypted = obj.encrypt(str.encode(plainText))
-        print(encrypted)
+        # obj = AES.new(key1, AES.MODE_CBC, iv)
+        # encrypted = obj.encrypt(str.encode(plainText))
+        # print(encrypted)
         # return encrypted
 
     except Exception as e:
