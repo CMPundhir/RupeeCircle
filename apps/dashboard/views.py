@@ -51,6 +51,9 @@ class InvestorViewSet(viewsets.ModelViewSet):
         API for registering Investor.
         '''
         data = request.data
+        # user = request.user
+        user = User.objects.get(id=request.user.id)
+        user_type = user.role
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             mobile_exist = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
@@ -101,10 +104,9 @@ class InvestorViewSet(viewsets.ModelViewSet):
                 instance.company = serializer.validated_data['company']
             if 'last_name' in serializer.validated_data and serializer.validated_data['last_name']:
                 instance.last_name = serializer.validated_data['last_name']
-            if 'aggregator' in serializer.validated_data and serializer.validated_data['aggregator']:
-                instance.aggregator = serializer.validated_data['aggregator']
-            else:
-                instance.aggregator = request.user
+            if user_type == User.ROLE_CHOICES[1][1]:
+                instance.partner = user
+            instance.registration_type = user_type
             instance.save()
             LogService.log(user=instance, msg="Welcome to RupeeCircle.", is_transaction=False)
             serializer = InvestorGetSerializer(instance)

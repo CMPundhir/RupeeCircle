@@ -4,6 +4,13 @@ from apps.dashboard.serializers import InvestorGetSerializer
 from .models import *
 
 
+# def validate_tenure_range(value):
+#     if value < 1 or value > 84:
+#         raise serializers.ValidationError('Tenure should be between 1 and 84')
+    # elif value > 10:
+    #     raise serializers.ValidationError('Value cannot be higher than 10')
+
+
 class TermsAndConditionSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -80,7 +87,7 @@ class InstallmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class InvestmentSerializer(serializers.ModelSerializer):
+class InvestmentGetSerializer(serializers.ModelSerializer):
     # installments = InstallmentSerializer(many=True)
     investor = InvestorGetSerializer()
 
@@ -122,4 +129,28 @@ class LoanExcelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Loan
+        fields = '__all__'
+
+
+class RateSerializer(serializers.Serializer):
+    tenure = serializers.IntegerField()
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Payment
+        fields = '__all__'
+
+
+class InterestSerializer(serializers.Serializer):
+    amount = serializers.IntegerField()
+    interest_rate = serializers.FloatField()
+    tenure = serializers.IntegerField()
+
+
+class InvestmentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Investment
         fields = '__all__'

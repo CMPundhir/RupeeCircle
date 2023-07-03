@@ -219,3 +219,22 @@ class Product(BaseModel, models.Model):
         #     last_object = InvestmentProduct.objects.latest('id')#all().order_by('-id')[0]
         #     self.plan_id = f"PLAN{last_object.id + 1}"
         super(Product, self).save(*args, **kwargs)
+
+
+class Payment(BaseModel, models.Model):
+    id = models.AutoField(primary_key=True)
+    # investment = models.ForeignKey('Investment', on_delete=models.DO_NOTHING)
+    investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    due_date = models.DateField()
+    amount = models.FloatField()
+    status = models.CharField(max_length=100)
+
+
+class Investment(BaseModel, models.Model):
+    id = models.AutoField(primary_key=True)
+    principal = models.IntegerField()
+    interest_rate = models.FloatField()
+    tenure = models.IntegerField()
+    product = models.ForeignKey(Product, on_delete=models.DO_NOTHING)
+    investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    installments = models.ManyToManyField(Payment)
