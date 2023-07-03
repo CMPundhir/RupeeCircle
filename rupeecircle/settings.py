@@ -113,6 +113,7 @@ DATABASES = {
 		'HOST':'database-1.cdje8iud1vtd.ap-south-1.rds.amazonaws.com',
 		'PORT':'5432',
 	}
+    
     # 'default': {
 	# 	'ENGINE': 'django.db.backends.postgresql',
 	# 	'NAME': 'rupeecircle_new',
