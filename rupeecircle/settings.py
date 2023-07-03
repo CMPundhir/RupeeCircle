@@ -65,7 +65,7 @@ INSTALLED_APPS = [
     "corsheaders",
     'sslserver',
     'django_filters',
-    'Cryptodome'
+    'psycopg'
     # 'apps.mauth.apps.MauthConfig.name',
 ]
 
