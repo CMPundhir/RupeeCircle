@@ -107,16 +107,11 @@ WSGI_APPLICATION = 'rupeecircle.wsgi.application'
 DATABASES = {
     'default': {
 		'ENGINE': 'django.db.backends.postgresql',
-		# 'NAME': 'postgres',
-		# 'USER': 'postgres',
-		# 'PASSWORD': 'kuchhBhi#098', # kuchhBhi#098
-		# 'HOST':'database-1.cdje8iud1vtd.ap-south-1.rds.amazonaws.com',
-		# 'PORT':'5432',
-        'NAME': os.environ['RDS_DB_NAME'],
-        'USER': os.environ['RDS_USERNAME'],
-        'PASSWORD': os.environ['RDS_PASSWORD'],
-        'HOST': os.environ['RDS_HOSTNAME'],
-        'PORT': os.environ['RDS_PORT'],
+		'NAME': 'postgres',
+		'USER': 'postgres',
+		'PASSWORD': 'kuchhBhi#098', # kuchhBhi#098
+		'HOST':'database-1.cdje8iud1vtd.ap-south-1.rds.amazonaws.com',
+		'PORT':'5432',
 	}
     # 'default': {
 	# 	'ENGINE': 'django.db.backends.postgresql',
@@ -179,7 +174,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'EXCEPTION_HANDLER': 'utility.exception_handler.custom_exception_handler',
+    # 'EXCEPTION_HANDLER': 'utility.exception_handler.custom_exception_handler',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS': (
