@@ -161,8 +161,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # @action(methods=['GET'], detail=False)
-    # def graphDetail(self, request):
+    @action(methods=['GET'], detail=False)
+    def excel(self, request):
+        queryset = Transaction.objects.all()
+        serializer = TransactionExcelSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BankAccountViewSet(viewsets.ModelViewSet):    
@@ -246,6 +249,3 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         instance.save()
         return Response({"message": "Made Bank primary successfully."}, status=status.HTTP_200_OK)
 
-
-def dataform(request):
-    return render(request, 'dataform.html')

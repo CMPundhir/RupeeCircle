@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import CustomUser as User
-from .models import RiskLog
+from .models import *
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
@@ -139,4 +139,11 @@ class RiskLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RiskLog
+        fields = '__all__'
+
+
+class LogHistorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = LogHistory
         fields = '__all__'
