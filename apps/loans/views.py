@@ -775,6 +775,11 @@ class InstallmentViewSet(viewsets.ModelViewSet):
 
 
 class ProductViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = []
 
     def get_queryset(self):
         queryset = Product.objects.all().order_by('-id')
@@ -790,26 +795,54 @@ class ProductViewSet(viewsets.ModelViewSet):
         return ProductSerializer
     
     def create(self, request, *args, **kwargs):
+        paramlimit = Param.objects.all()[0]
         serializer = ProductInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if not 1 <= serializer.validated_data['all_data'][0]['min_tenure'] <= 84 or not 1 <= serializer.validated_data['all_data'][0]['max_tenure'] <= 84:
-            return Response({"message": "Tenure should be between 1 and 84 months."}, status=status.HTTP_400_BAD_REQUEST)
-        if not 1000 <= serializer.validated_data['all_data'][0]['min_amount'] <= 500000 or not 1000 <= serializer.validated_data['all_data'][0]['max_amount'] <= 500000:
-            return Response({"message": "Amount should be between 1000 and 500000."}, status=status.HTTP_400_BAD_REQUEST)
-        if not 0 < serializer.validated_data['all_data'][0]['interest_rate'] < 100:
-            return Response({"message": "Please enter a valid Interest Rate."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Checking if values are valid or not
+        for i in serializer.validated_data['all_data']:
+            if i['min_amount'] < 0 or i['max_amount'] < 0 or i['min_tenure'] < 0 or i['max_tenure'] < 0 or i['min_interest'] < 0 or i['max_interest'] < 0:
+                return Response({"message": "All values should be positive."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if type(i['min_tenure']) and type(i['max_tenure']) and type(i['min_amount']) and type(i['max_amount']) != int:
+                return Response({"message": "All values should be numeric except interest rates."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if type(i['min_interest']) and type(i['max_interest']) != float:
+                return Response({"message": "Interest Values should be decimal values."}, status.HTTP_400_BAD_REQUEST)
+
+        # Checking tenure range
+        if not paramlimit.min_tenure <= serializer.validated_data['all_data'][0]['min_tenure'] <= paramlimit.max_tenure or not paramlimit.min_tenure <= serializer.validated_data['all_data'][0]['max_tenure'] <= paramlimit.max_tenure:
+            return Response({"message": f"Tenure should be between {paramlimit.min_tenure} and {paramlimit.max_tenure} months."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Checking amount range
+        if not paramlimit.min_amount <= serializer.validated_data['all_data'][0]['min_amount'] <= paramlimit.max_amount or not paramlimit.min_amount <= serializer.validated_data['all_data'][0]['max_amount'] <= paramlimit.max_amount:
+            return Response({"message": f"Amount should be between {paramlimit.min_amount} and {paramlimit.max_amount}."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Checking interest rate range
+        if not paramlimit.min_interest < serializer.validated_data['all_data'][0]['interest_rate'] < paramlimit.max_interest:
+            return Response({"message": f"Interest Rate should be between {paramlimit.min_interest} and {paramlimit.max_interest}"}, status=status.HTTP_400_BAD_REQUEST)
         print(serializer.validated_data['all_data'])
+        
+        # Checking if tenure slab clashes
         range_list = set()
         for i in serializer.validated_data['all_data']:
             if i['min_tenure'] in range_list or i['max_tenure'] in range_list:
-                return Response({"message": "Tenure range clashes."}, status=status.HTTP_400_BAD_REQUEST)
-            # if i['min_tenure'] not in range_list or i['max_tenure'] not in range_list:
+                return Response({"message": "The Tenure range you entered clashes."}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 for j in range(i['min_tenure'], i['max_tenure'] + 1):
                     range_list.add(j)
                     print(range_list)
-            # else:
-            #     return Response({"message": "Tenure range clashes."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Checking if slabs are inconsistent
+        tenure_range = [i + 1 for i in range(paramlimit.max_tenure)]
+        missing_tenure = list()
+        for i in tenure_range:
+            if i not in range_list:
+                missing_tenure.append(i)
+        if len(missing_tenure) > 0:
+            return Response({"message": f"Inconsistent Slabs. Plan not applicable for following months {missing_tenure}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Checking if slab already exists.
         for i in serializer.validated_data['all_data']:
             all_products = Product.objects.all()
             if len(all_products) > 0:
@@ -818,6 +851,8 @@ class ProductViewSet(viewsets.ModelViewSet):
                         return Response({"message": "Slab Already Exists."}, status=status.HTTP_400_BAD_REQUEST)
                     if int(j.min_tenure) <= int(i['max_tenure']) <= int(j.max_tenure) and j.type == serializer.validated_data['type']:
                         return Response({"message": "Slab Already Exists."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Everything went well."})
+        # Creating slabs
         for i in serializer.validated_data['all_data']:
             print(f'This is your {i}')
             Product.objects.create(min_amount=i['min_amount'],
@@ -829,6 +864,12 @@ class ProductViewSet(viewsets.ModelViewSet):
                                    )
         return Response({"message": "Created."}, status=status.HTTP_201_CREATED)#, headers=headers)
 
+    @action(methods=['GET'], detail=False)
+    def deleteall(self, request):
+        queryset = Product.objects.all()
+        queryset.delete()
+        return Response({"message": "Deleted All."}, status=status.HTTP_200_OK)
+    
     def perform_create(self, serializer):
         serializer.save()
 
@@ -876,22 +917,27 @@ class ProductViewSet(viewsets.ModelViewSet):
                 instance = None
         print("Looped")
         if instance:
+            if instance.interest_rate != serializer.validated_data['interest_rate']:
+                return Response({"message": "Interest Rate doesn't match the slab interest rate."}, status=status.HTTP_400_BAD_REQUEST)
+            print(f"This is your instance => {instance}")
             wallet = Wallet.objects.get(owner=request.user)
             if wallet.balance < serializer.validated_data['amount']:
                 return Response({"message": "You don't have enough balance in your wallet."}, status=status.HTTP_400_BAD_REQUEST)
             wallet.balance -= serializer.validated_data['amount']
+            wallet.save()
             LogService.log(user=request.user, msg=f"Investment successful for {instance.plan_id}.")
             LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} has been deducted from your Wallet.")
             LogService.transaction_log(owner=request.user, wallet=wallet, amount=serializer.validated_data['amount'], debit=True, type=Transaction.TYPE_CHOICES[2][1])
             investment = Investment.objects.create(principal=serializer.validated_data['amount'],
-                                                interest_rate=serializer.validated_data['interest_rate'],
-                                                tenure=serializer.validated_data['tenure'],
-                                                product=instance,
-                                                investor=request.user)
+                                                   interest_rate=serializer.validated_data['interest_rate'],
+                                                   tenure=serializer.validated_data['tenure'],
+                                                   product=instance,
+                                                   investor=request.user)
             for i in range(serializer.validated_data['tenure']):
                 month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                 payment = Payment.objects.create(investor=request.user,
                                                 due_date=month,
+                                                product_id=instance.plan_id,
                                                 amount=serializer.validated_data['amount'],
                                                 )
                 investment.installments.add(payment)
@@ -899,8 +945,18 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
         return Response({"message": "No product applicable on this tenure."}, status=status.HTTP_404_NOT_FOUND)
 
+    # @action(methods=['GET'], detail=False)
+    # def get_params(self, request):
+        
+    #     response['min_amount']
+
 
 class PaymentViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['product_id', 'investor']
+    ordering_fields = ['id']
+    filterset_fields = ['product_id', 'investor']
 
     def get_queryset(self):
         user = self.request.user
@@ -914,9 +970,20 @@ class PaymentViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         return PaymentSerializer
+    
+    @action(methods=['GET'], detail=False)
+    def deleteall(self, request):
+        queryset = Payment.objects.all()
+        queryset.delete()
+        return Response({"message": "Deleted All."}, status=status.HTTP_200_OK)
 
 
 class InvestmentViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = ['investor', 'product_id']
     
     def get_queryset(self):
         user=self.request.user
@@ -930,3 +997,23 @@ class InvestmentViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         return InvestmentSerializer
+
+    @action(methods=['GET'], detail=False)
+    def deleteall(self, request):
+        queryset = Investment.objects.all()
+        queryset.delete()
+        return Response({"message": "Deleted All."}, status=status.HTTP_200_OK)
+
+
+class ParamViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        queryset = Param.objects.all()
+        return queryset
+    
+    def get_serializer_class(self):
+        return ParamSerializer
+
+    def create(self, request):
+        return Response({"message": "Method Not Allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+

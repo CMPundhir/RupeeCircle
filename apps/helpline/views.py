@@ -25,6 +25,8 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'markResolve':
             return MarkResolveSerializer
+        elif self.action == 'create':
+            return ComplaintCreateSerializer
         return ComplaintSerializer
     
     def create(self, request, *args, **kwargs):
