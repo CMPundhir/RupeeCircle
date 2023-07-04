@@ -38,6 +38,16 @@ jobs:
         echo "[default]"
         echo "aws_access_key_id = $AWS_ACCESS_KEY_ID"
         echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY"
+    
+    - name: Deploy to EB
+      uses: einaregilsson/beanstalk-deploy@v21
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: RupeeCircle
+        environment_name: RupeeCircle-dev
+        version_label: 12345
+        region: ap-south-1
 
     # - name: Django aws eb deployment
     #   uses: joel-hanson/django-aws-eb-deploy@V1.1
