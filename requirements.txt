@@ -12,3 +12,4 @@ rest_framework_simplejwt==0.0.2
 requests==2.29.0
 flake8==6.0.0
 psycopg2-binary==2.9.6
+Pillow==9.5.0
