@@ -1,0 +1,10 @@
+{
+  "dev": {
+    "aws_region": "ap-south-1",
+    "django_settings": "rupeecircle.settings",
+    "profile_name": "eb-cli",
+    "project_name": "rupeecircle",
+    "runtime": "python3.9",
+    "s3_bucket": "zappa-lfthiijcr"
+  }
+}

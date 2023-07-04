@@ -20,6 +20,12 @@ class Wallet(BaseModel, models.Model):
 
 class Transaction(BaseModel, models.Model):
     STATUS_CHOICES = (('SUCCESS', 'SUCCESS'), ('PENDING', 'PENDING'), ('FAILED', 'FAILED'))
+    TYPE_CHOICES = (('FUNDS ADDED', 'FUNDS ADDED'), 
+                    ('FUNDS WITHDRAWN', 'FUNDS WITHDRAWN'), 
+                    ('INVESTMENT', 'INVESTMENT'), 
+                    ('INTEREST', 'INTEREST'), 
+                    ('REPAYMENT', 'REPAYMENT'),
+                    ('LOAN', 'LOAN'))
     id = models.AutoField(primary_key=True)
     transaction_id = models.CharField(max_length=1000, unique=True, blank=True)
     wallet = models.ForeignKey(Wallet, on_delete=models.DO_NOTHING)
@@ -29,6 +35,7 @@ class Transaction(BaseModel, models.Model):
     penny_drop_utr = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=100, choices=STATUS_CHOICES, blank=True, null=True)
     bank = models.ForeignKey('BankAccount', on_delete=models.DO_NOTHING, blank=True, null=True)
+    type = models.CharField(max_length=100, choices=TYPE_CHOICES, null=True, blank=True)
     # interest = models.DecimalField(max_digits=100, decimal_places=2, null=True)
     # repayment = models.BooleanField(default=False)
     debit = models.BooleanField(default=False)
@@ -43,7 +50,7 @@ class Transaction(BaseModel, models.Model):
 
 class BankAccount(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
-    bank = models.CharField(max_length=255)
+    bank = models.CharField(max_length=255, null=True, blank=True)
     owner = models.ForeignKey(User, on_delete=models.DO_NOTHING, blank=True)
     acc_number = models.CharField(max_length=255, unique=True)
     ifsc = models.CharField(max_length=255)

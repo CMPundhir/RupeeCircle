@@ -22,6 +22,9 @@ class Complaint(models.Model):
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def save(self, *args, **kwargs):
-        last_object = Complaint.objects.latest('id')#all().order_by('-id')[0]
-        self.complaint_id = f'CMPLNT{last_object + 1}'
+        if Complaint.objects.all().count() == 0:
+            self.complaint_id = f'COMPLAINT1'
+        else:
+            last_object = Complaint.objects.latest('id')#all().order_by('-id')[0]
+            self.complaint_id = f'COMPLAINT{last_object + 1}'
         super(Complaint, self).save(*args, **kwargs)

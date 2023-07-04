@@ -45,6 +45,7 @@ class CustomUser(AbstractUser):
                       ('ACTIVE', 'ACTIVE'))
     GENDER_CHOICES = (('MALE', 'MALE'), ('FEMALE', 'FEMALE'), ('OTHERS', 'OTHERS'))
     RISK_CHOICES = (('LOW', 'LOW'), ('MODERATE', 'MODERATE'), ('HIGH', 'HIGH'))
+    REGISTRATION_TYPE_CHOICES = (('SELF', 'SELF'), ('PARTNER', 'PARTNER'), ('ADMIN', 'ADMIN'))
 
     name = models.CharField(null=True, blank=True)
     user_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
@@ -77,10 +78,12 @@ class CustomUser(AbstractUser):
     is_marketplace_allowed = models.BooleanField(default=False)
     special_plan_exist = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0])
-    role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])   
+    role = models.CharField(choices=ROLE_CHOICES, default=ROLE_CHOICES[0][1])
+    registration_type = models.CharField(choices=REGISTRATION_TYPE_CHOICES, default=REGISTRATION_TYPE_CHOICES[0][1])
+    pan_api_response = models.CharField(max_length=400, blank=True, null=True   )   
     rc_risk = models.CharField(max_length=255, choices=RISK_CHOICES, default=RISK_CHOICES[0][1])
     partner = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)
-    # credit_score = models.IntegerField(blank=True, null=True)
+    credit_score = models.IntegerField(blank=True, null=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
@@ -89,7 +92,6 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return f'{self.username} {self.role}'
-    
     
 
 class BaseModel(models.Model):
@@ -139,3 +141,18 @@ class RiskLog(BaseModel, models.Model):
     owner = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING)
     updated_risk = models.CharField(max_length=255, choices=CustomUser.RISK_CHOICES, default=CustomUser.RISK_CHOICES[0][1])
     comment = models.CharField(max_length=1000)
+
+
+class Activity(BaseModel, models.Model):
+    id = models.AutoField(primary_key=True)
+    body = models.CharField(max_length=255)
+
+
+class LogHistory(BaseModel, models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING)
+    activities = models.ManyToManyField(Activity)
+    ip = models.CharField(max_length=100)
+    location = models.CharField(max_length=100, null=True, blank=True)
+    platform = models.CharField(max_length=100, null=True, blank=True)
+

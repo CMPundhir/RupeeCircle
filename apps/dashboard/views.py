@@ -27,7 +27,7 @@ class InvestorViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[1][1]:
-            queryset = User.objects.filter(aggregator=user, status=User.STATUS_CHOICES[3][1]).order_by('-id')
+            queryset = User.objects.filter(partner=user, status=User.STATUS_CHOICES[3][1]).order_by('-id')
         else:
             queryset = User.objects.filter(role=User.ROLE_CHOICES[0][1], status=User.STATUS_CHOICES[4][1]).order_by('-id')
         return queryset
@@ -51,6 +51,9 @@ class InvestorViewSet(viewsets.ModelViewSet):
         API for registering Investor.
         '''
         data = request.data
+        # user = request.user
+        user = User.objects.get(id=request.user.id)
+        user_type = user.role
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             mobile_exist = User.objects.filter(mobile=serializer.validated_data['mobile']).exists()
@@ -101,10 +104,9 @@ class InvestorViewSet(viewsets.ModelViewSet):
                 instance.company = serializer.validated_data['company']
             if 'last_name' in serializer.validated_data and serializer.validated_data['last_name']:
                 instance.last_name = serializer.validated_data['last_name']
-            if 'aggregator' in serializer.validated_data and serializer.validated_data['aggregator']:
-                instance.aggregator = serializer.validated_data['aggregator']
-            else:
-                instance.aggregator = request.user
+            if user_type == User.ROLE_CHOICES[1][1]:
+                instance.partner = user
+            instance.registration_type = user_type
             instance.save()
             LogService.log(user=instance, msg="Welcome to RupeeCircle.", is_transaction=False)
             serializer = InvestorGetSerializer(instance)
@@ -166,7 +168,12 @@ class InvestorViewSet(viewsets.ModelViewSet):
         queryset = RiskLog.objects.filter(owner=user).order_by('-id')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)     
-        
+
+    @action(methods=['GET'], detail=False)
+    def excel(self, request):
+        queryset = User.objects.filter(role=User.ROLE_CHOICES[0][1])
+        serializer = InvestorExcelSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)  
 
 class PartnerViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAdminUser]
@@ -186,7 +193,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action == 'addInvestor':
-            return AddInvestorSerializer
+            return UserSerializer
         elif self.action == 'create':
             return PartnerRegistrationSerializer
         elif self.action == 'list' or self.action == 'retrieve':
@@ -261,7 +268,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
         '''
         partner=self.get_object()
         data = request.data
-        serializer = AddInvestorSerializer(data=data)
+        serializer = UserSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             instance = User.objects.get(id=serializer.validated_data['investor'].id)
             instance.partner = partner
@@ -290,8 +297,8 @@ class BorrowerViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'riskLog':
             return RiskLogSerializer
-        return InvestorGetSerializer
-    
+        return BorrowerGetSerializer
+     
     @action(methods=['POST'], detail=True)
     def updateRisk(self, request, pk):
         instance = self.get_object()

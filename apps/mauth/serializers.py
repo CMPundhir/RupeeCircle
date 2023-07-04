@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import CustomUser as User
-from .models import RiskLog
+from .models import *
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
@@ -54,15 +54,15 @@ class PanSerializer(serializers.ModelSerializer):
         fields = ['pan']
 
 
-class PanVerifySerializer(serializers.ModelSerializer):
+class PanVerifySerializer(serializers.Serializer):
     # mobile = serializers.CharField()
-    pan = serializers.RegexField(regex=r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$')
-    name = serializers.CharField()
+    # pan = serializers.RegexField(regex=r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$')
+    # name = serializers.CharField()
     is_verified = serializers.BooleanField()
 
-    class Meta:
-        model = User
-        fields = ['pan', 'name', 'is_verified']
+    # class Meta:
+    #     model = User
+    #     fields = ['is_verified']
 
 
 class AadharSerializer(serializers.ModelSerializer):
@@ -91,11 +91,11 @@ class BankDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['bank_ifsc', 'bank_acc']
+        fields = ['bank_ifsc', 'bank_acc', 'acc_holder_name']
 
 # include
-class AddInvestorSerializer(serializers.Serializer):
-    pass
+# class AddInvestorSerializer(serializers.Serializer):
+    # pass
     # investor = serializers.ChoiceField(choices=User.objects.filter(role=User.ROLE_CHOICES[0][1], partner=None))
 
     # class Meta:
@@ -124,18 +124,26 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'user_id', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'rc_risk', 'role']
+        # fields = '__all__'
+        fields = ['id', 'user_id', 'credit_score', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'rc_risk', 'role']
  
 
 class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'selfie', 'rc_risk', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'special_plan_exist']
+        fields = ['id', 'selfie', 'rc_risk', 'credit_score', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'is_pan_verified', 'aadhaar', 'is_aadhaar_verified', 'bank_acc', 'bank_ifsc', 'is_bank_acc_verified', 'status', 'role', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'special_plan_exist']
 
 
 class RiskLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RiskLog
+        fields = '__all__'
+
+
+class LogHistorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = LogHistory
         fields = '__all__'

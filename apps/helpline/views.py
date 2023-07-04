@@ -19,12 +19,14 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     filterset_fields = []
 
     def get_queryset(self):
-        queryset = Complaint.objects.filter(status=Complaint.STATUS_CHOICES[0][1])
+        queryset = Complaint.objects.all()#filter(status=Complaint.STATUS_CHOICES[0][1])
         return queryset
     
     def get_serializer_class(self):
         if self.action == 'markResolve':
             return MarkResolveSerializer
+        elif self.action == 'create':
+            return ComplaintCreateSerializer
         return ComplaintSerializer
     
     def create(self, request, *args, **kwargs):
@@ -33,6 +35,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.validated_data['complainant'] = user
         self.perform_create(serializer)
+        print("A")
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 

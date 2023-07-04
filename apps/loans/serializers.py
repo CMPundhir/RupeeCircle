@@ -4,6 +4,13 @@ from apps.dashboard.serializers import InvestorGetSerializer
 from .models import *
 
 
+# def validate_tenure_range(value):
+#     if value < 1 or value > 84:
+#         raise serializers.ValidationError('Tenure should be between 1 and 84')
+    # elif value > 10:
+    #     raise serializers.ValidationError('Value cannot be higher than 10')
+
+
 class TermsAndConditionSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -15,7 +22,7 @@ class BorrowerDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name']
+        fields = ['first_name', 'last_name', 'credit_score']
 
 
 class LoanApplicationSerializer(serializers.ModelSerializer):
@@ -59,24 +66,17 @@ class InvestmentRequestSerializer(serializers.ModelSerializer):
 
 
 class InvestmentApplicationSerializer(serializers.Serializer):
-    amount = serializers.IntegerField()
-    remarks = serializers.CharField()
+    amount = serializers.CharField()
+    tnc = serializers.BooleanField()
 
 
 class InvestmentRequestGetSerializer(serializers.ModelSerializer):
-    loan = LoanApplicationSerializer()
+    # loan = LoanApplicationSerializer()
     # plan = InvestmentProductSerializer()
     investor = InvestorGetSerializer()
 
     class Meta:
         model = InvestmentRequest
-        fields = '__all__'
-
-
-class InvestmentSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Loan
         fields = '__all__'
 
 
@@ -87,5 +87,77 @@ class InstallmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class InvestmentGetSerializer(serializers.ModelSerializer):
+    # installments = InstallmentSerializer(many=True)
+    investor = InvestorGetSerializer()
+
+    class Meta:
+        model = Loan
+        fields = '__all__'
+
+
 class ApplySerializer(serializers.Serializer):
     amount = models.IntegerField()
+
+
+class ProductCreationSerializer(serializers.Serializer):
+    min_amount = serializers.IntegerField()
+    max_amount = serializers.IntegerField()
+    min_tenure = serializers.IntegerField()
+    max_tenure = serializers.IntegerField()
+    interest_rate = serializers.FloatField()
+    # type = serializers.CharField()
+
+    # class Meta:
+    #     model = Product
+    #     fields = ['min_amount', 'max_amount', 'min_tenure', 'max_tenure', 'interest_rate', 'type']
+
+
+class ProductInputSerializer(serializers.Serializer):
+    all_data = ProductCreationSerializer(many=True)
+    type = serializers.ChoiceField(choices=Product.TYPE_CHOICES)
+
+
+class ProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+
+class LoanExcelSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Loan
+        fields = '__all__'
+
+
+class RateSerializer(serializers.Serializer):
+    tenure = serializers.IntegerField()
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Payment
+        fields = '__all__'
+
+
+class InterestSerializer(serializers.Serializer):
+    amount = serializers.IntegerField()
+    interest_rate = serializers.FloatField()
+    tenure = serializers.IntegerField()
+
+
+class InvestmentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Investment
+        fields = '__all__'
+
+
+class ParamSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Param
+        fields = '__all__'
