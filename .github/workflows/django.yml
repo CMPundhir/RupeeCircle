@@ -17,7 +17,7 @@ jobs:
         # python-version: [3.7, 3.8, 3.9]
 
     steps:
-    # - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
@@ -39,8 +39,8 @@ jobs:
         echo "aws_access_key_id = $AWS_ACCESS_KEY_ID"
         echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY"
     
-    - name: Checkout source code
-      uses: actions/checkout@v2
+    # - name: Checkout source code
+    #   uses: actions/checkout@v2
 
     - name: Generate deployment package
       run: zip -r deploy.zip . -x '*.git*'
