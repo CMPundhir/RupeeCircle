@@ -144,7 +144,8 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
 
 class FixedROIViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, 
+                       filters.OrderingFilter]
     search_fields = ['amount', 'tenure', 'type', 'interest_rate']
     ordering_fields = ['id']
     filterset_fields = ['amount', 'tenure', 'type', 'interest_rate']
