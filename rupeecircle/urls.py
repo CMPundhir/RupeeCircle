@@ -37,7 +37,7 @@ urlpatterns = [
     # path('get-aadhar/', AadharDetailView.as_view(), name='get-aadhar'),
     # path('verify-aadhar/', AadharVerifyView.as_view(), name='verify-aadhar'),
     path('', include(v1_router.urls), name="v1"),
-    path('v1/', include(v1_router.urls), name="v1")
+    path('v2/', include(v1_router.urls), name="v1")
 ]
 
 admin.site.site_header = "Rupee Circle Admin"
