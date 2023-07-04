@@ -65,7 +65,7 @@ INSTALLED_APPS = [
     "corsheaders",
     'sslserver',
     'django_filters',
-    'psycopg2'
+    # 'psycopg'
     # 'apps.mauth.apps.MauthConfig.name',
 ]
 
@@ -113,6 +113,7 @@ DATABASES = {
 		'HOST':'database-1.cdje8iud1vtd.ap-south-1.rds.amazonaws.com',
 		'PORT':'5432',
 	}
+    
     # 'default': {
 	# 	'ENGINE': 'django.db.backends.postgresql',
 	# 	'NAME': 'rupeecircle_new',
@@ -160,7 +161,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+# STATIC_URL = '/static/'
+# STATIC_ROOT = BASE_DIR / 'static'
+
+STATIC_URL = '/staticfiles/'
+STATIC_ROOT = str(BASE_DIR.joinpath('staticfiles'))
+STATICFILES_DIRS = [str(BASE_DIR.joinpath('static'))]
+    
+# STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
@@ -174,7 +182,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'EXCEPTION_HANDLER': 'utility.exception_handler.custom_exception_handler',
+    # 'EXCEPTION_HANDLER': 'utility.exception_handler.custom_exception_handler',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS': (
