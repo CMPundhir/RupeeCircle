@@ -223,6 +223,7 @@ class Product(BaseModel, models.Model):
 
 class Payment(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
+    product_id = models.CharField(max_length=100, blank=True, null=True)
     # investment = models.ForeignKey('Investment', on_delete=models.DO_NOTHING)
     investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     due_date = models.DateField()
@@ -233,8 +234,25 @@ class Payment(BaseModel, models.Model):
 class Investment(BaseModel, models.Model):
     id = models.AutoField(primary_key=True)
     principal = models.IntegerField()
+    # investment_id = models.CharField(max_length=100)
     interest_rate = models.FloatField()
     tenure = models.IntegerField()
     product = models.ForeignKey(Product, on_delete=models.DO_NOTHING)
     investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     installments = models.ManyToManyField(Payment)
+
+    # def save(self, *args, **kwargs):
+    #     all_investments = Investment.objects.all()
+    #     if len(all_investments) == 0:
+            
+    #     self.investment_id = f"INV{self.product.plan_id}"
+    #     super(Product, self).save(*args, **kwargs)
+
+class Param(models.Model):
+    id = models.AutoField(primary_key=True)
+    min_amount = models.IntegerField()
+    max_amount = models.IntegerField()
+    min_tenure = models.IntegerField()
+    max_tenure = models.IntegerField()
+    min_interest = models.FloatField()
+    max_interest = models.FloatField()

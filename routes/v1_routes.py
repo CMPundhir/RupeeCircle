@@ -24,14 +24,15 @@ v1_router.register(r'transaction', TransactionViewSet, basename='transaction')
 v1_router.register(r'marketplace', LoanApplicationViewSet, basename='marketplace')
 v1_router.register(r'fixed-roi', FixedROIViewSet, basename='fixed-roi')
 v1_router.register(r'anytime-withdrawal', AnytimeWithdrawalViewSet, basename='anytime-withdrawal')
-v1_router.register(r'portfolio', LoanViewSet, basename='portfolio')
+v1_router.register(r'portfolio', InvestmentViewSet, basename='portfolio')
 v1_router.register(r'all-investments', LoanViewSet, basename='all-investments')
 v1_router.register(r'bid', InvestmentRequestViewSet, basename='bid')
-v1_router.register(r'installment', InstallmentViewSet, basename='installment')
+v1_router.register(r'installment', PaymentViewSet, basename='installment')
 v1_router.register(r'notification', ActivityAppViewSet, basename='notification')
 v1_router.register(r'helpline', ComplaintViewSet, basename='helpline')
 v1_router.register(r'tnc', TermsAndConditionViewSet, basename='tnc')
 v1_router.register(r'product', ProductViewSet, basename='product')
+v1_router.register(r'productparam', ParamViewSet, basename='productparam')
 
 
 

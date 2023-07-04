@@ -9,6 +9,12 @@ class ComplaintSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ComplaintCreateSerializer(serializers.Serializer):
+    nature = serializers.CharField()
+    body = serializers.CharField()
+    medium = serializers.CharField()
+
+
 class MailComplaintSerializer(serializers.Serializer):
     email = serializers.EmailField()
     body = serializers.CharField()

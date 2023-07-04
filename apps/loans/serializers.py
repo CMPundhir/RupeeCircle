@@ -154,3 +154,10 @@ class InvestmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Investment
         fields = '__all__'
+
+
+class ParamSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Param
+        fields = '__all__'

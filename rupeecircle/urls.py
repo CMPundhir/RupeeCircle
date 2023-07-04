@@ -36,6 +36,7 @@ urlpatterns = [
     # path('verify-pan/', PanVerifyView.as_view(), name='verify-pan'),
     # path('get-aadhar/', AadharDetailView.as_view(), name='get-aadhar'),
     # path('verify-aadhar/', AadharVerifyView.as_view(), name='verify-aadhar'),
+    path('', include(v1_router.urls), name="v1"),
     path('v1/', include(v1_router.urls), name="v1")
 ]
 
