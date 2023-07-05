@@ -26,5 +26,5 @@ class Complaint(models.Model):
             self.complaint_id = f'COMPLAINT1'
         else:
             last_object = Complaint.objects.latest('id')#all().order_by('-id')[0]
-            self.complaint_id = f'COMPLAINT{last_object + 1}'
+            self.complaint_id = f'COMPLAINT{last_object.id + 1}'
         super(Complaint, self).save(*args, **kwargs)

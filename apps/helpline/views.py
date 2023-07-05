@@ -33,11 +33,13 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         user = request.user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.validated_data['complainant'] = user
-        self.perform_create(serializer)
-        print("A")
+        complainant = user
+        complaint = Complaint.objects.create(nature=serializer.validated_data['nature'],
+                                 body=serializer.validated_data['body'],
+                                 medium=serializer.validated_data['medium'],
+                                 complainant=complainant)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({"message": f"Your Complaint has been registered. Ticket for this complaint is {complaint.complaint_id}"}, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
         serializer.save()
@@ -100,3 +102,9 @@ class ComplaintViewSet(viewsets.ModelViewSet):
                                  )
         return Response({"message": "Complain Registered Successfully."}, status=status.HTTP_200_OK)
         
+    @action(methods=['GET'], detail=False)
+    def checkingIp(self, request):
+        ip = request.META['REMOTE_ADDR']
+        return Response({"message": request.headers['user_agent']})#['browser']['family']})
+        # return Response({"message": request.headers['user_agent']['browser']['family']})
+
