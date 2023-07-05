@@ -100,6 +100,13 @@ class ApplySerializer(serializers.Serializer):
     amount = models.IntegerField()
 
 
+class NewProductCreationSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=NewProduct.TYPE_CHOICES)
+    month = serializers.IntegerField()
+    # amount = serializers.IntegerField()
+    interest_rate = serializers.FloatField()
+
+
 class ProductCreationSerializer(serializers.Serializer):
     min_amount = serializers.IntegerField()
     max_amount = serializers.IntegerField()
@@ -114,8 +121,8 @@ class ProductCreationSerializer(serializers.Serializer):
 
 
 class ProductInputSerializer(serializers.Serializer):
-    all_data = ProductCreationSerializer(many=True)
-    type = serializers.ChoiceField(choices=Product.TYPE_CHOICES)
+    all_data = NewProductCreationSerializer(many=True)
+    # type = serializers.ChoiceField(choices=Product.TYPE_CHOICES)
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -160,4 +167,11 @@ class ParamSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Param
+        fields = '__all__'
+
+
+class NewProductSerialzier(serializers.ModelSerializer):
+
+    class Meta:
+        model = NewProduct
         fields = '__all__'

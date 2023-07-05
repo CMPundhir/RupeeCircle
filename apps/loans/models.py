@@ -248,6 +248,7 @@ class Investment(BaseModel, models.Model):
     #     self.investment_id = f"INV{self.product.plan_id}"
     #     super(Product, self).save(*args, **kwargs)
 
+
 class Param(models.Model):
     id = models.AutoField(primary_key=True)
     min_amount = models.IntegerField()
@@ -256,3 +257,23 @@ class Param(models.Model):
     max_tenure = models.IntegerField()
     min_interest = models.FloatField()
     max_interest = models.FloatField()
+
+
+class NewProduct(BaseModel, models.Model):
+    TYPE_CHOICES = (('FIXED', 'FIXED'), ('FLEXI', 'FLEXI'))
+    id = models.AutoField(primary_key=True)
+    product_id = models.CharField(max_length=100)
+    type = models.CharField(max_length=100, choices=TYPE_CHOICES)
+    month = models.IntegerField()
+    interest_rate = models.FloatField()
+
+    def save(self, *args, **kwargs):
+        if len(NewProduct.objects.all()) == 0:
+            self.product_id = f"PLAN{self.type}{self.month}{1}"
+        else:
+            latest_id = NewProduct.objects.latest('id')
+            self.product_id = f"PLAN{self.type}{self.month}{latest_id.id}"
+        super(NewProduct, self).save(*args, **kwargs)
+
+
+

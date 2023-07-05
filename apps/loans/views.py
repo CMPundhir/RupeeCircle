@@ -802,13 +802,13 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         # Checking if values are valid or not
         for i in serializer.validated_data['all_data']:
-            if i['min_amount'] < 0 or i['max_amount'] < 0 or i['min_tenure'] < 0 or i['max_tenure'] < 0 or i['min_interest'] < 0 or i['max_interest'] < 0:
+            if i['min_amount'] < 0 or i['max_amount'] < 0 or i['min_tenure'] < 0 or i['max_tenure'] < 0 or i['interest_rate'] < 0:
                 return Response({"message": "All values should be positive."}, status=status.HTTP_400_BAD_REQUEST)
 
             if type(i['min_tenure']) and type(i['max_tenure']) and type(i['min_amount']) and type(i['max_amount']) != int:
                 return Response({"message": "All values should be numeric except interest rates."}, status=status.HTTP_400_BAD_REQUEST)
 
-            if type(i['min_interest']) and type(i['max_interest']) != float:
+            if type(i['interest_rate']) != float:
                 return Response({"message": "Interest Values should be decimal values."}, status.HTTP_400_BAD_REQUEST)
 
         # Checking tenure range
@@ -852,7 +852,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                         return Response({"message": "Slab Already Exists."}, status=status.HTTP_400_BAD_REQUEST)
                     if int(j.min_tenure) <= int(i['max_tenure']) <= int(j.max_tenure) and j.type == serializer.validated_data['type']:
                         return Response({"message": "Slab Already Exists."}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"message": "Everything went well."})
+        # return Response({"message": "Everything went well."})
         # Creating slabs
         for i in serializer.validated_data['all_data']:
             print(f'This is your {i}')
@@ -1018,3 +1018,73 @@ class ParamViewSet(viewsets.ModelViewSet):
     def create(self, request):
         return Response({"message": "Method Not Allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+
+class NewProductViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = []
+    ordering_fields = ['id']
+    filterset_fields = ['product_id', 'type', 'month']
+
+    def get_queryset(self):
+        queryset = NewProduct.objects.all()
+        return queryset
+    
+    def get_serializer_class(self):
+        return NewProductSerialzier
+
+    def create(self, request, *args, **kwargs):
+        # paramlimit = Param.objects.all()[0]
+        serializer = ProductInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # return Response({"message": type(serializer.validated_data['all_data'])})
+        types_of_all = list()
+        for i in serializer.validated_data['all_data']:
+            if i['type'] == NewProduct.TYPE_CHOICES[1][1]:
+                types_of_all.append(i['type'])
+        for i in NewProduct.objects.all():
+            if i.type == NewProduct.TYPE_CHOICES[1][1]:
+                types_of_all.append(i.type)
+        if len(types_of_all) > 1:
+            return Response({"message": "Only one plan can be created for FLEXI plan."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Checking if values are valid or not
+        for i in serializer.validated_data['all_data']:
+            if i['month'] < 0 or i['interest_rate'] < 0:
+                return Response({"message": "All values should be positive."}, status=status.HTTP_400_BAD_REQUEST)
+            if type(i['month']) != int:
+                return Response({"message": "All values should be numeric except interest rates."}, status=status.HTTP_400_BAD_REQUEST)
+            if type(i['interest_rate']) != float:
+                return Response({"message": "Interest Values should be decimal values."}, status.HTTP_400_BAD_REQUEST)
+        
+        # Checking if tenure slab clashes
+        range_list = list()
+        for i in serializer.validated_data['all_data']:
+            current_list = [i['month'], i['type']]
+            if current_list in range_list:
+                return Response({"message": "The Tenure range you entered clashes."}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                range_list.append(current_list)
+
+        # Checking if plan already exists
+        for i in serializer.validated_data['all_data']:
+            exist = NewProduct.objects.filter(type=i['type'], month=i['month']).exists()
+            if exist:
+                return Response({"message": f"Plan with type {i['type']} and month {i['month']} already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Creating slabs
+        for i in serializer.validated_data['all_data']:
+            print(f'This is your {i}')
+            NewProduct.objects.create(type=i['type'],
+                                   month=i['month'],
+                                   interest_rate=i['interest_rate']
+                                   )
+        return Response({"message": "Created."}, status=status.HTTP_201_CREATED)#, headers=headers)
+
+        
+    @action(methods=['GET'], detail=False)
+    def deleteall(self, request):
+        queryset = NewProduct.objects.all()
+        queryset.delete()
+        return Response({"message": "Deleted All."}, status=status.HTTP_200_OK)
+    
