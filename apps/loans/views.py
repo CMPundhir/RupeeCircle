@@ -1027,7 +1027,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
     filterset_fields = ['product_id', 'type', 'month']
 
     def get_queryset(self):
-        queryset = NewProduct.objects.all()
+        queryset = NewProduct.objects.filter(is_record_active=True)
         return queryset
     
     def get_serializer_class(self):
@@ -1072,7 +1072,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
             if exist:
                 return Response({"message": f"Plan with type {i['type']} and month {i['month']} already exists."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Creating slabs
+        # Creating Plans
         for i in serializer.validated_data['all_data']:
             print(f'This is your {i}')
             NewProduct.objects.create(type=i['type'],
