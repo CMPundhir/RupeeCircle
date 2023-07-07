@@ -153,6 +153,8 @@ class LogHistory(BaseModel, models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING)
     activities = models.ManyToManyField(Activity)
     ip = models.CharField(max_length=100)
-    location = models.CharField(max_length=100, null=True, blank=True)
+    lat = models.CharField(max_length=100, null=True, blank=True)
+    long = models.CharField(max_length=100, null=True, blank=True)
     platform = models.CharField(max_length=100, null=True, blank=True)
+    browser = models.CharField(max_length=100, null=True, blank=True)
 

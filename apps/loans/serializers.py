@@ -97,7 +97,14 @@ class InvestmentGetSerializer(serializers.ModelSerializer):
 
 
 class ApplySerializer(serializers.Serializer):
-    amount = models.IntegerField()
+    amount = serializers.IntegerField()
+
+
+class NewProductCreationSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=NewProduct.TYPE_CHOICES)
+    month = serializers.IntegerField()
+    # amount = serializers.IntegerField()
+    interest_rate = serializers.FloatField()
 
 
 class ProductCreationSerializer(serializers.Serializer):
@@ -114,8 +121,8 @@ class ProductCreationSerializer(serializers.Serializer):
 
 
 class ProductInputSerializer(serializers.Serializer):
-    all_data = ProductCreationSerializer(many=True)
-    type = serializers.ChoiceField(choices=Product.TYPE_CHOICES)
+    all_data = NewProductCreationSerializer(many=True)
+    # type = serializers.ChoiceField(choices=Product.TYPE_CHOICES)
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -161,3 +168,27 @@ class ParamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Param
         fields = '__all__'
+
+
+class NewProductSerialzier(serializers.ModelSerializer):
+
+    class Meta:
+        model = NewProduct
+        fields = '__all__'
+
+
+class ProductApplySerializer(serializers.Serializer):
+    amount = serializers.IntegerField()
+    flexi_month = serializers.IntegerField(required=False)
+
+
+class ProductResponseSerializer(serializers.Serializer):
+    total_interest = serializers.IntegerField()
+    product_id = serializers.CharField()
+    type = serializers.ChoiceField(choices=NewProduct.TYPE_CHOICES)
+    month = serializers.IntegerField()
+    interest_rate = serializers.FloatField()
+
+    # class Meta:
+    #     model = NewProduct
+    #     fields = '__all__'

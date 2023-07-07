@@ -18,7 +18,7 @@ class Complaint(models.Model):
     body = models.CharField(max_length=1000, null=True, blank=True)
     remarks = models.CharField(max_length=255, blank=True, null=True)
     image = models.ImageField(upload_to=upload_image, blank=True, null=True)
-    medium = models.CharField(max_length=255, choices=MEDIUM_CHOICES, default=MEDIUM_CHOICES[1][1])
+    # medium = models.CharField(max_length=255, choices=MEDIUM_CHOICES, default=MEDIUM_CHOICES[1][1])
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
     def save(self, *args, **kwargs):
@@ -26,5 +26,5 @@ class Complaint(models.Model):
             self.complaint_id = f'COMPLAINT1'
         else:
             last_object = Complaint.objects.latest('id')#all().order_by('-id')[0]
-            self.complaint_id = f'COMPLAINT{last_object + 1}'
+            self.complaint_id = f'COMPLAINT{last_object.id + 1}'
         super(Complaint, self).save(*args, **kwargs)

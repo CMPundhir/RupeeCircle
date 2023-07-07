@@ -8,6 +8,8 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Complaint
 from rest_framework.decorators import action
 from rest_framework.settings import api_settings
+from django.contrib.gis.geoip2 import GeoIP2
+import requests
 
 # Create your views here.
 
@@ -21,23 +23,25 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Complaint.objects.all()#filter(status=Complaint.STATUS_CHOICES[0][1])
         return queryset
-    
+
     def get_serializer_class(self):
         if self.action == 'markResolve':
             return MarkResolveSerializer
         elif self.action == 'create':
             return ComplaintCreateSerializer
         return ComplaintSerializer
-    
+
     def create(self, request, *args, **kwargs):
         user = request.user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.validated_data['complainant'] = user
-        self.perform_create(serializer)
-        print("A")
+        complainant = user
+        complaint = Complaint.objects.create(nature=serializer.validated_data['nature'],
+                                 body=serializer.validated_data['body'],
+                                #  medium=serializer.validated_data['medium'],
+                                 complainant=complainant)
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response({"message": f"Your Complaint has been registered. Ticket for this complaint is {complaint.complaint_id}"}, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
         serializer.save()
@@ -47,7 +51,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
             return {'Location': str(data[api_settings.URL_FIELD_NAME])}
         except (TypeError, KeyError):
             return {}
-        
+
     def list(self, request, *args, **kwargs):
         user = request.user
         if user.role == User.ROLE_CHOICES[3][1]:
@@ -62,7 +66,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-    
+
     @action(methods=['GET'], detail=True)
     def markResolve(self, request, pk):
         user = request.user
@@ -76,7 +80,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         instance.status = Complaint.STATUS_CHOICES[1][1]
         instance.save()
         return Response({"message": "Complaint Resolved Successfully."}, status=status.HTTP_200_OK)
-    
+
     @action(methods=['GET'], detail=False)
     def resolved(self, request):
         user = request.user
@@ -99,4 +103,18 @@ class ComplaintViewSet(viewsets.ModelViewSet):
                                  medium=Complaint.MEDIUM_CHOICES[0][1],
                                  )
         return Response({"message": "Complain Registered Successfully."}, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=False)
+    def checkingIp(self, request):
+        ip = request.META['REMOTE_ADDR']
+        # res = request.headers['user_agent']
         
+        res = request.headers.user_agent.is_mobile
+        # res = request.headers['user_agent']#['is_mobile']
+        # return Response({"message": request.headers['user_agent']})#['browser']['family']})
+        # g = GeoIP2()
+        # location = g.city(ip)
+        # res = requests.get(f'https://ipapi.co/{ip}/json/').json()
+        return Response({"message": res})
+        # return Response({"message": request.headers['user_agent']['browser']['family']})
+
