@@ -38,7 +38,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         complainant = user
         complaint = Complaint.objects.create(nature=serializer.validated_data['nature'],
                                  body=serializer.validated_data['body'],
-                                 medium=serializer.validated_data['medium'],
+                                #  medium=serializer.validated_data['medium'],
                                  complainant=complainant)
         headers = self.get_success_headers(serializer.data)
         return Response({"message": f"Your Complaint has been registered. Ticket for this complaint is {complaint.complaint_id}"}, status=status.HTTP_201_CREATED, headers=headers)

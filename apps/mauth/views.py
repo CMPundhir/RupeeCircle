@@ -96,15 +96,15 @@ class AuthViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             mobile=serializer.validated_data['mobile']
             otp = random.randint(100000, 999999)
-            # message = f'OTP for login into your RupeeCircle account is {otp}. Please do not share this OTP with anyone to ensure account\'s security.'
-            # r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
-            # r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
-            #                   headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
-            # res = r.json()
+            message = 'OTP for login into your RupeeCircle account is '+str(otp)+'.. Please do not share this OTP with anyone to ensure account\'s security.'
+            r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
+            r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
+                              headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
+            res = r.json()
             OTP_DICT[f'{mobile}'] = otp
             print(OTP_DICT[f'{mobile}'])
-            # return Response({"message": f'Your OTP is {otp}'})
-            return Response({"message": f"Your OTP is {otp}"})
+            return Response({"message": f'Your OTP is {otp}'})
+            # return Response({"message": f"{res['message']}"})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -389,35 +389,67 @@ class UserViewSet(viewsets.ModelViewSet):
                         return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
                     
                     # Integrate Penny Drop Api below
-                    # wallet = Wallet.objects.create(owner=user)
-                    # s = datetime.now()
-                    # traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
-                    # transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False, transaction_id=traceId)
-                    # bank_detail = {
-                    #     "bankAccount": serializer.validated_data['bank_acc'], 
-                    #     "ifsc": serializer.validated_data['bank_ifsc'],
-                    #     "name": "", 
-                    #     "phone": "", 
-                    #     "traceId": traceId}
-                    # url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
-                    # response = requests.post(url, data=bank_detail)
-                    # # r = json.loads(response)
-                    # res = response.json()
-                    # transaction.status = res['status']
-                    # if res['status'] == 'SUCCESS':
-                    #     user.bank_acc = serializer.validated_data['bank_acc']
-                    #     user.bank_ifsc = serializer.validated_data['bank_ifsc']
-                    #     user.bank_name = res['data']['nameAtBank']
-                    #     user.is_bank_acc_verified = True
-                    #     user.save()
-                    #     transaction.penny_drop_utr = res['data']['utr']
-                    #     transaction.ref_id = res['data']['ref_id']
-                    #     transaction.save()
-                    #     return Response({"message": response.status, "name": res['data']['nameAtBank']})
-                    # else:
-                    #     transaction.ref_id = res['data']['ref_id']
-                    #     transaction.save()
-                    #     return Response({"message": res['status']}, status=status.HTTP_400_BAD_REQUEST)
+                    try:
+                        wallet = Wallet.objects.create(owner=user)
+                    except:
+                        wallet = Wallet.objects.get(owner=user)
+                    s = datetime.now()
+                    traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
+                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False, transaction_id=traceId)
+                    bank_detail = {
+                        "bankAccount": serializer.validated_data['bank_acc'], 
+                        "ifsc": serializer.validated_data['bank_ifsc'],
+                        "name": "", 
+                        "phone": "", 
+                        "traceId": "ABCDEF12345678"}
+                    url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    headers = {
+                        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg4ODEyODExLCJpYXQiOjE2ODg3MjY0MTEsImp0aSI6IjUwMjUyOWQ0OTJhZTQ5ZGNhZmFmOWNjYmY2ZTU0NDIyIiwidXNlcl9pZCI6N30.J1wRCEku7nTjfZ69E3aVDKksn0nPe9j_fkdJQ9OLHsQ",
+                        "Content-Type": "application/json"
+                    }
+                    response = requests.post(url, json=bank_detail, headers=headers)
+                    # r = json.loads(response)
+                    res = response.json()
+
+                    # Below code is to check the request
+                    # req = requests.Request('POST',url,headers={"Authorization": f"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg4ODEyODExLCJpYXQiOjE2ODg3MjY0MTEsImp0aSI6IjUwMjUyOWQ0OTJhZTQ5ZGNhZmFmOWNjYmY2ZTU0NDIyIiwidXNlcl9pZCI6N30.J1wRCEku7nTjfZ69E3aVDKksn0nPe9j_fkdJQ9OLHsQ",  "Content-Type": "application/json"},data=bank_detail)
+                    # prepared = req.prepare()
+                    # def pretty_print_POST(req):
+                    #     print('{}\n{}\r\n{}\r\n\r\n{}'.format(
+                    #         '-----------START-----------',
+                    #         req.method + ' ' + req.url,
+                    #         '\r\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
+                    #         req.body,
+                    #     ))
+                    # pretty_print_POST(response.request)
+                    print(f"---------------------------------------- Request starts ----------------------------------------")
+                    print('response.request => ',response.request)
+                    print('response.request.url => ', response.request.url)
+                    print('response.request.body => ', response.request.body)
+                    print('response.request.headers => ', response.request.headers)
+                    print(f"---------------------------------------- Request ENDS ----------------------------------------")
+
+                    print(f"This is your res => {res}")
+                    # Above code is to check the request
+                        
+                    transaction.status = res['status']
+                    if res['status'] == 'SUCCESS':
+                        user.bank_acc = serializer.validated_data['bank_acc']
+                        user.bank_ifsc = serializer.validated_data['bank_ifsc']
+                        user.bank_name = res['data']['nameAtBank']
+                        user.is_bank_acc_verified = True
+                        user.save()
+                        transaction.penny_drop_utr = res['data']['utr']
+                        transaction.ref_id = res['data']['ref_id']
+                        transaction.save()
+                        return Response({"message": response.status, "name": res['data']['nameAtBank']})
+                    else:
+                        try:
+                            transaction.ref_id = res['data']['ref_id']
+                        except:
+                            transaction.ref_id = ''
+                        transaction.save()
+                        return Response({"message": res['message'] if 'message' in res else res['status'], "res" : res}, status=status.HTTP_400_BAD_REQUEST)
                     # if r.status == 'FAILURE':
                     #     return Response({"message": "Bank Verification Failed. Please try again."})
                     # # Integrate Penny Drop Api above

@@ -905,51 +905,46 @@ class ProductViewSet(viewsets.ModelViewSet):
                          "total": total},
                          status=status.HTTP_200_OK)
         
-    @action(methods=['POST'], detail=False)
-    def apply(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        for i in Product.objects.all():
-            if i.min_tenure <= serializer.validated_data['tenure'] <= i.max_tenure:
-                print("Looping")
-                instance = i
-                break
-            else:
-                instance = None
-        print("Looped")
-        if instance:
-            if instance.interest_rate != serializer.validated_data['interest_rate']:
-                return Response({"message": "Interest Rate doesn't match the slab interest rate."}, status=status.HTTP_400_BAD_REQUEST)
-            print(f"This is your instance => {instance}")
-            wallet = Wallet.objects.get(owner=request.user)
-            if wallet.balance < serializer.validated_data['amount']:
-                return Response({"message": "You don't have enough balance in your wallet."}, status=status.HTTP_400_BAD_REQUEST)
-            wallet.balance -= serializer.validated_data['amount']
-            wallet.save()
-            LogService.log(user=request.user, msg=f"Investment successful for {instance.plan_id}.")
-            LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} has been deducted from your Wallet.")
-            LogService.transaction_log(owner=request.user, wallet=wallet, amount=serializer.validated_data['amount'], debit=True, type=Transaction.TYPE_CHOICES[2][1])
-            investment = Investment.objects.create(principal=serializer.validated_data['amount'],
-                                                   interest_rate=serializer.validated_data['interest_rate'],
-                                                   tenure=serializer.validated_data['tenure'],
-                                                   product=instance,
-                                                   investor=request.user)
-            for i in range(serializer.validated_data['tenure']):
-                month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
-                payment = Payment.objects.create(investor=request.user,
-                                                due_date=month,
-                                                product_id=instance.plan_id,
-                                                amount=serializer.validated_data['amount'],
-                                                )
-                investment.installments.add(payment)
-                investment.save()
-            return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
-        return Response({"message": "No product applicable on this tenure."}, status=status.HTTP_404_NOT_FOUND)
-
-    # @action(methods=['GET'], detail=False)
-    # def get_params(self, request):
-        
-    #     response['min_amount']
+    # @action(methods=['GET', 'POST'], detail=False)
+    # def apply(self, request):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     for i in Product.objects.all():
+    #         if i.min_tenure <= serializer.validated_data['tenure'] <= i.max_tenure:
+    #             print("Looping")
+    #             instance = i
+    #             break
+    #         else:
+    #             instance = None
+    #     print("Looped")
+    #     if instance:
+    #         if instance.interest_rate != serializer.validated_data['interest_rate']:
+    #             return Response({"message": "Interest Rate doesn't match the slab interest rate."}, status=status.HTTP_400_BAD_REQUEST)
+    #         print(f"This is your instance => {instance}")
+    #         wallet = Wallet.objects.get(owner=request.user)
+    #         if wallet.balance < serializer.validated_data['amount']:
+    #             return Response({"message": "You don't have enough balance in your wallet."}, status=status.HTTP_400_BAD_REQUEST)
+    #         wallet.balance -= serializer.validated_data['amount']
+    #         wallet.save()
+    #         LogService.log(user=request.user, msg=f"Investment successful for {instance.plan_id}.")
+    #         LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} has been deducted from your Wallet.")
+    #         LogService.transaction_log(owner=request.user, wallet=wallet, amount=serializer.validated_data['amount'], debit=True, type=Transaction.TYPE_CHOICES[2][1])
+    #         investment = Investment.objects.create(principal=serializer.validated_data['amount'],
+    #                                                interest_rate=serializer.validated_data['interest_rate'],
+    #                                                tenure=serializer.validated_data['tenure'],
+    #                                                product=instance,
+    #                                                investor=request.user)
+    #         for i in range(serializer.validated_data['tenure']):
+    #             month = datetime.date.today() + relativedelta.relativedelta(months=i+1)
+    #             payment = Payment.objects.create(investor=request.user,
+    #                                             due_date=month,
+    #                                             product_id=instance.plan_id,
+    #                                             amount=serializer.validated_data['amount'],
+    #                                             )
+    #             investment.installments.add(payment)
+    #             investment.save()
+    #         return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
+    #     return Response({"message": "No product applicable on this tenure."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class PaymentViewSet(viewsets.ModelViewSet):
@@ -1031,6 +1026,12 @@ class NewProductViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self):
+        if self.action == 'create':
+            return ProductInputSerializer
+        elif self.action == 'calculate_interest':
+            return ProductApplySerializer
+        elif self.action == 'apply':
+            return ApplySerializer
         return NewProductSerialzier
 
     def create(self, request, *args, **kwargs):
@@ -1080,11 +1081,80 @@ class NewProductViewSet(viewsets.ModelViewSet):
                                    interest_rate=i['interest_rate']
                                    )
         return Response({"message": "Created."}, status=status.HTTP_201_CREATED)#, headers=headers)
-
-        
+ 
     @action(methods=['GET'], detail=False)
     def deleteall(self, request):
         queryset = NewProduct.objects.all()
         queryset.delete()
         return Response({"message": "Deleted All."}, status=status.HTTP_200_OK)
     
+    @action(methods=['POST'], detail=False)
+    def calculate_interest(self, request):
+        data = request.data
+        serializer = ProductApplySerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+            queryset = self.get_queryset()
+            response_list = list()
+            for i in queryset:
+                if i.type == NewProduct.TYPE_CHOICES[1][1]:
+                    if 'flexi_month' in serializer.validated_data and serializer.validated_data['flexi_month']:
+                        i.month = serializer.validated_data['flexi_month']
+                i.total_interest = ((serializer.validated_data['amount'])*(i.interest_rate/100))*(i.month/12)
+                response_list.append(i)
+            flexi = [i for i in response_list if i.type == 'FLEXI']
+            print(f"This is your Flexi {flexi}")
+            flexi_index = response_list.index(flexi[0])
+            flexi_plan = response_list.pop(flexi_index)
+            response_list[0] = flexi_plan
+        response_serializer = ProductResponseSerializer(response_list, many=True)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True)
+    def apply(self, request, pk):
+        instance = self.get_object()
+        wallet = Wallet.objects.get(owner=request.user)
+        serializer = ApplySerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            if wallet.balance < serializer.validated_data['amount']:
+                    return Response({"message": "You don't have enough balance in your wallet."}, status=status.HTTP_400_BAD_REQUEST)
+            wallet.balance -= serializer.validated_data['amount']
+            wallet.invested_amount += serializer.validated_data['amount']
+            # return Response({"message": "All good till wallet."})
+            wallet.save()
+            LogService.log(user=request.user, msg=f"Investment successful for {instance.plan_id}.")
+            LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} have been deducted from your Wallet.")
+            LogService.transaction_log(owner=request.user, wallet=wallet, amount=serializer.validated_data['amount'], debit=True, type=Transaction.TYPE_CHOICES[2][1])
+            investment = Investment.objects.create(principal=instance.amount,
+                                                    interest_rate=instance.interest_rate,
+                                                    tenure=instance.tenure,
+                                                    product=instance,
+                                                    investor=request.user)
+            for i in range(instance.month):
+                if instance.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
+                    amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/(instance.month*30)
+                    due_date = datetime.date.today() + relativedelta.relativedelta(days=i+1)
+                if instance.interest_payment == Investment.INTEREST_PAYMENT[1][1]:
+                    due_date = datetime.date.today() + relativedelta.relativedelta(months=i+1)
+                    amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/instance.month
+                if instance.interest_payment == Investment.INTEREST_PAYMENT[2][1]:
+                    amount = (((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/(instance.month))*4
+                    due_date = datetime.date.today() + relativedelta.relativedelta(months=(i+1)*4) 
+                if instance.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
+                    amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))#*(instance.month/12)/instance.month
+                    due_date = datetime.date.today() + relativedelta.relativedelta(years=i+1)
+                payment = Payment.objects.create(investor=request.user,
+                                                due_date=due_date,
+                                                product_id=instance.plan_id,
+                                                amount=amount,
+                                                )
+                investment.installments.add(payment)
+                investment.save()
+            return Response({"message": "Invested Successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors)
+
+    @action(methods=['GET'], detail=False)
+    def flexi_month(self, request):
+        # print(request.auth)
+        flexi = self.get_queryset().get(type='FLEXI')
+        data = [i for i in range(1,flexi.month + 1)]
+        return Response(data, status=status.HTTP_200_OK)

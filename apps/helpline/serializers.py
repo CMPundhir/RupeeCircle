@@ -12,7 +12,7 @@ class ComplaintSerializer(serializers.ModelSerializer):
 class ComplaintCreateSerializer(serializers.Serializer):
     nature = serializers.ChoiceField(choices=Complaint.NATURE_CHOICES)
     body = serializers.CharField()
-    medium = serializers.ChoiceField(choices=Complaint.MEDIUM_CHOICES)
+    # medium = serializers.ChoiceField(choices=Complaint.MEDIUM_CHOICES)
 
 
 class MailComplaintSerializer(serializers.Serializer):

@@ -97,7 +97,7 @@ class InvestmentGetSerializer(serializers.ModelSerializer):
 
 
 class ApplySerializer(serializers.Serializer):
-    amount = models.IntegerField()
+    amount = serializers.IntegerField()
 
 
 class NewProductCreationSerializer(serializers.Serializer):
@@ -175,3 +175,20 @@ class NewProductSerialzier(serializers.ModelSerializer):
     class Meta:
         model = NewProduct
         fields = '__all__'
+
+
+class ProductApplySerializer(serializers.Serializer):
+    amount = serializers.IntegerField()
+    flexi_month = serializers.IntegerField(required=False)
+
+
+class ProductResponseSerializer(serializers.Serializer):
+    total_interest = serializers.IntegerField()
+    product_id = serializers.CharField()
+    type = serializers.ChoiceField(choices=NewProduct.TYPE_CHOICES)
+    month = serializers.IntegerField()
+    interest_rate = serializers.FloatField()
+
+    # class Meta:
+    #     model = NewProduct
+    #     fields = '__all__'

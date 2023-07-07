@@ -222,23 +222,26 @@ class Product(BaseModel, models.Model):
 
 
 class Payment(BaseModel, models.Model):
+    STATUS_CHOICES = (('PENDING', 'PENDING'), ('PAID', 'PAID'))
     id = models.AutoField(primary_key=True)
     product_id = models.CharField(max_length=100, blank=True, null=True)
     # investment = models.ForeignKey('Investment', on_delete=models.DO_NOTHING)
     investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     due_date = models.DateField()
     amount = models.FloatField()
-    status = models.CharField(max_length=100)
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][1])
 
 
 class Investment(BaseModel, models.Model):
+    INTEREST_PAYMENT = (('DAILY', 'DAILY'), ('MONTHLY', 'MONTHLY'), ('QUARTERLY', 'QUARTERLY'), ('ANNUALLY', 'ANNUALLY'))
     id = models.AutoField(primary_key=True)
     principal = models.IntegerField()
     # investment_id = models.CharField(max_length=100)
     interest_rate = models.FloatField()
     tenure = models.IntegerField()
-    product = models.ForeignKey(Product, on_delete=models.DO_NOTHING)
+    product = models.ForeignKey('NewProduct', on_delete=models.DO_NOTHING)
     investor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    interest_payment = models.CharField(max_length=100, choices=INTEREST_PAYMENT, default=INTEREST_PAYMENT[1][0])
     installments = models.ManyToManyField(Payment)
 
     # def save(self, *args, **kwargs):
@@ -268,6 +271,8 @@ class NewProduct(BaseModel, models.Model):
     interest_rate = models.FloatField()
 
     def save(self, *args, **kwargs):
+        if self.type == self.TYPE_CHOICES[1][1]:
+            self.month = 0
         if len(NewProduct.objects.all()) == 0:
             self.product_id = f"PLAN{self.type}{self.month}{1}"
         else:

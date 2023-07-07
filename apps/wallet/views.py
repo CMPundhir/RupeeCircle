@@ -1,8 +1,10 @@
 from django.shortcuts import render
+import requests
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from apps.notification.services import LogService
+from apps.mauth.serializers import BankDetailSerializer
 from rest_framework import status
 from .models import Wallet
 from apps.mauth.models import CustomUser as User
@@ -187,6 +189,59 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         return BankAccountSerializer
     
     def create(self, request, *args, **kwargs):
+        data = request.data
+        user = request.user
+        serializer = BankDetailSerializer(data=data)
+        # print("Validating Serializer")
+        if serializer.is_valid(raise_exception=True):
+            if serializer.is_valid(raise_exception=True):
+                # print("Serializer Validated")
+                if 'acc_holder_name' in serializer.validated_data and 'bank_acc' in serializer.validated_data and 'bank_ifsc' in serializer.validated_data:
+                    # print("Getting User object.")
+                    # acc_holder_name = serializer.validated_data['acc_holder_name']
+                    bank_acc = serializer.validated_data['bank_acc']
+                    bank_ifsc = serializer.validated_data['bank_ifsc']
+                    bank_acc_exists = User.objects.filter(bank_acc=bank_acc).exists()
+                    if bank_acc_exists:
+                        return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    # Integrate Penny Drop Api below
+                    try:
+                        wallet = Wallet.objects.create(owner=user)
+                    except:
+                        wallet = Wallet.objects.get(owner=user)
+                    s = datetime.now()
+                    traceId = f"T{wallet.id}{str(s).replace('-', '').replace(' ',  '').replace(':', '').replace('.', '')}"
+                    transaction = Transaction.objects.create(owner=user, amount=1, wallet=wallet, debit=False, transaction_id=traceId)
+                    bank_detail = {
+                        "bankAccount": serializer.validated_data['bank_acc'], 
+                        "ifsc": serializer.validated_data['bank_ifsc'],
+                        "name": "", 
+                        "phone": "", 
+                        "traceId": traceId}
+                    url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    response = requests.post(url, data=bank_detail, headers={"Authorization": f"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg4ODEyODExLCJpYXQiOjE2ODg3MjY0MTEsImp0aSI6IjUwMjUyOWQ0OTJhZTQ5ZGNhZmFmOWNjYmY2ZTU0NDIyIiwidXNlcl9pZCI6N30.J1wRCEku7nTjfZ69E3aVDKksn0nPe9j_fkdJQ9OLHsQ"})
+                    # r = json.loads(response)
+                    res = response.json()
+                    transaction.status = res['status']
+                    print(f"This is your res => {res}")
+                    if res['status'] == 'SUCCESS':
+                        user.bank_acc = serializer.validated_data['bank_acc']
+                        user.bank_ifsc = serializer.validated_data['bank_ifsc']
+                        user.bank_name = res['data']['nameAtBank']
+                        user.is_bank_acc_verified = True
+                        user.save()
+                        transaction.penny_drop_utr = res['data']['utr']
+                        transaction.ref_id = res['data']['ref_id']
+                        transaction.save()
+                        return Response({"message": response.status, "name": res['data']['nameAtBank']})
+                    else:
+                        try:
+                            transaction.ref_id = res['data']['ref_id']
+                        except:
+                            transaction.ref_id = ''
+                        transaction.save()
+                        return Response({"message": res['status']}, status=status.HTTP_400_BAD_REQUEST)
         user = request.user
         all_banks = BankAccount.objects.filter(owner=user).count()
         if all_banks >= 4:
