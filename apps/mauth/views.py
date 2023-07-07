@@ -401,10 +401,10 @@ class UserViewSet(viewsets.ModelViewSet):
                         "ifsc": serializer.validated_data['bank_ifsc'],
                         "name": "", 
                         "phone": "",
-                        "traceId": "ABCDEF12345678"}
+                        "traceId": "X738393937202"}
                     url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
                     headers = {
-                        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg4ODEyODExLCJpYXQiOjE2ODg3MjY0MTEsImp0aSI6IjUwMjUyOWQ0OTJhZTQ5ZGNhZmFmOWNjYmY2ZTU0NDIyIiwidXNlcl9pZCI6N30.J1wRCEku7nTjfZ69E3aVDKksn0nPe9j_fkdJQ9OLHsQ",
+                        "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI0NjYiLCJzdWIiOiJ0cmFucyIsImlzcyI6IlRSQU5TWFQiLCJTRVNTSU9OSUQiOiIwIiwiU0VDUkVUIjoiIiwiUFJPRExJU1QiOltdLCJVU0VSSUQiOiIwIiwiUE9SVEFMIjoiIiwiRU5WIjoidWF0In0.uVpDCnsllwcYCyL44dTX5sHXtGYljRqXV06etoRfSerEa94f6oakN0e_rK0pE6HEOhvjHgA8xR89bamSxqGGzQ",
                         "Content-Type": "application/json"
                     }
                     response = requests.post(url, json=bank_detail, headers=headers)
@@ -440,7 +440,7 @@ class UserViewSet(viewsets.ModelViewSet):
                         user.is_bank_acc_verified = True
                         user.save()
                         transaction.penny_drop_utr = res['data']['utr']
-                        transaction.ref_id = res['data']['ref_id']
+                        transaction.ref_id = res['data']['refId']
                         transaction.save()
                         return Response({"message": response.status, "name": res['data']['nameAtBank']})
                     else:
