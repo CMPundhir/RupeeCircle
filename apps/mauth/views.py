@@ -375,6 +375,7 @@ class UserViewSet(viewsets.ModelViewSet):
             user.is_aadhaar_verified = True
             user.status = CustomUser.STATUS_CHOICES[3][0]
             user.save()
+            #JUST
             return Response({'message': res['data']['status'], 'step': user.status})
             return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
