@@ -163,6 +163,14 @@ class InvestmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class InvestmentGetSerializer(serializers.ModelSerializer):
+    installments = PaymentSerializer(many=True)
+
+    class Meta:
+        model = Investment
+        fields = '__all__'
+
+
 class ParamSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -183,6 +191,7 @@ class ProductApplySerializer(serializers.Serializer):
 
 
 class ProductResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     total_interest = serializers.IntegerField()
     product_id = serializers.CharField()
     type = serializers.ChoiceField(choices=NewProduct.TYPE_CHOICES)

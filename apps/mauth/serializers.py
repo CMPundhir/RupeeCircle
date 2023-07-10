@@ -126,7 +126,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         # fields = '__all__'
         fields = ['id', 'user_id', 'credit_score', 'selfie', 'username', 'partner', 'first_name', 'last_name', 'email', 'is_email_verified', 'gender', 'mobile', 'is_mobile_verified', 'country', 'state', 'city', 'pincode', 'company', 'address', 'status', 'special_plan_exist', 'is_fixedroi_allowed', 'is_anytime_withdrawal_allowed', 'is_marketplace_allowed', 'rc_risk', 'role']
- 
+
 
 class UserDetailSerializer(serializers.ModelSerializer):
 

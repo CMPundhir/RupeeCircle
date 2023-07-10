@@ -992,6 +992,8 @@ class InvestmentViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return InvestmentGetSerializer
         return InvestmentSerializer
 
     @action(methods=['GET'], detail=False)
@@ -1112,9 +1114,10 @@ class NewProductViewSet(viewsets.ModelViewSet):
                 response_list.append(i)
             flexi = [i for i in response_list if i.type == 'FLEXI']
             print(f"This is your Flexi {flexi}")
-            flexi_index = response_list.index(flexi[0])
-            flexi_plan = response_list.pop(flexi_index)
-            response_list[0] = flexi_plan
+            if len(flexi) > 0:
+                flexi_index = response_list.index(flexi[0])
+                flexi_plan = response_list.pop(flexi_index)
+                response_list[0] = flexi_plan
         response_serializer = ProductResponseSerializer(response_list, many=True)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
@@ -1130,30 +1133,30 @@ class NewProductViewSet(viewsets.ModelViewSet):
             wallet.invested_amount += serializer.validated_data['amount']
             # return Response({"message": "All good till wallet."})
             wallet.save()
-            LogService.log(user=request.user, msg=f"Investment successful for {instance.plan_id}.")
-            LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} have been deducted from your Wallet.")
+            LogService.log(user=request.user, msg=f"Investment successful for {instance.product_id}.", is_activity=True)
+            LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} have been deducted from your Wallet.", is_activity=False)
             LogService.transaction_log(owner=request.user, wallet=wallet, amount=serializer.validated_data['amount'], debit=True, type=Transaction.TYPE_CHOICES[2][1])
-            investment = Investment.objects.create(principal=instance.amount,
+            investment = Investment.objects.create(principal=serializer.validated_data['amount'],
                                                     interest_rate=instance.interest_rate,
-                                                    tenure=instance.tenure,
+                                                    tenure=instance.month,
                                                     product=instance,
                                                     investor=request.user)
             for i in range(instance.month):
-                if instance.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
+                if investment.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
                     amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/(instance.month*30)
                     due_date = datetime.date.today() + relativedelta.relativedelta(days=i+1)
-                if instance.interest_payment == Investment.INTEREST_PAYMENT[1][1]:
+                if investment.interest_payment == Investment.INTEREST_PAYMENT[1][1]:
                     due_date = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                     amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/instance.month
-                if instance.interest_payment == Investment.INTEREST_PAYMENT[2][1]:
+                if investment.interest_payment == Investment.INTEREST_PAYMENT[2][1]:
                     amount = (((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/(instance.month))*4
                     due_date = datetime.date.today() + relativedelta.relativedelta(months=(i+1)*4) 
-                if instance.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
+                if investment.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
                     amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))#*(instance.month/12)/instance.month
                     due_date = datetime.date.today() + relativedelta.relativedelta(years=i+1)
                 payment = Payment.objects.create(investor=request.user,
                                                 due_date=due_date,
-                                                product_id=instance.plan_id,
+                                                product_id=instance.product_id,
                                                 amount=amount,
                                                 )
                 investment.installments.add(payment)

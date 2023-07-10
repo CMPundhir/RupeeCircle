@@ -280,5 +280,6 @@ class NewProduct(BaseModel, models.Model):
             self.product_id = f"PLAN{self.type}{self.month}{latest_id.id}"
         super(NewProduct, self).save(*args, **kwargs)
 
-
+    def __str__(self):
+        return self.product_id
 
