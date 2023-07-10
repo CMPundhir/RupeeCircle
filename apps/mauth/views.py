@@ -216,7 +216,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
-        if self.action == 'panDetail':
+        if self.action == 'panDetail' or self.action == 'myIpTest':
             return PanSerializer
         elif self.action == 'panVerify':
             return PanVerifySerializer
