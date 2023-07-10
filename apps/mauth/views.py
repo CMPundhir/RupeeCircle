@@ -254,9 +254,9 @@ class UserViewSet(viewsets.ModelViewSet):
         r = requests.post(url="https://www.rupeecircle.com/api/v4/vendor/ip", 
                           json=data,
                           headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6InhmOWhWOHdLeUJ1UVNSVHNpY2hDK3c9PSIsInZhbHVlIjoidldmYW9ScTVvVXVqT0JDNFlnbldlRmlBNVgyK2lscEhXZmlEbDJtYzhjWnlrRkJHYXVlRFZBZXRkampNeUxlMUdmSTJ0ZFIxcFJTRFQ2ektpbVpyTXc9PSIsIm1hYyI6ImY2ZWUwMzdlMGM4NmExN2ZkMjU2Yzk1ODVhMmQ1Mzg1OGI1NGZjN2I3NjMwNTM1MTY1ZDIyMDlkZmMxMDgzMWIifQ%3D%3D; AWSALB=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ; AWSALBCORS=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ"})
-        res = r.json()
+        # res = r.json()
         print(r.content)
-        return Response({"message": "Success", "res": res})
+        return Response({"message": "Success", "res": r})
         
     
     
