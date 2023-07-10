@@ -241,6 +241,7 @@ class UserViewSet(viewsets.ModelViewSet):
         balance = Wallet.objects.filter(owner=instance)
         serializer.data['balance'] = balance
         return Response(serializer.data)
+
     
     @action(methods=['POST'], detail=True)
     def panDetail(self, request, pk):
@@ -265,7 +266,9 @@ class UserViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         # Below is pan integration
-        r = requests.post(url="https://www.rupeecircle.com/api/v4/nsdl-pan-verification", 
+        #                      https://www.rupeecircle.com/api/v4/nsdl-pan-verification
+        # r = requests.post(url="https://www.rupeecircle.com/api/v4/nsdl-pan-verification", 
+        r = requests.post(url="https://www.rupeecircle.com/api/v4/vendor/ip'", 
                           json=data,
                           headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6InhmOWhWOHdLeUJ1UVNSVHNpY2hDK3c9PSIsInZhbHVlIjoidldmYW9ScTVvVXVqT0JDNFlnbldlRmlBNVgyK2lscEhXZmlEbDJtYzhjWnlrRkJHYXVlRFZBZXRkampNeUxlMUdmSTJ0ZFIxcFJTRFQ2ektpbVpyTXc9PSIsIm1hYyI6ImY2ZWUwMzdlMGM4NmExN2ZkMjU2Yzk1ODVhMmQ1Mzg1OGI1NGZjN2I3NjMwNTM1MTY1ZDIyMDlkZmMxMDgzMWIifQ%3D%3D; AWSALB=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ; AWSALBCORS=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ"})
         res = r.json()
