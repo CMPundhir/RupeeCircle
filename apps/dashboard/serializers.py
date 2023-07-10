@@ -42,7 +42,7 @@ class PartnerRegistrationSerializer(serializers.ModelSerializer):
                   'aadhaar', 
                   'bank_acc', 
                   'bank_ifsc', 
-                  'company_name',
+                  'company',
                   'company_gst',
                   'company_pan',
                   'nature', 

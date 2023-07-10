@@ -61,7 +61,7 @@ class CustomUser(AbstractUser):
     city = models.CharField(max_length=255, null=True, blank=True)
     address = models.CharField(max_length=255, blank=True, null=True)
     pincode = models.CharField(max_length=255, null=True, blank=True)
-    company_name = models.CharField(max_length=255, null=True, blank=True)
+    company = models.CharField(max_length=255, null=True, blank=True)
     company_gst = models.CharField(max_length=255, null=True, blank=True)
     company_pan = models.CharField(max_length=255, null=True, blank=True)
     pan = models.CharField(null=True, blank=True, unique=True)
