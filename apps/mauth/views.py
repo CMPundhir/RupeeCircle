@@ -430,7 +430,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         PENNY_DROP_PROD_TOKEN = os.getenv("PENNY_DROP_PROD_TOKEN")
         serializer = BankDetailSerializer(data=data)
-        print("PENNY_DROP_PROD_TOKEN => ", PENNY_DROP_PROD_TOKEN)
+        # print("PENNY_DROP_PROD_TOKEN => ", PENNY_DROP_PROD_TOKEN)
         # print("Validating Serializer")
         if serializer.is_valid(raise_exception=True):
             if serializer.is_valid(raise_exception=True):
@@ -469,7 +469,6 @@ class UserViewSet(viewsets.ModelViewSet):
                     response = requests.post(url, json=bank_detail, headers=headers)
                     print("Bank Details =>> ", response.__dict__)
                     # r = json.loads(response)
-                    res = response.json()
 
                     # Below code is to check the request
                     # req = requests.Request('POST',url,headers={"Authorization": f"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg4ODEyODExLCJpYXQiOjE2ODg3MjY0MTEsImp0aSI6IjUwMjUyOWQ0OTJhZTQ5ZGNhZmFmOWNjYmY2ZTU0NDIyIiwidXNlcl9pZCI6N30.J1wRCEku7nTjfZ69E3aVDKksn0nPe9j_fkdJQ9OLHsQ",  "Content-Type": "application/json"},data=bank_detail)
@@ -487,7 +486,12 @@ class UserViewSet(viewsets.ModelViewSet):
                     print('response.request.url => ', response.request.url)
                     print('response.request.body => ', response.request.body)
                     print('response.request.headers => ', response.request.headers)
+                    print('response.text => ', response.text)
                     print(f"---------------------------------------- Request ENDS ----------------------------------------")
+                    try:
+                        res = response.json()
+                    except Exception as e:
+                        return Response({"res": response.text, "tk": PENNY_DROP_PROD_TOKEN}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
                     print(f"This is your res => {res}")
                     # Above code is to check the request
@@ -511,27 +515,6 @@ class UserViewSet(viewsets.ModelViewSet):
                             transaction.ref_id = ''
                         transaction.save()
                         return Response({"message": res['message'] if 'message' in res else res['status'], "res" : res}, status=status.HTTP_400_BAD_REQUEST)
-                    # if r.status == 'FAILURE':
-                    #     return Response({"message": "Bank Verification Failed. Please try again."})
-                    # # Integrate Penny Drop Api above
-                    
-                    # Match the name here
-                    print('getting user')
-                    user = CustomUser.objects.get(pk=pk)
-                    user.acc_holder_name = acc_holder_name
-                    # user.account_holder_name = 'Name'
-                    user.bank_acc = bank_acc
-                    user.bank_ifsc = bank_ifsc
-                    user.is_bank_acc_verified = True
-                    user.status = CustomUser.STATUS_CHOICES[4][0]
-                    user.save()
-                    special_plan = InvestmentProduct.objects.get(id=22)
-                    special_plan.allowed_investor.add(user)
-                    special_plan.save()
-                    BankAccount.objects.create(bank=user.bank_name, owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                    Wallet.objects.create(owner=user)
-                    
-                    return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
