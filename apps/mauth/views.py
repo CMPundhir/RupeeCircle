@@ -372,7 +372,7 @@ class UserViewSet(viewsets.ModelViewSet):
             r = requests.post(url='https://api.signzy.app/api/v3/fetchOkycData', json={"requestId": request_id, "otp": otp}, headers=headers)
             res = r.json()
             user.aadhaar = aadhaar
-            user.aadhaar_verify_data = f'r'
+            user.aadhaar_verify_data = f'{r}'
             user.is_aadhaar_verified = True
             user.status = CustomUser.STATUS_CHOICES[3][0]
             user.save()
