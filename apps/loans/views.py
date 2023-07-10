@@ -1022,7 +1022,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
     filterset_fields = ['product_id', 'type', 'month', 'is_record_active'] # added filter of record active in Product
 
     def get_queryset(self):
-        queryset = NewProduct.objects.all()#filter(is_record_active=True)
+        queryset = NewProduct.objects.all().order_by("-id")#filter(is_record_active=True)
         return queryset
     
     def get_serializer_class(self):
@@ -1033,6 +1033,16 @@ class NewProductViewSet(viewsets.ModelViewSet):
         elif self.action == 'apply':
             return ApplySerializer
         return NewProductSerialzier
+    
+    def partial_update(self, request, *args, **kwargs):
+        print("Product Patch => ",request.data)
+        data = request.data
+        if 'type' in data and data['type'] == NewProduct.TYPE_CHOICES[1][1] and data['is_record_active']:
+            flex_list = NewProduct.objects.filter(type=NewProduct.TYPE_CHOICES[1][1])
+            for f in flex_list:
+                f.is_record_active = False
+                f.save()
+        return super().partial_update(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         # paramlimit = Param.objects.all()[0]
@@ -1047,7 +1057,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
         for i in serializer.validated_data['all_data']:
             for j in all_plans:
                 if i['type'] == j.type and i['month'] == j.month and i['interest_rate'] == j.interest_rate:
-                    return Response({"message": "Plan(s) alredy exist with same specification."})
+                    return Response({"message": "Plan(s) already exist with same specification."})
 
         for i in serializer.validated_data['all_data']:
             if i['type'] == NewProduct.TYPE_CHOICES[1][1]:
@@ -1060,7 +1070,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
         
         # Checking if values are valid or not
         for i in serializer.validated_data['all_data']:
-            if i['month'] < 0 or i['interest_rate'] < 0:
+            if i['month'] < 1 or i['interest_rate'] < 0:
                 return Response({"message": "All values should be positive."}, status=status.HTTP_400_BAD_REQUEST)
             if type(i['month']) != int:
                 return Response({"message": "All values should be numeric except interest rates."}, status=status.HTTP_400_BAD_REQUEST)
