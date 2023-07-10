@@ -33,6 +33,7 @@ v1_router.register(r'helpline', ComplaintViewSet, basename='helpline')
 v1_router.register(r'tnc', TermsAndConditionViewSet, basename='tnc')
 v1_router.register(r'product', NewProductViewSet, basename='product')
 v1_router.register(r'productparam', ParamViewSet, basename='productparam')
+v1_router.register(r'bankslabs', BankSlabViewSet, basename='bankslabs')
 
 
 

@@ -140,7 +140,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         queryset = LoanApplication.objects.annotate(investor_count=Count('investors')).order_by('-investor_count')[0:4]
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
- 
+
 
 class FixedROIViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -1019,10 +1019,10 @@ class NewProductViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id']
-    filterset_fields = ['product_id', 'type', 'month']
+    filterset_fields = ['product_id', 'type', 'month', 'is_record_active'] # added filter of record active in Product
 
     def get_queryset(self):
-        queryset = NewProduct.objects.filter(is_record_active=True)
+        queryset = NewProduct.objects.all()#filter(is_record_active=True)
         return queryset
     
     def get_serializer_class(self):
@@ -1040,10 +1040,19 @@ class NewProductViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         # return Response({"message": type(serializer.validated_data['all_data'])})
         types_of_all = list()
+
+        # Checking if plan with same param is inactive
+        inactive_exist = list()
+        queryset = NewProduct.objects.filter(is_record_active=False)
+        for i in serializer.validated_data['all_data']:
+            for j in queryset:
+                if i['type'] == j.type and i['month'] == j.month and i['interest_rate'] == j.interest_rate:
+                    return Response({"message": "Plan(s) alredy exist with same specification."})
+
         for i in serializer.validated_data['all_data']:
             if i['type'] == NewProduct.TYPE_CHOICES[1][1]:
                 types_of_all.append(i['type'])
-        for i in NewProduct.objects.all():
+        for i in NewProduct.objects.filter(is_record_active=True):
             if i.type == NewProduct.TYPE_CHOICES[1][1]:
                 types_of_all.append(i.type)
         if len(types_of_all) > 1:
@@ -1080,7 +1089,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
                                    month=i['month'],
                                    interest_rate=i['interest_rate']
                                    )
-        return Response({"message": "Created."}, status=status.HTTP_201_CREATED)#, headers=headers)
+        return Response({"message": "Created."}, status=status.HTTP_201_CREATED)
  
     @action(methods=['GET'], detail=False)
     def deleteall(self, request):

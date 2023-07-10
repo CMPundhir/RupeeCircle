@@ -56,3 +56,12 @@ class BankAccount(BaseModel, models.Model):
     ifsc = models.CharField(max_length=255)
     is_primary = models.BooleanField(default=False)
 
+
+class BankSlab(BaseModel, models.Model):
+    SYSTEM_CHOICES = (('IMPS', 'IMPS'), ('NEFT', 'NEFT'), ('RTGS', 'RTGS'))
+    id = models.AutoField(primary_key=True)
+    system = models.CharField(max_length=50, choices=SYSTEM_CHOICES, default=SYSTEM_CHOICES[0][1])
+    charges = models.IntegerField()
+    min_limit = models.IntegerField()
+    max_limit = models.IntegerField()
+

@@ -33,7 +33,24 @@ class PartnerRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode']
+        fields = ['first_name', 
+                  'last_name', 
+                  'mobile', 
+                  'email', 
+                  'gender', 
+                  'pan', 
+                  'aadhaar', 
+                  'bank_acc', 
+                  'bank_ifsc', 
+                  'company',
+                  'company_gst',
+                  'company_pan',
+                  'nature', 
+                  'address', 
+                  'country', 
+                  'state', 
+                  'city', 
+                  'pincode']
         # fields = ['first_name', 'last_name', 'mobile', 'email', 'gender', 'country', 'state', 'city', 'pincode', 'company', 'address', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc']
         # extra_kwargs = {'first_name': {'required': True},
         #                 'mobile': {'required': True}, 
