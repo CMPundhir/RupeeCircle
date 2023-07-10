@@ -459,11 +459,11 @@ class UserViewSet(viewsets.ModelViewSet):
                         "phone": "",
                         # "traceId": "X738393937202"}
                         "traceId": traceId}
-                    # url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
-                    url = 'https://auroapi.transxt.in/api/1.1/pennydrop'
+                    url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    # url = 'https://auroapi.transxt.in/api/1.1/pennydrop'
                     headers = {
-                        # "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI0NjYiLCJzdWIiOiJ0cmFucyIsImlzcyI6IlRSQU5TWFQiLCJTRVNTSU9OSUQiOiIwIiwiU0VDUkVUIjoiIiwiUFJPRExJU1QiOltdLCJVU0VSSUQiOiIwIiwiUE9SVEFMIjoiIiwiRU5WIjoidWF0In0.uVpDCnsllwcYCyL44dTX5sHXtGYljRqXV06etoRfSerEa94f6oakN0e_rK0pE6HEOhvjHgA8xR89bamSxqGGzQ",
-                        "Authorization": f"Bearer {PENNY_DROP_PROD_TOKEN}",
+                        "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI0NjYiLCJzdWIiOiJ0cmFucyIsImlzcyI6IlRSQU5TWFQiLCJTRVNTSU9OSUQiOiIwIiwiU0VDUkVUIjoiIiwiUFJPRExJU1QiOltdLCJVU0VSSUQiOiIwIiwiUE9SVEFMIjoiIiwiRU5WIjoidWF0In0.uVpDCnsllwcYCyL44dTX5sHXtGYljRqXV06etoRfSerEa94f6oakN0e_rK0pE6HEOhvjHgA8xR89bamSxqGGzQ",
+                        # "Authorization": f"Bearer {PENNY_DROP_PROD_TOKEN}",
                         "Content-Type": "application/json"
                     }
                     response = requests.post(url, json=bank_detail, headers=headers)
