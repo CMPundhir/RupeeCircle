@@ -253,7 +253,11 @@ class UserViewSet(viewsets.ModelViewSet):
         pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
         if pan_exist:
             return Response({"message": "PAN already exists."}, status=status.HTTP_400_BAD_REQUEST)
-        data = {"access_token": "9dECoXkSlurJQs8C", "panId": serializer.validated_data['pan']}
+        data = {"access_token": "FuGUrmePylKM3jDp",
+                "firstname": "",
+                "middlename": "",
+                "lastname": "", 
+                "panId": serializer.validated_data['pan']}
         # data = json.load({
         # "access_token":"9dECoXkSlurJQs8C",
         # "panId": "AAIPM3854E"
@@ -261,9 +265,9 @@ class UserViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         # Below is pan integration
-        r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", 
+        r = requests.post(url="https://www.rupeecircle.com/api/v4/nsdl-pan-verification", 
                           json=data,
-                          headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6IitzUFFuXC9NckdvWGgreHAxSU1uUFNRPT0iLCJ2YWx1ZSI6ImFpNjhoeTlrK29ZbVplK0tPS2pZNXJSS2hZUURkVHk3ZWhYVHJFZmdwbUlpSkkyZCtwYjZWbytsMVppMjE3OUxlamEzeWFYb0ZzdDMrbWpOa0oyQVR3PT0iLCJtYWMiOiJhZjYxYmFmNTFiMzgyY2IyN2Y1N2I0MTcyOTI0MDAzYWEwMmQ0NDcwYWU4Y2E3MzBkNTRiODU5OWZhOTgxMTI2In0%3D; RupeeCircle=eyJpdiI6IldHYlFLRldNc2lmdnh6OWdSb1RKMlE9PSIsInZhbHVlIjoicEJ2anBianhSZW9Ia3U5TUFiaGpORjVYUDE0QlhVZm9wTDYyS1M1V2tjQjZCNXpMR2dHNVZWWW1vOWxGS1g4Mk9EQ2tjbllVV0dHWWpNSWk2MjNxckE9PSIsIm1hYyI6ImViYmEwOTIwYjExYzY1NGFmNDI5MTQ3YTYxYTU1MjE3NGQ5NWExNmU1MGQ5YzlhNjJkOTBiYTdlNDBmNWRkNGQifQ%3D%3D"})
+                          headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6InhmOWhWOHdLeUJ1UVNSVHNpY2hDK3c9PSIsInZhbHVlIjoidldmYW9ScTVvVXVqT0JDNFlnbldlRmlBNVgyK2lscEhXZmlEbDJtYzhjWnlrRkJHYXVlRFZBZXRkampNeUxlMUdmSTJ0ZFIxcFJTRFQ2ektpbVpyTXc9PSIsIm1hYyI6ImY2ZWUwMzdlMGM4NmExN2ZkMjU2Yzk1ODVhMmQ1Mzg1OGI1NGZjN2I3NjMwNTM1MTY1ZDIyMDlkZmMxMDgzMWIifQ%3D%3D; AWSALB=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ; AWSALBCORS=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ"})
         res = r.json()
         print(r.content)
         if res['flag'] == True:
@@ -365,13 +369,13 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             headers = {"Authorization": "OXX3dFnFsQRwsOb6gU9jDLNpHACUhX5B", "Content-Type": "application/json"}
             r = requests.post(url='https://api.signzy.app/api/v3/fetchOkycData', json={"requestId": request_id, "otp": otp}, headers=headers)
-            
+            res = r.json()
             user.aadhaar = aadhaar
             user.aadhaar_verify_data = f'r'
             user.is_aadhaar_verified = True
             user.status = CustomUser.STATUS_CHOICES[3][0]
             user.save()
-            return Response({'message': 'Aadhar Verification successful', 'step': user.status})
+            return Response({'message': res['data']['status'], 'step': user.status})
             return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
