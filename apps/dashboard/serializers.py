@@ -65,7 +65,7 @@ class PartnerGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'address', 'country', 'state', 'city', 'pincode']
+        fields = ['id', 'username', 'first_name', 'last_name', 'mobile', 'email', 'gender', 'pan', 'aadhaar', 'bank_acc', 'bank_ifsc', 'company', 'company_gst', 'company_pan', 'nature', 'address', 'country', 'state', 'city', 'pincode']
 
 
 class PartnerDetailSerializer(serializers.ModelSerializer):

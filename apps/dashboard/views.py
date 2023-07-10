@@ -199,7 +199,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
             return PartnerRegistrationSerializer
         elif self.action == 'list' or self.action == 'retrieve':
             return PartnerGetSerializer
-        return UserSerializer
+        return PartnerGetSerializer
     
     def create(self, request):
         '''
@@ -248,6 +248,8 @@ class PartnerViewSet(viewsets.ModelViewSet):
                 instance.country_gst = serializer.validated_data['country_gst']
             if 'country_pan' in serializer.validated_data and serializer.validated_data['country_pan']:
                 instance.country_pan = serializer.validated_data['country_pan']
+            if 'nature' in serializer.validated_data and serializer.validated_data['nature']:
+                instance.nature = serializer.validated_data['nature']
                 instance.is_pan_verified = True
             if 'state' in serializer.validated_data and serializer.validated_data['state']:
                 instance.state = serializer.validated_data['state']
@@ -262,7 +264,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
             if 'last_name' in serializer.validated_data and serializer.validated_data['last_name']:
                 instance.last_name = serializer.validated_data['last_name']
             instance.save()
-            LogService.log(user=instance, msg="Welcome to RupeeCircle.", is_transaction=False)
+            LogService.log(user=instance, msg="Welcome to RupeeCircle.", is_activity=True)
             serializer = self.get_serializer(instance)
             return Response({"message": "Partner registered successfully.", "partner": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

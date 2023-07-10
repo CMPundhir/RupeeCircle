@@ -1043,9 +1043,9 @@ class NewProductViewSet(viewsets.ModelViewSet):
 
         # Checking if plan with same param is inactive
         inactive_exist = list()
-        queryset = NewProduct.objects.filter(is_record_active=False)
+        all_plans = NewProduct.objects.filter(is_record_active=False)
         for i in serializer.validated_data['all_data']:
-            for j in queryset:
+            for j in all_plans:
                 if i['type'] == j.type and i['month'] == j.month and i['interest_rate'] == j.interest_rate:
                     return Response({"message": "Plan(s) alredy exist with same specification."})
 
@@ -1090,7 +1090,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
                                    interest_rate=i['interest_rate']
                                    )
         return Response({"message": "Created."}, status=status.HTTP_201_CREATED)
- 
+
     @action(methods=['GET'], detail=False)
     def deleteall(self, request):
         queryset = NewProduct.objects.all()

@@ -64,6 +64,7 @@ class CustomUser(AbstractUser):
     company = models.CharField(max_length=255, null=True, blank=True)
     company_gst = models.CharField(max_length=255, null=True, blank=True)
     company_pan = models.CharField(max_length=255, null=True, blank=True)
+    nature = models.CharField(max_length=255, null=True, blank=True)
     pan = models.CharField(null=True, blank=True, unique=True)
     pan_name = models.CharField(null=True, blank=True)
     is_pan_verified = models.BooleanField(default=False)
