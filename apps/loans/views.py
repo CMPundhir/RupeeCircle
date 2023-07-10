@@ -1102,7 +1102,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = ProductApplySerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            queryset = self.get_queryset()
+            queryset = NewProduct.objects.filter(is_record_active=True)
             response_list = list()
             for i in queryset:
                 if i.type == NewProduct.TYPE_CHOICES[1][1]:

@@ -271,8 +271,8 @@ class NewProduct(BaseModel, models.Model):
     interest_rate = models.FloatField()
 
     def save(self, *args, **kwargs):
-        if self.type == self.TYPE_CHOICES[1][1]:
-            self.month = 0
+        # if self.type == self.TYPE_CHOICES[1][1]:
+        #     self.month = 0
         if len(NewProduct.objects.all()) == 0:
             self.product_id = f"PLAN{self.type}{self.month}{1}"
         else:

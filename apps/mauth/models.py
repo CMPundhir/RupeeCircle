@@ -77,6 +77,7 @@ class CustomUser(AbstractUser):
     bank_name = models.CharField(null=True, blank=True)
     is_bank_acc_verified = models.BooleanField(default=False)
     is_fixedroi_allowed = models.BooleanField(default=True)
+    aadhaar_verify_data = models.CharField(max_length=None, null=True, blank=True)
     is_anytime_withdrawal_allowed = models.BooleanField(default=False)
     is_marketplace_allowed = models.BooleanField(default=False)
     special_plan_exist = models.BooleanField(default=False)
