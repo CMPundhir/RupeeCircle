@@ -276,6 +276,7 @@ class UserViewSet(viewsets.ModelViewSet):
             instance.first_name = res['data']['name']
             instance.is_pan_verified = True
             instance.pan_api_response = f"{res}"
+            instance.status = User.STATUS_CHOICES[2][1]
             instance.save()
             return Response({"message": "Success", "name": res['data']['name']})
         else:
