@@ -292,7 +292,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
 
 
 class BorrowerViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdminUser]
+    # permission_classes = [IsAdminUser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id']
