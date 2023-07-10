@@ -81,7 +81,7 @@ class AadharVerifySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['aadhaar', 'otp']
+        fields = ['request_id', 'otp']
 
 
 class BankDetailSerializer(serializers.ModelSerializer):
