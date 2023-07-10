@@ -75,13 +75,13 @@ class AadharSerializer(serializers.ModelSerializer):
 
 
 class AadharVerifySerializer(serializers.ModelSerializer):
-    # aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
+    aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
     request_id = serializers.CharField()
-    otp = serializers.IntegerField()
+    otp = serializers.CharField()
 
     class Meta:
         model = User
-        fields = ['request_id', 'otp']
+        fields = ['request_id', 'otp', 'aadhaar']
 
 
 class BankDetailSerializer(serializers.ModelSerializer):

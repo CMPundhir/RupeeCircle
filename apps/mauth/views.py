@@ -19,6 +19,12 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -105,7 +111,7 @@ class AuthViewSet(viewsets.ModelViewSet):
             print(OTP_DICT[f'{mobile}'])
             # return Response({"message": f'Your OTP is {otp}'})
             # print(f"This is your res => {res}")
-            return Response({"message": f"{res['type']}"})
+            return Response({"message": f"{res['type']}", 'ooo': otp})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -296,7 +302,6 @@ class UserViewSet(viewsets.ModelViewSet):
             instance.first_name = res['data']['name']
             instance.is_pan_verified = True
             instance.pan_api_response = f"{res}"
-            instance.status = User.STATUS_CHOICES[2][1]
             instance.save()
             return Response({"message": "Success", "name": res['data']['name']})
         else:
@@ -350,16 +355,18 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         Takes Aadhar detail and generates OTP for verification for aadhar Verification
         '''
+        user = request.user
         data = request.data
         serializer = AadharSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             aadhaar = serializer.validated_data['aadhaar']
-            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
+            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exclude(id=user.id).exists()
             if aadhaar_already_exists:
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             headers = {"Content-Type": "application/json", "Authorization": "OXX3dFnFsQRwsOb6gU9jDLNpHACUhX5B"}
             res = requests.post(url='https://api.signzy.app/api/v3/getOkycOtp', json={"aadhaarNumber": aadhaar}, headers=headers)
             r = res.json()
+            print("aadharDetail => ", r)
             # otp = random.randint(100000, 999999)
             # OTP_DICT[f'{aadhaar}'] = otp
             # print(otp)
@@ -383,22 +390,35 @@ class UserViewSet(viewsets.ModelViewSet):
             # global AADHAR_OTP
             # Checking aadhar already exist.
 
-
             # if otp == OTP_DICT[f'{aadhaar}']:
-            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
+            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exclude(id=user.id).exists()
             if aadhaar_already_exists:
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             headers = {"Authorization": "OXX3dFnFsQRwsOb6gU9jDLNpHACUhX5B", "Content-Type": "application/json"}
-            r = requests.post(url='https://api.signzy.app/api/v3/fetchOkycData', json={"requestId": request_id, "otp": otp}, headers=headers)
-            res = r.json()
+            data = {"requestId": request_id, "otp": otp}
+            response = requests.post(url='https://api.signzy.app/api/v3/fetchOkycData', json=data, headers=headers)
+            
+            print(f"---------------------------------------- Request starts ----------------------------------------")
+            print('response.request => ',response.request)
+            print('response.request.url => ', response.request.url)
+            print('response.request.body => ', response.request.body)
+            print('response.request.headers => ', response.request.headers)
+            print(f"---------------------------------------- Request ENDS ----------------------------------------")
+
+            res = response.json()
+            if res and 'statusCode' in res and res['statusCode']==200:
+                user.is_aadhaar_verified = True
+                user.status = CustomUser.STATUS_CHOICES[3][0]
+            else:
+                user.is_aadhaar_verified = False
             user.aadhaar = aadhaar
-            user.aadhaar_verify_data = f'{r}'
-            user.is_aadhaar_verified = True
-            user.status = CustomUser.STATUS_CHOICES[3][0]
+            user.aadhaar_verify_data = f'{res}'
             user.save()
             #JUST
-            return Response({'message': res['data']['status'], 'step': user.status})
-            return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
+            if user.is_aadhaar_verified:
+                return Response({'message': res['message'], 'step': user.status})
+            else:
+                return Response({'message': res['message'], 'step': user.status, "res": res}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
@@ -408,7 +428,9 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         data = request.data
         user = request.user
+        PENNY_DROP_PROD_TOKEN = os.getenv("PENNY_DROP_PROD_TOKEN")
         serializer = BankDetailSerializer(data=data)
+        print("PENNY_DROP_PROD_TOKEN => ", PENNY_DROP_PROD_TOKEN)
         # print("Validating Serializer")
         if serializer.is_valid(raise_exception=True):
             if serializer.is_valid(raise_exception=True):
@@ -435,13 +457,17 @@ class UserViewSet(viewsets.ModelViewSet):
                         "ifsc": serializer.validated_data['bank_ifsc'],
                         "name": "", 
                         "phone": "",
-                        "traceId": "X738393937202"}
-                    url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                        # "traceId": "X738393937202"}
+                        "traceId": traceId}
+                    # url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    url = 'https://auroapi.transxt.in/api/1.1/pennydrop'
                     headers = {
-                        "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI0NjYiLCJzdWIiOiJ0cmFucyIsImlzcyI6IlRSQU5TWFQiLCJTRVNTSU9OSUQiOiIwIiwiU0VDUkVUIjoiIiwiUFJPRExJU1QiOltdLCJVU0VSSUQiOiIwIiwiUE9SVEFMIjoiIiwiRU5WIjoidWF0In0.uVpDCnsllwcYCyL44dTX5sHXtGYljRqXV06etoRfSerEa94f6oakN0e_rK0pE6HEOhvjHgA8xR89bamSxqGGzQ",
+                        # "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI0NjYiLCJzdWIiOiJ0cmFucyIsImlzcyI6IlRSQU5TWFQiLCJTRVNTSU9OSUQiOiIwIiwiU0VDUkVUIjoiIiwiUFJPRExJU1QiOltdLCJVU0VSSUQiOiIwIiwiUE9SVEFMIjoiIiwiRU5WIjoidWF0In0.uVpDCnsllwcYCyL44dTX5sHXtGYljRqXV06etoRfSerEa94f6oakN0e_rK0pE6HEOhvjHgA8xR89bamSxqGGzQ",
+                        "Authorization": f"Bearer {PENNY_DROP_PROD_TOKEN}",
                         "Content-Type": "application/json"
                     }
                     response = requests.post(url, json=bank_detail, headers=headers)
+                    print("Bank Details =>> ", response.__dict__)
                     # r = json.loads(response)
                     res = response.json()
 
