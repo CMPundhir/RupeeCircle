@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Complaint
 from rest_framework.decorators import action
 from rest_framework.settings import api_settings
-from django.contrib.gis.geoip2 import GeoIP2
+# from django.contrib.gis.geoip2 import GeoIP2
 import requests
 
 # Create your views here.
