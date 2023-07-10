@@ -108,7 +108,7 @@ class InvestorViewSet(viewsets.ModelViewSet):
                 instance.partner = user
             instance.registration_type = user_type
             instance.save()
-            LogService.log(user=instance, msg="Welcome to RupeeCircle.", is_transaction=False)
+            LogService.log(user=instance, msg="Welcome to RupeeCircle.", is_activity=True)
             serializer = InvestorGetSerializer(instance)
             return Response({"message": "Investor registered successfully.", "investor": serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -175,6 +175,7 @@ class InvestorViewSet(viewsets.ModelViewSet):
         serializer = InvestorExcelSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)  
 
+
 class PartnerViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAdminUser]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
@@ -230,10 +231,10 @@ class PartnerViewSet(viewsets.ModelViewSet):
             instance.is_mobile_verified = True
             instance.email = serializer.validated_data['email']
             instance.is_email_verified = True
-            instance.gender = serializer.validated_data['gender']
-            instance.first_name = serializer.validated_data['first_name']
-            instance.pan = serializer.validated_data['pan']
-            instance.is_pan_verified = True
+            # instance.gender = serializer.validated_data['gender']
+            # instance.first_name = serializer.validated_data['first_name']
+            # # instance.pan = serializer.validated_data['pan']
+            # instance.is_pan_verified = True
             instance.aadhaar = serializer.validated_data['aadhaar']
             instance.is_aadhaar_verified = True
             instance.bank_acc = serializer.validated_data['bank_acc']
@@ -241,8 +242,13 @@ class PartnerViewSet(viewsets.ModelViewSet):
             instance.is_bank_acc_verified = True
             instance.role = User.ROLE_CHOICES[1][0]
             instance.status = User.STATUS_CHOICES[4][1]
-            if 'country' in serializer.validated_data and serializer.validated_data['country']:
-                instance.country = serializer.validated_data['country']
+            if 'country_name' in serializer.validated_data and serializer.validated_data['country_name']:
+                instance.country_name = serializer.validated_data['country_name']
+            if 'country_gst' in serializer.validated_data and serializer.validated_data['country_gst']:
+                instance.country_gst = serializer.validated_data['country_gst']
+            if 'country_pan' in serializer.validated_data and serializer.validated_data['country_pan']:
+                instance.country_pan = serializer.validated_data['country_pan']
+                instance.is_pan_verified = True
             if 'state' in serializer.validated_data and serializer.validated_data['state']:
                 instance.state = serializer.validated_data['state']
             if 'city' in serializer.validated_data and serializer.validated_data['city']:

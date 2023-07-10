@@ -1022,7 +1022,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
     filterset_fields = ['product_id', 'type', 'month', 'is_record_active'] # added filter of record active in Product
 
     def get_queryset(self):
-        queryset = NewProduct.objects.filter(is_record_active=True)
+        queryset = NewProduct.objects.all()#filter(is_record_active=True)
         return queryset
     
     def get_serializer_class(self):

@@ -43,3 +43,10 @@ class TransactionExcelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = '__all__'
+
+
+class BankSlabSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = BankSlab
+        fields = '__all__'

@@ -304,3 +304,12 @@ class BankAccountViewSet(viewsets.ModelViewSet):
         instance.save()
         return Response({"message": "Made Bank primary successfully."}, status=status.HTTP_200_OK)
 
+
+class BankSlabViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        return super().get_queryset()
+    
+    def get_serializer_class(self):
+        return BankSlabSerializer
+    
