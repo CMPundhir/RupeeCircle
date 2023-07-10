@@ -491,7 +491,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     try:
                         res = response.json()
                     except Exception as e:
-                        return Response({"res": response.text, "tk": PENNY_DROP_PROD_TOKEN}, status=status.HTTP_406_NOT_ACCEPTABLE)
+                        return Response({"res": response.text}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
                     print(f"This is your res => {res}")
                     # Above code is to check the request
