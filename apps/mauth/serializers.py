@@ -75,8 +75,8 @@ class AadharSerializer(serializers.ModelSerializer):
 
 
 class AadharVerifySerializer(serializers.ModelSerializer):
-    aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
-    # name = serializers.CharField()
+    # aadhaar = serializers.RegexField(regex=r'^[0-9]{12}$')
+    request_id = serializers.CharField()
     otp = serializers.IntegerField()
 
     class Meta:

@@ -96,15 +96,16 @@ class AuthViewSet(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
             mobile=serializer.validated_data['mobile']
             otp = random.randint(100000, 999999)
-            # message = 'OTP for login into your RupeeCircle account is '+str(otp)+'.. Please do not share this OTP with anyone to ensure account\'s security.'
-            # r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
-            # r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
-            #                   headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
-            # res = r.json()
+            message = 'OTP for login into your RupeeCircle account is '+str(otp)+'.. Please do not share this OTP with anyone to ensure account\'s security.'
+            r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
+            r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
+                              headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
+            res = r.json()
             OTP_DICT[f'{mobile}'] = otp
             print(OTP_DICT[f'{mobile}'])
-            return Response({"message": f'Your OTP is {otp}'})
-            # return Response({"message": f"{res['message']}"})
+            # return Response({"message": f'Your OTP is {otp}'})
+            # print(f"This is your res => {res}")
+            return Response({"message": f"{res['type']}"})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -252,7 +253,11 @@ class UserViewSet(viewsets.ModelViewSet):
         pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
         if pan_exist:
             return Response({"message": "PAN already exists."}, status=status.HTTP_400_BAD_REQUEST)
-        data = {"access_token": "9dECoXkSlurJQs8C", "panId": serializer.validated_data['pan']}
+        data = {"access_token": "FuGUrmePylKM3jDp",
+                "firstname": "",
+                "middlename": "",
+                "lastname": "", 
+                "panId": serializer.validated_data['pan']}
         # data = json.load({
         # "access_token":"9dECoXkSlurJQs8C",
         # "panId": "AAIPM3854E"
@@ -260,9 +265,9 @@ class UserViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         # Below is pan integration
-        r = requests.post(url="http://34.131.215.77:8080/api/v2/nsdlPanVerification", 
+        r = requests.post(url="https://www.rupeecircle.com/api/v4/nsdl-pan-verification", 
                           json=data,
-                          headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6IitzUFFuXC9NckdvWGgreHAxSU1uUFNRPT0iLCJ2YWx1ZSI6ImFpNjhoeTlrK29ZbVplK0tPS2pZNXJSS2hZUURkVHk3ZWhYVHJFZmdwbUlpSkkyZCtwYjZWbytsMVppMjE3OUxlamEzeWFYb0ZzdDMrbWpOa0oyQVR3PT0iLCJtYWMiOiJhZjYxYmFmNTFiMzgyY2IyN2Y1N2I0MTcyOTI0MDAzYWEwMmQ0NDcwYWU4Y2E3MzBkNTRiODU5OWZhOTgxMTI2In0%3D; RupeeCircle=eyJpdiI6IldHYlFLRldNc2lmdnh6OWdSb1RKMlE9PSIsInZhbHVlIjoicEJ2anBianhSZW9Ia3U5TUFiaGpORjVYUDE0QlhVZm9wTDYyS1M1V2tjQjZCNXpMR2dHNVZWWW1vOWxGS1g4Mk9EQ2tjbllVV0dHWWpNSWk2MjNxckE9PSIsIm1hYyI6ImViYmEwOTIwYjExYzY1NGFmNDI5MTQ3YTYxYTU1MjE3NGQ5NWExNmU1MGQ5YzlhNjJkOTBiYTdlNDBmNWRkNGQifQ%3D%3D"})
+                          headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6InhmOWhWOHdLeUJ1UVNSVHNpY2hDK3c9PSIsInZhbHVlIjoidldmYW9ScTVvVXVqT0JDNFlnbldlRmlBNVgyK2lscEhXZmlEbDJtYzhjWnlrRkJHYXVlRFZBZXRkampNeUxlMUdmSTJ0ZFIxcFJTRFQ2ektpbVpyTXc9PSIsIm1hYyI6ImY2ZWUwMzdlMGM4NmExN2ZkMjU2Yzk1ODVhMmQ1Mzg1OGI1NGZjN2I3NjMwNTM1MTY1ZDIyMDlkZmMxMDgzMWIifQ%3D%3D; AWSALB=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ; AWSALBCORS=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ"})
         res = r.json()
         print(r.content)
         if res['flag'] == True:
@@ -331,10 +336,13 @@ class UserViewSet(viewsets.ModelViewSet):
             aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
             if aadhaar_already_exists:
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-            otp = random.randint(100000, 999999)
-            OTP_DICT[f'{aadhaar}'] = otp
-            print(otp)
-            return Response({"message": "OTP sent to AADHAAR registered mobile number.", "otp": otp})
+            headers = {"Content-Type": "application/json", "Authorization": "OXX3dFnFsQRwsOb6gU9jDLNpHACUhX5B"}
+            res = requests.post(url='https://api.signzy.app/api/v3/getOkycOtp', json={"aadhaarNumber": aadhaar}, headers=headers)
+            r = res.json()
+            # otp = random.randint(100000, 999999)
+            # OTP_DICT[f'{aadhaar}'] = otp
+            # print(otp)
+            return Response({"message": "OTP sent to AADHAAR registered mobile number.", "requestId": r['data']['requestId']})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
@@ -349,21 +357,25 @@ class UserViewSet(viewsets.ModelViewSet):
             # user = CustomUser.objects.get(id=request.user.id)
             user = CustomUser.objects.get(pk=pk)
             aadhaar = serializer.validated_data['aadhaar']
-            # name = serializer.validated_data['name']
+            request_id = serializer.validated_data['request_id']
             otp = serializer.validated_data['otp']
             # global AADHAR_OTP
-            if otp == OTP_DICT[f'{aadhaar}']:
-                aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
-                if aadhaar_already_exists:
-                    return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
-                # if user.pan_name != name:
-                #     return Response({'message': 'Aadhaar name doesn\'t match with PAN name.'}, status=status.HTTP_400_BAD_REQUEST)
-                user.aadhaar = aadhaar
-                # user.aadhaar_name = name
-                user.is_aadhaar_verified = True
-                user.status = CustomUser.STATUS_CHOICES[3][0]
-                user.save()
-                return Response({'message': 'Aadhar Verification successful', 'step': user.status})
+            # Checking aadhar already exist.
+
+
+            # if otp == OTP_DICT[f'{aadhaar}']:
+            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
+            if aadhaar_already_exists:
+                return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            headers = {"Authorization": "OXX3dFnFsQRwsOb6gU9jDLNpHACUhX5B", "Content-Type": "application/json"}
+            r = requests.post(url='https://api.signzy.app/api/v3/fetchOkycData', json={"requestId": request_id, "otp": otp}, headers=headers)
+            res = r.json()
+            user.aadhaar = aadhaar
+            user.aadhaar_verify_data = f'r'
+            user.is_aadhaar_verified = True
+            user.status = CustomUser.STATUS_CHOICES[3][0]
+            user.save()
+            return Response({'message': res['data']['status'], 'step': user.status})
             return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
