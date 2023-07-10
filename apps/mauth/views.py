@@ -265,12 +265,16 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         Takes PAN number and obtains response from PAN database if matches return owner Name in response
         '''
-        # user = request.user
+        user = request.user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
-        if pan_exist:
-            return Response({"message": "PAN already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        if user and user.pan and user.pan == request.data['pan']:
+            print("pan already saved => ", user.pan)
+        else:   
+            pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exclude(id=user.id).exists()
+            print("pan_exist => ", pan_exist)
+            if pan_exist:
+                return Response({"message": "PAN already exists."}, status=status.HTTP_400_BAD_REQUEST)
         data = {"access_token": "FuGUrmePylKM3jDp",
                 "firstname": "",
                 "middlename": "",
@@ -281,9 +285,6 @@ class UserViewSet(viewsets.ModelViewSet):
         # "panId": "AAIPM3854E"
         # })
         instance = self.get_object()
-
-        # Below is pan integration
-        #                      https://www.rupeecircle.com/api/v4/nsdl-pan-verification
         r = requests.post(url="https://www.rupeecircle.com/api/v4/nsdl-pan-verification", 
                           json=data,
                           headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6InhmOWhWOHdLeUJ1UVNSVHNpY2hDK3c9PSIsInZhbHVlIjoidldmYW9ScTVvVXVqT0JDNFlnbldlRmlBNVgyK2lscEhXZmlEbDJtYzhjWnlrRkJHYXVlRFZBZXRkampNeUxlMUdmSTJ0ZFIxcFJTRFQ2ektpbVpyTXc9PSIsIm1hYyI6ImY2ZWUwMzdlMGM4NmExN2ZkMjU2Yzk1ODVhMmQ1Mzg1OGI1NGZjN2I3NjMwNTM1MTY1ZDIyMDlkZmMxMDgzMWIifQ%3D%3D; AWSALB=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ; AWSALBCORS=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ"})
