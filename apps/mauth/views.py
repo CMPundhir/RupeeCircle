@@ -524,16 +524,22 @@ class UserViewSet(viewsets.ModelViewSet):
                         
                     transaction.status = res['status']
                     if 'status' in res and res['status'] == 'SUCCESS':
-                        user.bank_acc = serializer.validated_data['bank_acc']
-                        user.bank_ifsc = serializer.validated_data['bank_ifsc']
-                        user.bank_name = res['data']['nameAtBank']
-                        user.is_bank_acc_verified = True
-                        user.save()
+                        # user.bank_acc = serializer.validated_data['bank_acc']
+                        # user.bank_ifsc = serializer.validated_data['bank_ifsc']
+                        # user.bank_name = res['data']['nameAtBank']
                         transaction.penny_drop_utr = res['data']['utr']
                         transaction.ref_id = res['data']['refId']
                         transaction.save()
-                        BankAccount.objects.create(owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                        return Response({"message": res['status'], "name": res['data']['nameAtBank']})
+                        BankAccount.objects.create(owner=user, acc_number=serializer.validated_data['bank_acc'], 
+                                                   ifsc=serializer.validated_data['bank_ifsc'],
+                                                   is_primary=True)
+                        user.is_bank_acc_verified = True
+                        user.save()
+                        if res['data']['nameAtBank']:
+                            nameAtBank = res['data']['nameAtBank']
+                        else:
+                            nameAtBank = ''
+                        return Response({"message": res['status'], "name": nameAtBank})
                     else:
                         try:
                             transaction.ref_id = res['data']['ref_id']
