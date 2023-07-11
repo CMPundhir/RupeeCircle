@@ -527,8 +527,8 @@ class UserViewSet(viewsets.ModelViewSet):
                         # user.bank_acc = serializer.validated_data['bank_acc']
                         # user.bank_ifsc = serializer.validated_data['bank_ifsc']
                         # user.bank_name = res['data']['nameAtBank']
-                        transaction.penny_drop_utr = res['data']['utr']
-                        transaction.ref_id = res['data']['refId']
+                        transaction.penny_drop_utr = res['data']['utr'] if res['data']['utr'] else ''
+                        transaction.ref_id = res['data']['refId'] if res['data']['refId'] else ''
                         transaction.save()
                         BankAccount.objects.create(owner=user, acc_number=serializer.validated_data['bank_acc'], 
                                                    ifsc=serializer.validated_data['bank_ifsc'],
