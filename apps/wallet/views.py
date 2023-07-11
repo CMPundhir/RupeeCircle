@@ -1,5 +1,6 @@
 from django.shortcuts import render
 import requests
+from rest_framework.permissions import IsAdminUser
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -306,9 +307,11 @@ class BankAccountViewSet(viewsets.ModelViewSet):
 
 
 class BankSlabViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
-        return super().get_queryset().order_by('-id')
+        queryset = BankSlab.objects.all()
+        return queryset
     
     def get_serializer_class(self):
         return BankSlabSerializer

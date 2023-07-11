@@ -220,7 +220,7 @@ class AuthViewSet(viewsets.ModelViewSet):
         result = [i[1] for i in CustomUser.ROLE_CHOICES[0:3]]
         print(result)
         return Response(result)
-    
+
 
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -280,9 +280,7 @@ class UserViewSet(viewsets.ModelViewSet):
         # res = r.json()
         print(r.content)
         return Response({"message": "Success", "res": r})
-        
-    
-    
+
     @action(methods=['POST'], detail=True)
     def panDetail(self, request, pk):
         '''
@@ -318,6 +316,9 @@ class UserViewSet(viewsets.ModelViewSet):
             instance.pan_name = res['data']['name']
             instance.first_name = res['data']['name']
             instance.is_pan_verified = True
+            api_response = DocumentVerificationResponse.objects.get(owner=user)
+            api_response.pan_response = f"{res}"
+            api_response.save()
             instance.pan_api_response = f"{res}"
             instance.save()
             return Response({"message": "Success", "name": res['data']['name']})
@@ -383,6 +384,9 @@ class UserViewSet(viewsets.ModelViewSet):
             headers = {"Content-Type": "application/json", "Authorization": "OXX3dFnFsQRwsOb6gU9jDLNpHACUhX5B"}
             res = requests.post(url='https://api.signzy.app/api/v3/getOkycOtp', json={"aadhaarNumber": aadhaar}, headers=headers)
             r = res.json()
+            api_response = DocumentVerificationResponse.objects.get(owner=user)
+            api_response.aadhaar_response = f"{r}"
+            api_response.save()
             print("aadharDetail => ", r)
             # otp = random.randint(100000, 999999)
             # OTP_DICT[f'{aadhaar}'] = otp
@@ -429,6 +433,9 @@ class UserViewSet(viewsets.ModelViewSet):
             else:
                 user.is_aadhaar_verified = False
             user.aadhaar = aadhaar
+            api_response = DocumentVerificationResponse.objects.get(owner=user)
+            api_response.aadhaar_response += f"{res}"
+            api_response.save()
             user.aadhaar_verify_data = f'{res}'
             user.save()
             #JUST
