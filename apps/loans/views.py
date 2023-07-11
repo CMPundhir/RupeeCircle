@@ -1015,14 +1015,16 @@ class InvestmentViewSet(viewsets.ModelViewSet):
     def upcoming_payment(self, request):
         user = request.user
         investments = self.get_queryset()#.filter(investor=user)
-        investments_id = [i.id for i in investments]
+        investments_id = [i.product for i in investments]
+        print(f"These are your investments {investments_id}")
         month = datetime.datetime.now().month
         year = datetime.datetime.now().year
         payments = Payment.objects.filter(product_id__in=investments_id)
+        # print(f"This is your payment object {payments[0]}")
         upcoming_payments = list()
         for i in payments:
-            print(f"This is due date of i {i.due_date.year} and prnthsis {i.due_date.year()}")
-            if i.due_date.year() == year and i.due_date.month() == month or i.due_date.year() == year and i.due_date.month() == month+1:
+            print(f"This is due date of i {i.due_date.year} and prnthsis {i.due_date.year}")
+            if i.due_date.year == year and i.due_date.month == month or i.due_date.year == year and i.due_date.month == month+1:
                 upcoming_payments.append(i)
         print(f"These are your payments {payments}")
         serializer = PaymentSerializer(upcoming_payments, many=True)
