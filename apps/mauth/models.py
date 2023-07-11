@@ -53,7 +53,7 @@ class CustomUser(AbstractUser):
     is_tnc_accepted = models.BooleanField(default=False)
     mobile = models.CharField(unique=True, null=True)
     is_mobile_verified = models.BooleanField(default=False)
-    # email = models.EmailField(unique=True, null=True)
+    email = models.EmailField(unique=True, null=True)
     is_email_verified = models.BooleanField(default=False)
     gender = models.CharField(choices=GENDER_CHOICES, blank=True, null=True)
     country = models.CharField(max_length=255, null=True, blank=True)
@@ -88,6 +88,7 @@ class CustomUser(AbstractUser):
     rc_risk = models.CharField(max_length=255, choices=RISK_CHOICES, default=RISK_CHOICES[0][1])
     partner = models.ForeignKey('self', on_delete=models.DO_NOTHING, null=True)
     credit_score = models.IntegerField(blank=True, null=True)
+    penny_trial_left = models.IntegerField(blank=True, null=True, default=3)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []

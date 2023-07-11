@@ -447,6 +447,8 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         data = request.data
         user = request.user
+        if not user: return Response({'message':"User not found"}, status=status.HTTP_400_BAD_REQUEST)
+        if not user.is_superuser and user.is_bank_acc_verified: return Response({'message':"Bank Account already verified"}, status=status.HTTP_400_BAD_REQUEST)
         PENNY_DROP_PROD_TOKEN = os.getenv("PENNY_DROP_PROD_TOKEN")
         serializer = BankDetailSerializer(data=data)
         # print("PENNY_DROP_PROD_TOKEN => ", PENNY_DROP_PROD_TOKEN)
@@ -462,7 +464,9 @@ class UserViewSet(viewsets.ModelViewSet):
                     bank_acc_exists = CustomUser.objects.filter(bank_acc=bank_acc).exists()
                     # if bank_acc_exists:
                     #     return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
-                    
+                    if user.penny_trial_left <=0 : return Response({'message':"Bank Verification limit exceeded"}, status=status.HTTP_400_BAD_REQUEST)
+                    user.penny_trial_left = user.penny_trial_left - 1
+                    user.save()
                     # Integrate Penny Drop Api below
                     try:
                         wallet = Wallet.objects.create(owner=user)
@@ -486,20 +490,6 @@ class UserViewSet(viewsets.ModelViewSet):
                         "Content-Type": "application/json"
                     }
                     response = requests.post(url, json=bank_detail, headers=headers)
-                    print("Bank Details =>> ", response.__dict__)
-                    # r = json.loads(response)
-
-                    # Below code is to check the request
-                    # req = requests.Request('POST',url,headers={"Authorization": f"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg4ODEyODExLCJpYXQiOjE2ODg3MjY0MTEsImp0aSI6IjUwMjUyOWQ0OTJhZTQ5ZGNhZmFmOWNjYmY2ZTU0NDIyIiwidXNlcl9pZCI6N30.J1wRCEku7nTjfZ69E3aVDKksn0nPe9j_fkdJQ9OLHsQ",  "Content-Type": "application/json"},data=bank_detail)
-                    # prepared = req.prepare()
-                    # def pretty_print_POST(req):
-                    #     print('{}\n{}\r\n{}\r\n\r\n{}'.format(
-                    #         '-----------START-----------',
-                    #         req.method + ' ' + req.url,
-                    #         '\r\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
-                    #         req.body,
-                    #     ))
-                    # pretty_print_POST(response.request)
                     print(f"---------------------------------------- Request starts ----------------------------------------")
                     print('response.request => ',response.request)
                     print('response.request.url => ', response.request.url)
@@ -527,24 +517,31 @@ class UserViewSet(viewsets.ModelViewSet):
                         # user.bank_acc = serializer.validated_data['bank_acc']
                         # user.bank_ifsc = serializer.validated_data['bank_ifsc']
                         # user.bank_name = res['data']['nameAtBank']
-                        transaction.penny_drop_utr = res['data']['utr'] if res['data']['utr'] else ''
-                        transaction.ref_id = res['data']['refId'] if res['data']['refId'] else ''
-                        transaction.save()
-                        BankAccount.objects.create(owner=user, acc_number=serializer.validated_data['bank_acc'], 
-                                                   ifsc=serializer.validated_data['bank_ifsc'],
-                                                   is_primary=True)
-                        user.is_bank_acc_verified = True
-                        user.save()
-                        if res['data']['nameAtBank']:
-                            nameAtBank = res['data']['nameAtBank']
+                        if 'data' in res:
+                            data = res['data']
+                            transaction.penny_drop_utr = data['utr'] if 'utr' in data and data['utr'] else ''
+                            transaction.ref_id = data['refId'] if 'refId' in data and data['refId'] else ''
+                            transaction.save()
+                            if 'nameAtBank' in data and data['nameAtBank']:
+                                nameAtBank = data['nameAtBank']
+                                BankAccount.objects.create(owner=user, acc_number=serializer.validated_data['bank_acc'], 
+                                                    ifsc=serializer.validated_data['bank_ifsc'],
+                                                    is_primary=True)
+                                user.is_bank_acc_verified = True
+                                user.save()
+                                return Response({"message": res['status'], "name": nameAtBank})
+                            else:
+                                return Response({"message": res['status'], "name": "Name Not found", "res": res}, status=status.HTTP_400_BAD_REQUEST)
                         else:
-                            nameAtBank = ''
-                        return Response({"message": res['status'], "name": nameAtBank})
+                            transaction.save()
+                            return Response({"message": res['status'], "name": "Data Not found", "res": res}, status=status.HTTP_400_BAD_REQUEST)
                     else:
-                        try:
-                            transaction.ref_id = res['data']['ref_id']
-                        except:
-                            transaction.ref_id = ''
+                        if 'data' in res and res['data']:
+                            data = res['data']
+                            if 'ref_id' in data and data['ref_id']:
+                                transaction.ref_id = res['data']['ref_id']
+                            else:
+                                transaction.ref_id = ''
                         transaction.save()
                         return Response({"message": res['message'] if 'message' in res else res['status'], "res" : res}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
