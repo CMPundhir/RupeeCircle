@@ -19,6 +19,12 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -95,6 +101,17 @@ class AuthViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
             mobile=serializer.validated_data['mobile']
+            otp = random.randint(100000, 999999)
+            message = 'OTP for login into your RupeeCircle account is '+str(otp)+'.. Please do not share this OTP with anyone to ensure account\'s security.'
+            r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
+            r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
+                              headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
+            res = r.json()
+            OTP_DICT[f'{mobile}'] = otp
+            print(OTP_DICT[f'{mobile}'])
+            # return Response({"message": f'Your OTP is {otp}'})
+            # print(f"This is your res => {res}")
+            return Response({"message": f"{res['type']}", 'ooo': otp})
             user_exist = User.objects.filter(mobile=mobile).exists()
             if user_exist:
                 otp = random.randint(100000, 999999)
@@ -222,7 +239,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
-        if self.action == 'panDetail':
+        if self.action == 'panDetail' or self.action == 'myIpTest':
             return PanSerializer
         elif self.action == 'panVerify':
             return PanVerifySerializer
@@ -247,18 +264,40 @@ class UserViewSet(viewsets.ModelViewSet):
         balance = Wallet.objects.filter(owner=instance)
         serializer.data['balance'] = balance
         return Response(serializer.data)
+
+    @action(methods=['POST'], detail=True)
+    def myIpTest(self, request, pk):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)       
+        data = {"access_token": "FuGUrmePylKM3jDp",
+                "firstname": "",
+                "middlename": "",
+                "lastname": "", 
+                "panId": serializer.validated_data['pan']}
+        r = requests.post(url="https://www.rupeecircle.com/api/v4/vendor/ip", 
+                          json=data,
+                          headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6InhmOWhWOHdLeUJ1UVNSVHNpY2hDK3c9PSIsInZhbHVlIjoidldmYW9ScTVvVXVqT0JDNFlnbldlRmlBNVgyK2lscEhXZmlEbDJtYzhjWnlrRkJHYXVlRFZBZXRkampNeUxlMUdmSTJ0ZFIxcFJTRFQ2ektpbVpyTXc9PSIsIm1hYyI6ImY2ZWUwMzdlMGM4NmExN2ZkMjU2Yzk1ODVhMmQ1Mzg1OGI1NGZjN2I3NjMwNTM1MTY1ZDIyMDlkZmMxMDgzMWIifQ%3D%3D; AWSALB=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ; AWSALBCORS=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ"})
+        # res = r.json()
+        print(r.content)
+        return Response({"message": "Success", "res": r})
+        
+    
     
     @action(methods=['POST'], detail=True)
     def panDetail(self, request, pk):
         '''
         Takes PAN number and obtains response from PAN database if matches return owner Name in response
         '''
-        # user = request.user
+        user = request.user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exists()
-        if pan_exist:
-            return Response({"message": "PAN already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        if user and user.pan and user.pan == request.data['pan']:
+            print("pan already saved => ", user.pan)
+        else:   
+            pan_exist = User.objects.filter(pan=serializer.validated_data['pan']).exclude(id=user.id).exists()
+            print("pan_exist => ", pan_exist)
+            if pan_exist:
+                return Response({"message": "PAN already exists."}, status=status.HTTP_400_BAD_REQUEST)
         data = {"access_token": "FuGUrmePylKM3jDp",
                 "firstname": "",
                 "middlename": "",
@@ -269,8 +308,6 @@ class UserViewSet(viewsets.ModelViewSet):
         # "panId": "AAIPM3854E"
         # })
         instance = self.get_object()
-
-        # Below is pan integration
         r = requests.post(url="https://www.rupeecircle.com/api/v4/nsdl-pan-verification", 
                           json=data,
                           headers={"app_version_code": "17", "device_type": "computer", "Content-Type": "application/json", "Cookie": "RupeeCircle=eyJpdiI6InhmOWhWOHdLeUJ1UVNSVHNpY2hDK3c9PSIsInZhbHVlIjoidldmYW9ScTVvVXVqT0JDNFlnbldlRmlBNVgyK2lscEhXZmlEbDJtYzhjWnlrRkJHYXVlRFZBZXRkampNeUxlMUdmSTJ0ZFIxcFJTRFQ2ektpbVpyTXc9PSIsIm1hYyI6ImY2ZWUwMzdlMGM4NmExN2ZkMjU2Yzk1ODVhMmQ1Mzg1OGI1NGZjN2I3NjMwNTM1MTY1ZDIyMDlkZmMxMDgzMWIifQ%3D%3D; AWSALB=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ; AWSALBCORS=WBdG3GfUaTWPbNMTywpA66A6v/wrLvBkiCQcUQcEcS3N2pQTxQI5v/GTjq4TnO2WVZOoNedB4Tm5eGjvFvoqE1UhK5xscji/0y5iGChV0Lyo5V6BWXPHR1Lb8BvZ"})
@@ -282,7 +319,6 @@ class UserViewSet(viewsets.ModelViewSet):
             instance.first_name = res['data']['name']
             instance.is_pan_verified = True
             instance.pan_api_response = f"{res}"
-            instance.status = User.STATUS_CHOICES[2][1]
             instance.save()
             return Response({"message": "Success", "name": res['data']['name']})
         else:
@@ -336,16 +372,18 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         Takes Aadhar detail and generates OTP for verification for aadhar Verification
         '''
+        user = request.user
         data = request.data
         serializer = AadharSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
             aadhaar = serializer.validated_data['aadhaar']
-            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
+            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exclude(id=user.id).exists()
             if aadhaar_already_exists:
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             headers = {"Content-Type": "application/json", "Authorization": "OXX3dFnFsQRwsOb6gU9jDLNpHACUhX5B"}
             res = requests.post(url='https://api.signzy.app/api/v3/getOkycOtp', json={"aadhaarNumber": aadhaar}, headers=headers)
             r = res.json()
+            print("aadharDetail => ", r)
             # otp = random.randint(100000, 999999)
             # OTP_DICT[f'{aadhaar}'] = otp
             # print(otp)
@@ -369,19 +407,35 @@ class UserViewSet(viewsets.ModelViewSet):
             # global AADHAR_OTP
             # Checking aadhar already exist.
 
-
             # if otp == OTP_DICT[f'{aadhaar}']:
-            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exists()
+            aadhaar_already_exists = CustomUser.objects.filter(aadhaar=aadhaar).exclude(id=user.id).exists()
             if aadhaar_already_exists:
                 return Response({'message': 'Aadhaar is already registered with another account.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
             headers = {"Authorization": "OXX3dFnFsQRwsOb6gU9jDLNpHACUhX5B", "Content-Type": "application/json"}
-            r = requests.post(url='https://api.signzy.app/api/v3/fetchOkycData', json={"requestId": request_id, "otp": otp}, headers=headers)
-            res = r.json()
+            data = {"requestId": request_id, "otp": otp}
+            response = requests.post(url='https://api.signzy.app/api/v3/fetchOkycData', json=data, headers=headers)
+            
+            print(f"---------------------------------------- Request starts ----------------------------------------")
+            print('response.request => ',response.request)
+            print('response.request.url => ', response.request.url)
+            print('response.request.body => ', response.request.body)
+            print('response.request.headers => ', response.request.headers)
+            print(f"---------------------------------------- Request ENDS ----------------------------------------")
+
+            res = response.json()
+            if res and 'statusCode' in res and res['statusCode']==200:
+                user.is_aadhaar_verified = True
+                user.status = CustomUser.STATUS_CHOICES[3][0]
+            else:
+                user.is_aadhaar_verified = False
             user.aadhaar = aadhaar
-            user.aadhaar_verify_data = f'{r}'
-            user.is_aadhaar_verified = True
-            user.status = CustomUser.STATUS_CHOICES[3][0]
+            user.aadhaar_verify_data = f'{res}'
             user.save()
+            #JUST
+            if user.is_aadhaar_verified:
+                return Response({'message': res['message'], 'step': user.status})
+            else:
+                return Response({'message': res['message'], 'step': user.status, "res": res}, status=status.HTTP_400_BAD_REQUEST)
             return Response({'message': res['data']['status'], 'step': user.status})
             # return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -393,7 +447,9 @@ class UserViewSet(viewsets.ModelViewSet):
         '''
         data = request.data
         user = request.user
+        PENNY_DROP_PROD_TOKEN = os.getenv("PENNY_DROP_PROD_TOKEN")
         serializer = BankDetailSerializer(data=data)
+        # print("PENNY_DROP_PROD_TOKEN => ", PENNY_DROP_PROD_TOKEN)
         # print("Validating Serializer")
         if serializer.is_valid(raise_exception=True):
             if serializer.is_valid(raise_exception=True):
@@ -420,15 +476,18 @@ class UserViewSet(viewsets.ModelViewSet):
                         "ifsc": serializer.validated_data['bank_ifsc'],
                         "name": "", 
                         "phone": "",
-                        "traceId": "X738393937202"}
+                        # "traceId": "X738393937202"}
+                        "traceId": traceId}
                     url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    # url = 'https://auroapi.transxt.in/api/1.1/pennydrop'
                     headers = {
                         "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI0NjYiLCJzdWIiOiJ0cmFucyIsImlzcyI6IlRSQU5TWFQiLCJTRVNTSU9OSUQiOiIwIiwiU0VDUkVUIjoiIiwiUFJPRExJU1QiOltdLCJVU0VSSUQiOiIwIiwiUE9SVEFMIjoiIiwiRU5WIjoidWF0In0.uVpDCnsllwcYCyL44dTX5sHXtGYljRqXV06etoRfSerEa94f6oakN0e_rK0pE6HEOhvjHgA8xR89bamSxqGGzQ",
+                        # "Authorization": f"Bearer {PENNY_DROP_PROD_TOKEN}",
                         "Content-Type": "application/json"
                     }
                     response = requests.post(url, json=bank_detail, headers=headers)
+                    print("Bank Details =>> ", response.__dict__)
                     # r = json.loads(response)
-                    res = response.json()
 
                     # Below code is to check the request
                     # req = requests.Request('POST',url,headers={"Authorization": f"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjg4ODEyODExLCJpYXQiOjE2ODg3MjY0MTEsImp0aSI6IjUwMjUyOWQ0OTJhZTQ5ZGNhZmFmOWNjYmY2ZTU0NDIyIiwidXNlcl9pZCI6N30.J1wRCEku7nTjfZ69E3aVDKksn0nPe9j_fkdJQ9OLHsQ",  "Content-Type": "application/json"},data=bank_detail)
@@ -446,7 +505,12 @@ class UserViewSet(viewsets.ModelViewSet):
                     print('response.request.url => ', response.request.url)
                     print('response.request.body => ', response.request.body)
                     print('response.request.headers => ', response.request.headers)
+                    print('response.text => ', response.text)
                     print(f"---------------------------------------- Request ENDS ----------------------------------------")
+                    try:
+                        res = response.json()
+                    except Exception as e:
+                        return Response({"res": response.text}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
                     print(f"This is your res => {res}")
                     # Above code is to check the request
@@ -470,27 +534,6 @@ class UserViewSet(viewsets.ModelViewSet):
                             transaction.ref_id = ''
                         transaction.save()
                         return Response({"message": res['message'] if 'message' in res else res['status'], "res" : res}, status=status.HTTP_400_BAD_REQUEST)
-                    # if r.status == 'FAILURE':
-                    #     return Response({"message": "Bank Verification Failed. Please try again."})
-                    # # Integrate Penny Drop Api above
-                    
-                    # Match the name here
-                    print('getting user')
-                    user = CustomUser.objects.get(pk=pk)
-                    user.acc_holder_name = acc_holder_name
-                    # user.account_holder_name = 'Name'
-                    user.bank_acc = bank_acc
-                    user.bank_ifsc = bank_ifsc
-                    user.is_bank_acc_verified = True
-                    user.status = CustomUser.STATUS_CHOICES[4][0]
-                    user.save()
-                    special_plan = InvestmentProduct.objects.get(id=22)
-                    special_plan.allowed_investor.add(user)
-                    special_plan.save()
-                    BankAccount.objects.create(bank=user.bank_name, owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                    Wallet.objects.create(owner=user)
-                    
-                    return Response({"message": "Account Verified", "step": user.status}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)

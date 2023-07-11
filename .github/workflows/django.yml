@@ -35,10 +35,27 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: |
-        echo "[default]" > ~/.aws/credentials
-        echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
-        echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
-        chmod 600 ~/.aws/credentials
+        echo "[default]"
+        echo "aws_access_key_id = $AWS_ACCESS_KEY_ID"
+        echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY"
+    
+    # - name: Checkout source code
+    #   uses: actions/checkout@v2
+
+    - name: Generate deployment package
+      run: zip -r deploy.zip . -x '*.git*'
+
+    - name: Deploy to EB
+      uses: einaregilsson/beanstalk-deploy@v21
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: RupeeCircle
+        environment_name: RupeeCircle-dev
+        version_label: ${{github.SHA}}
+        version_description: ${{github.SHA}}
+        region: ap-south-1
+        deployment_package: deploy.zip
 
     # - name: Django aws eb deployment
     #   uses: joel-hanson/django-aws-eb-deploy@V1.1
