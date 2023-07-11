@@ -162,3 +162,10 @@ class LogHistory(BaseModel, models.Model):
     platform = models.CharField(max_length=100, null=True, blank=True)
     browser = models.CharField(max_length=100, null=True, blank=True)
 
+
+class DocumentVerificationResponse(BaseModel, models.Model):
+    id = models.AutoField(primary_key=True)
+    owner = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING)
+    pan_response = models.CharField(max_length=None, null=True, blank=True)
+    aadhaar_response = models.CharField(max_length=None, null=True, blank=True)
+    penny_drop_response = models.CharField(max_length=None, null=True, blank=True)
