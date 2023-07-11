@@ -1044,11 +1044,12 @@ class ParamViewSet(viewsets.ModelViewSet):
         return Response({"message": "Method Not Allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+
 class NewProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
-    ordering_fields = ['id']
+    ordering_fields = ['id', 'month']
     filterset_fields = ['product_id', 'type', 'month', 'is_record_active'] # added filter of record active in Product
 
     def get_queryset(self):
@@ -1126,9 +1127,9 @@ class NewProductViewSet(viewsets.ModelViewSet):
         for i in serializer.validated_data['all_data']:
             print(f'This is your {i}')
             NewProduct.objects.create(type=i['type'],
-                                   month=i['month'],
-                                   interest_rate=i['interest_rate']
-                                   )
+                                    month="1" if i.type == NewProduct.TYPE_CHOICES[1][1] else i['month'],
+                                    interest_rate=i['interest_rate'])
+            
         return Response({"message": "Created."}, status=status.HTTP_201_CREATED)
 
     @action(methods=['GET'], detail=False)
