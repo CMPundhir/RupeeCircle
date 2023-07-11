@@ -441,8 +441,8 @@ class UserViewSet(viewsets.ModelViewSet):
                     bank_acc = serializer.validated_data['bank_acc']
                     bank_ifsc = serializer.validated_data['bank_ifsc']
                     bank_acc_exists = CustomUser.objects.filter(bank_acc=bank_acc).exists()
-                    if bank_acc_exists:
-                        return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
+                    # if bank_acc_exists:
+                    #     return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
                     
                     # Integrate Penny Drop Api below
                     try:
@@ -459,11 +459,11 @@ class UserViewSet(viewsets.ModelViewSet):
                         "phone": "",
                         # "traceId": "X738393937202"}
                         "traceId": traceId}
-                    url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
-                    # url = 'https://auroapi.transxt.in/api/1.1/pennydrop'
+                    # url = 'https://sandbox.transxt.in/api/1.1/pennydrop'
+                    url = 'https://auroapi.transxt.in/api/1.1/pennydrop'
                     headers = {
-                        "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI0NjYiLCJzdWIiOiJ0cmFucyIsImlzcyI6IlRSQU5TWFQiLCJTRVNTSU9OSUQiOiIwIiwiU0VDUkVUIjoiIiwiUFJPRExJU1QiOltdLCJVU0VSSUQiOiIwIiwiUE9SVEFMIjoiIiwiRU5WIjoidWF0In0.uVpDCnsllwcYCyL44dTX5sHXtGYljRqXV06etoRfSerEa94f6oakN0e_rK0pE6HEOhvjHgA8xR89bamSxqGGzQ",
-                        # "Authorization": f"Bearer {PENNY_DROP_PROD_TOKEN}",
+                        # "Authorization": "Bearer eyJhbGciOiJIUzUxMiJ9.eyJqdGkiOiI0NjYiLCJzdWIiOiJ0cmFucyIsImlzcyI6IlRSQU5TWFQiLCJTRVNTSU9OSUQiOiIwIiwiU0VDUkVUIjoiIiwiUFJPRExJU1QiOltdLCJVU0VSSUQiOiIwIiwiUE9SVEFMIjoiIiwiRU5WIjoidWF0In0.uVpDCnsllwcYCyL44dTX5sHXtGYljRqXV06etoRfSerEa94f6oakN0e_rK0pE6HEOhvjHgA8xR89bamSxqGGzQ",
+                        "Authorization": f"Bearer {PENNY_DROP_PROD_TOKEN}",
                         "Content-Type": "application/json"
                     }
                     response = requests.post(url, json=bank_detail, headers=headers)
@@ -488,6 +488,13 @@ class UserViewSet(viewsets.ModelViewSet):
                     print('response.request.headers => ', response.request.headers)
                     print('response.text => ', response.text)
                     print(f"---------------------------------------- Request ENDS ----------------------------------------")
+                    print(f"---------------------------------------- Reponse starts ----------------------------------------")
+                    print('response.request => ',response.request)
+                    print('response.request.url => ', response.request.url)
+                    print('response.request.body => ', response.request.body)
+                    print('response.request.headers => ', response.request.headers)
+                    print('response.text => ', response.text)
+                    print(f"---------------------------------------- Reponse ENDS ----------------------------------------")
                     try:
                         res = response.json()
                     except Exception as e:
@@ -497,7 +504,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     # Above code is to check the request
                         
                     transaction.status = res['status']
-                    if res['status'] == 'SUCCESS':
+                    if 'status' in res and res['status'] == 'SUCCESS':
                         user.bank_acc = serializer.validated_data['bank_acc']
                         user.bank_ifsc = serializer.validated_data['bank_ifsc']
                         user.bank_name = res['data']['nameAtBank']
@@ -507,7 +514,7 @@ class UserViewSet(viewsets.ModelViewSet):
                         transaction.ref_id = res['data']['refId']
                         transaction.save()
                         BankAccount.objects.create(owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                        return Response({"message": response.status, "name": res['data']['nameAtBank']})
+                        return Response({"message": res['status'], "name": res['data']['nameAtBank']})
                     else:
                         try:
                             transaction.ref_id = res['data']['ref_id']
