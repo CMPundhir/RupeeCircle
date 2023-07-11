@@ -112,6 +112,23 @@ class AuthViewSet(viewsets.ModelViewSet):
             # return Response({"message": f'Your OTP is {otp}'})
             # print(f"This is your res => {res}")
             return Response({"message": f"{res['type']}", 'ooo': otp})
+            user_exist = User.objects.filter(mobile=mobile).exists()
+            if user_exist:
+                otp = random.randint(100000, 999999)
+                message = 'OTP for login into your RupeeCircle account is '+str(otp)+'.. Please do not share this OTP with anyone to ensure account\'s security.'
+                r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
+                r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
+                                headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
+                res = r.json()
+                OTP_DICT[f'{mobile}'] = otp
+                print(OTP_DICT[f'{mobile}'])
+                # return Response({"message": f'Your OTP is {otp}'})
+                # print(f"This is your res => {res}")
+                return Response({"message": f"{res['type']}"})
+            else:
+                email = serializer.validated_data['email']
+                role = serializer.validated_data['role']
+                
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -218,7 +235,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.role == CustomUser.ROLE_CHOICES[3][1]:
             queryset = CustomUser.objects.all().order_by('-id')
         else:
-            queryset = CustomUser.objects.filter(id=user.id)
+            queryset = CustomUser.objects.filter(id=user.id).order_by('-id')
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):
@@ -419,6 +436,8 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'message': res['message'], 'step': user.status})
             else:
                 return Response({'message': res['message'], 'step': user.status, "res": res}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': res['data']['status'], 'step': user.status})
+            # return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=['POST'], detail=True)
@@ -505,16 +524,22 @@ class UserViewSet(viewsets.ModelViewSet):
                         
                     transaction.status = res['status']
                     if 'status' in res and res['status'] == 'SUCCESS':
-                        user.bank_acc = serializer.validated_data['bank_acc']
-                        user.bank_ifsc = serializer.validated_data['bank_ifsc']
-                        user.bank_name = res['data']['nameAtBank']
+                        # user.bank_acc = serializer.validated_data['bank_acc']
+                        # user.bank_ifsc = serializer.validated_data['bank_ifsc']
+                        # user.bank_name = res['data']['nameAtBank']
+                        transaction.penny_drop_utr = res['data']['utr'] if res['data']['utr'] else ''
+                        transaction.ref_id = res['data']['refId'] if res['data']['refId'] else ''
+                        transaction.save()
+                        BankAccount.objects.create(owner=user, acc_number=serializer.validated_data['bank_acc'], 
+                                                   ifsc=serializer.validated_data['bank_ifsc'],
+                                                   is_primary=True)
                         user.is_bank_acc_verified = True
                         user.save()
-                        transaction.penny_drop_utr = res['data']['utr']
-                        transaction.ref_id = res['data']['refId']
-                        transaction.save()
-                        BankAccount.objects.create(owner=user, acc_number=user.bank_acc, ifsc=user.bank_ifsc, is_primary=True)
-                        return Response({"message": res['status'], "name": res['data']['nameAtBank']})
+                        if res['data']['nameAtBank']:
+                            nameAtBank = res['data']['nameAtBank']
+                        else:
+                            nameAtBank = ''
+                        return Response({"message": res['status'], "name": nameAtBank})
                     else:
                         try:
                             transaction.ref_id = res['data']['ref_id']

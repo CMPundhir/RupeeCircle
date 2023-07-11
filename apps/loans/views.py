@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.db.models import Count
+import datetime  
 from .models import *
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
@@ -22,7 +23,7 @@ from dateutil import relativedelta
 class TermsAndConditionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
-        queryset = TermsAndCondition.objects.all()
+        queryset = TermsAndCondition.objects.all().order_by('-id')
         return queryset
     
     def get_serializer_class(self):
@@ -38,11 +39,11 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_marketplace_allowed == True:
-            queryset = LoanApplication.objects.filter(is_record_active=True)
+            queryset = LoanApplication.objects.filter(is_record_active=True).order_by('-id')
         elif user.role == User.ROLE_CHOICES[2][1]:
-            queryset = LoanApplication.objects.filter(borrower=user)
+            queryset = LoanApplication.objects.filter(borrower=user).order_by('-id')
         else:
-            queryset = LoanApplication.objects.none()
+            queryset = LoanApplication.objects.none().order_by('-id')
         return queryset
         
         # queryset = Loan.objects.all()
@@ -153,7 +154,7 @@ class FixedROIViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
-            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[0][1], is_record_active=True, is_special_plan=False)
+            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[0][1], is_record_active=True, is_special_plan=False).order_by('-id')
         else:
             queryset = InvestmentProduct.objects.none()
         return queryset
@@ -324,7 +325,7 @@ class AnytimeWithdrawalViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1] or user.role == User.ROLE_CHOICES[0][1] and user.is_fixedroi_allowed == True:
-            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[1][1], is_record_active=True, is_special_plan=False)
+            queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[1][1], is_record_active=True, is_special_plan=False).order_by('-id')
         else:
             queryset = InvestmentProduct.objects.none()
         return queryset
@@ -428,10 +429,10 @@ class MyInvestmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if self.action == 'marketplace':
-            queryset = Loan.objects.filter(investor=user)
+            queryset = Loan.objects.filter(investor=user).order_by('-id')
             return queryset
         if self.action == 'InvestmentProducts':
-            queryset = InvestmentProduct.objects.filter(investor=user)
+            queryset = InvestmentProduct.objects.filter(investor=user).order_by('-id')
             return queryset
         return []
         
@@ -474,7 +475,7 @@ class AllInvestmentViewSet(viewsets.ModelViewSet):
         # if self.action == 'anytimeWithdraw':
         #     queryset = InvestmentProduct.objects.filter(type=InvestmentProduct.TYPE_CHOICES[1][1], investors__in=all_users)
         #     return queryset
-        queryset = Loan.objects.all()
+        queryset = Loan.objects.all().order_by('-id')
         return queryset#[]
         
     def get_serializer_class(self):
@@ -513,9 +514,9 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[2][1]:
-            queryset = InvestmentRequest.objects.filter(borrower=user)
+            queryset = InvestmentRequest.objects.filter(borrower=user).order_by('-id')
         elif user.role == User.ROLE_CHOICES[3][1]:
-            queryset = InvestmentRequest.objects.all()#filter(loan=None)
+            queryset = InvestmentRequest.objects.all().order_by('-id')#filter(loan=None)
         else:
             return Response({"message": "You are not authorized to access Investment Requests."}, status=status.HTTP_401_UNAUTHORIZED)
         return queryset
@@ -624,7 +625,7 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user=self.request.user
         if user.is_superuser:
-            queryset = InvestmentProduct.objects.filter(is_special_plan=True, is_record_active=True)
+            queryset = InvestmentProduct.objects.filter(is_special_plan=True, is_record_active=True).order_by('-id')
         elif user.role == User.ROLE_CHOICES[0][1]:
             if user.special_plan_exist == False:
                 user.special_plan_exist = True
@@ -632,7 +633,7 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
             special_plan = InvestmentProduct.objects.get(id=22)
             special_plan.allowed_investor.add(user)
             special_plan.save()
-            queryset = InvestmentProduct.objects.filter(is_special_plan=True, allowed_investor=user, is_record_active=True)
+            queryset = InvestmentProduct.objects.filter(is_special_plan=True, allowed_investor=user, is_record_active=True).order_by('-id')
         else:
             queryset = []
         return queryset
@@ -736,11 +737,11 @@ class LoanViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[0][1]:
-            queryset = Loan.objects.filter(investor=user)
+            queryset = Loan.objects.filter(investor=user).order_by('-id')
         elif user.role == User.ROLE_CHOICES[2][1]:
-            queryset = Loan.objects.filter(borrower=user)
+            queryset = Loan.objects.filter(borrower=user).order_by('-id')
         elif user.role == User.ROLE_CHOICES[3][1]:
-            queryset = Loan.objects.all()
+            queryset = Loan.objects.all().order_by('-id')
         return queryset
     
     def get_serializer_class(self):
@@ -761,7 +762,7 @@ class InstallmentViewSet(viewsets.ModelViewSet):
     filterset_fields = ['parent_loan']
 
     def get_queryset(self):
-        queryset = Installment.objects.all()
+        queryset = Installment.objects.all().order_by('-id')
         return queryset
     
     def get_serializer_class(self):
@@ -952,14 +953,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['product_id', 'investor']
     ordering_fields = ['id']
-    filterset_fields = ['product_id', 'investor']
+    filterset_fields = ['product_id', 'investor', 'status']
 
     def get_queryset(self):
         user = self.request.user
         if user.role == 'ADMIN':
-            queryset = Payment.objects.all()
+            queryset = Payment.objects.all().order_by('-id')
         elif user.role == 'INVESTOR':
-            queryset = Payment.objects.filter(investor=user)
+            queryset = Payment.objects.filter(investor=user).order_by('-id')
         else:
             queryset = Payment.objects.none()
         return queryset
@@ -972,7 +973,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         queryset = Payment.objects.all()
         queryset.delete()
         return Response({"message": "Deleted All."}, status=status.HTTP_200_OK)
-
+        
 
 class InvestmentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -984,14 +985,16 @@ class InvestmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user=self.request.user
         if user.role == 'INVESTOR':
-            queryset = Investment.objects.filter(investor=user)
+            queryset = Investment.objects.filter(investor=user).order_by('-id')
         elif user.role == 'ADMIN':
-            queryset = Investment.objects.all()
+            queryset = Investment.objects.all().order_by('-id')
         else:
-            queryset = Investment.objects.none()
+            queryset = Investment.objects.none().order_by('-id')
         return queryset
     
     def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return InvestmentGetSerializer
         return InvestmentSerializer
 
     @action(methods=['GET'], detail=False)
@@ -1000,11 +1003,38 @@ class InvestmentViewSet(viewsets.ModelViewSet):
         queryset.delete()
         return Response({"message": "Deleted All."}, status=status.HTTP_200_OK)
 
+    @action(methods=['GET'], detail=True)
+    def installments(self, request, pk):
+        instance = self.get_object()
+        installments = Payment.objects.filter(product_id=instance.product).order_by('-id')
+        print(f"These are your installments {installments}")
+        serializer = PaymentSerializer(installments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=False)
+    def upcoming_payment(self, request):
+        user = request.user
+        investments = self.get_queryset()#.filter(investor=user)
+        investments_id = [i.product for i in investments]
+        print(f"These are your investments {investments_id}")
+        month = datetime.datetime.now().month
+        year = datetime.datetime.now().year
+        payments = Payment.objects.filter(product_id__in=investments_id)
+        # print(f"This is your payment object {payments[0]}")
+        upcoming_payments = list()
+        for i in payments:
+            print(f"This is due date of i {i.due_date.year} and prnthsis {i.due_date.year}")
+            if i.due_date.year == year and i.due_date.month == month or i.due_date.year == year and i.due_date.month == month+1:
+                upcoming_payments.append(i)
+        print(f"These are your payments {payments}")
+        serializer = PaymentSerializer(upcoming_payments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class ParamViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
-        queryset = Param.objects.all()
+        queryset = Param.objects.all().order_by('-id')
         return queryset
     
     def get_serializer_class(self):
@@ -1023,7 +1053,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
     filterset_fields = ['product_id', 'type', 'month', 'is_record_active'] # added filter of record active in Product
 
     def get_queryset(self):
-        queryset = NewProduct.objects.all().order_by("-id")#filter(is_record_active=True)
+        queryset = NewProduct.objects.all().order_by('-id')#filter(is_record_active=True)
         return queryset
     
     def get_serializer_class(self):
@@ -1123,9 +1153,10 @@ class NewProductViewSet(viewsets.ModelViewSet):
                 response_list.append(i)
             flexi = [i for i in response_list if i.type == 'FLEXI']
             print(f"This is your Flexi {flexi}")
-            flexi_index = response_list.index(flexi[0])
-            flexi_plan = response_list.pop(flexi_index)
-            response_list[0] = flexi_plan
+            if len(flexi) > 0:
+                flexi_index = response_list.index(flexi[0])
+                flexi_plan = response_list.pop(flexi_index)
+                response_list[0] = flexi_plan
         response_serializer = ProductResponseSerializer(response_list, many=True)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
@@ -1141,30 +1172,30 @@ class NewProductViewSet(viewsets.ModelViewSet):
             wallet.invested_amount += serializer.validated_data['amount']
             # return Response({"message": "All good till wallet."})
             wallet.save()
-            LogService.log(user=request.user, msg=f"Investment successful for {instance.plan_id}.")
-            LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} have been deducted from your Wallet.")
+            LogService.log(user=request.user, msg=f"Investment successful for {instance.product_id}.", is_activity=True)
+            LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} have been deducted from your Wallet.", is_activity=False)
             LogService.transaction_log(owner=request.user, wallet=wallet, amount=serializer.validated_data['amount'], debit=True, type=Transaction.TYPE_CHOICES[2][1])
-            investment = Investment.objects.create(principal=instance.amount,
+            investment = Investment.objects.create(principal=serializer.validated_data['amount'],
                                                     interest_rate=instance.interest_rate,
-                                                    tenure=instance.tenure,
+                                                    tenure=instance.month,
                                                     product=instance,
                                                     investor=request.user)
             for i in range(instance.month):
-                if instance.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
+                if investment.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
                     amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/(instance.month*30)
                     due_date = datetime.date.today() + relativedelta.relativedelta(days=i+1)
-                if instance.interest_payment == Investment.INTEREST_PAYMENT[1][1]:
+                if investment.interest_payment == Investment.INTEREST_PAYMENT[1][1]:
                     due_date = datetime.date.today() + relativedelta.relativedelta(months=i+1)
                     amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/instance.month
-                if instance.interest_payment == Investment.INTEREST_PAYMENT[2][1]:
+                if investment.interest_payment == Investment.INTEREST_PAYMENT[2][1]:
                     amount = (((serializer.validated_data['amount'])*(instance.interest_rate/100))*(instance.month/12)/(instance.month))*4
                     due_date = datetime.date.today() + relativedelta.relativedelta(months=(i+1)*4) 
-                if instance.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
+                if investment.interest_payment == Investment.INTEREST_PAYMENT[0][1]:
                     amount = ((serializer.validated_data['amount'])*(instance.interest_rate/100))#*(instance.month/12)/instance.month
                     due_date = datetime.date.today() + relativedelta.relativedelta(years=i+1)
                 payment = Payment.objects.create(investor=request.user,
                                                 due_date=due_date,
-                                                product_id=instance.plan_id,
+                                                product_id=instance.product_id,
                                                 amount=amount,
                                                 )
                 investment.installments.add(payment)
