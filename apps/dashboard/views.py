@@ -185,11 +185,11 @@ class PartnerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.action == 'linkInvestor':
-            queryset =  User.objects.filter(role=User.ROLE_CHOICES[1][0])
+            queryset =  User.objects.filter(role=User.ROLE_CHOICES[1][0]).order_by('-id')
         elif self.action == 'listInvestor':
-            queryset =  User.objects.filter(role=User.ROLE_CHOICES[0][1])
+            queryset =  User.objects.filter(role=User.ROLE_CHOICES[0][1]).order_by('-id')
         else:
-            queryset =  User.objects.filter(role=User.ROLE_CHOICES[1][1])
+            queryset =  User.objects.filter(role=User.ROLE_CHOICES[1][1]).order_by('-id')
         return queryset
     
     def get_serializer_class(self):
@@ -299,7 +299,7 @@ class BorrowerViewSet(viewsets.ModelViewSet):
     filterset_fields = []
 
     def get_queryset(self):
-        queryset = User.objects.filter(role=User.ROLE_CHOICES[2][1], status=User.STATUS_CHOICES[4][1])
+        queryset = User.objects.filter(role=User.ROLE_CHOICES[2][1], status=User.STATUS_CHOICES[4][1]).order_by('-id')
         return queryset
     
     def get_serializer_class(self):

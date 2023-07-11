@@ -276,8 +276,12 @@ class NewProduct(BaseModel, models.Model):
         if len(NewProduct.objects.all()) == 0:
             self.product_id = f"PLAN{self.type}{self.month}{1}"
         else:
-            latest_id = NewProduct.objects.latest('id')
-            self.product_id = f"PLAN{self.type}{self.month}{latest_id.id}"
+            product_exist = NewProduct.objects.filter(id=self.id).exists()
+            if product_exist:
+                pass
+            else:
+                latest_id = NewProduct.objects.latest('id')
+                self.product_id = f"PLAN{self.type}{self.month}{latest_id.id}"
         super(NewProduct, self).save(*args, **kwargs)
 
     def __str__(self):

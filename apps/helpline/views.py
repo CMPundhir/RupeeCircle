@@ -21,7 +21,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     filterset_fields = []
 
     def get_queryset(self):
-        queryset = Complaint.objects.all()#filter(status=Complaint.STATUS_CHOICES[0][1])
+        queryset = Complaint.objects.all().order_by('-id')#filter(status=Complaint.STATUS_CHOICES[0][1])
         return queryset
 
     def get_serializer_class(self):

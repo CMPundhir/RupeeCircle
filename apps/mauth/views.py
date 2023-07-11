@@ -218,7 +218,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.role == CustomUser.ROLE_CHOICES[3][1]:
             queryset = CustomUser.objects.all().order_by('-id')
         else:
-            queryset = CustomUser.objects.filter(id=user.id)
+            queryset = CustomUser.objects.filter(id=user.id).order_by('-id')
         return queryset
 
     def get_serializer_class(self, *args, **kwargs):

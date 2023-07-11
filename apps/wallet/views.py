@@ -33,7 +33,7 @@ class WalletViewSet(viewsets.ModelViewSet):
         # if user.role == User.ROLE_CHOICES[3][1]:
         #     queryset = Wallet.objects.all()
         # else:
-        queryset = Wallet.objects.filter(owner=user.id)
+        queryset = Wallet.objects.filter(owner=user.id).order_by('-id')
         # queryset = Wallet.objects.all()
         return queryset
     
@@ -179,9 +179,9 @@ class BankAccountViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.ROLE_CHOICES[3][1]:
-            queryset = BankAccount.objects.all()
+            queryset = BankAccount.objects.all().order_by('-id')
         else:
-            queryset = BankAccount.objects.filter(owner=user)
+            queryset = BankAccount.objects.filter(owner=user).order_by('-id')
         # queryset = BankAccount.objects.all()
         return queryset
     
@@ -308,7 +308,7 @@ class BankAccountViewSet(viewsets.ModelViewSet):
 class BankSlabViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
-        return super().get_queryset()
+        return super().get_queryset().order_by('-id')
     
     def get_serializer_class(self):
         return BankSlabSerializer
