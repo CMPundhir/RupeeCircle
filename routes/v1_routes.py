@@ -7,6 +7,7 @@ from apps.wallet.views import *
 from apps.dashboard.views import *
 from apps.loans.views import *
 from apps.helpline.views import *
+from apps.pgapp.views import *
 from routes.auth_router import AuthRouter
 from routes.extend_router import ExtendRouter
 
@@ -34,6 +35,7 @@ v1_router.register(r'tnc', TermsAndConditionViewSet, basename='tnc')
 v1_router.register(r'product', NewProductViewSet, basename='product')
 v1_router.register(r'productparam', ParamViewSet, basename='productparam')
 v1_router.register(r'bankslabs', BankSlabViewSet, basename='bankslabs')
+v1_router.register(r'pg', PhonePeViewSet, basename='pg')
 
 
 
