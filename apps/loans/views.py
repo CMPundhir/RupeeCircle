@@ -953,7 +953,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['product_id', 'investor']
     ordering_fields = ['id']
-    filterset_fields = ['product_id', 'investor']
+    filterset_fields = ['product_id', 'investor', 'status']
 
     def get_queryset(self):
         user = self.request.user
@@ -980,7 +980,7 @@ class InvestmentViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = []
     ordering_fields = ['id']
-    filterset_fields = ['investor', 'product_id', 'status']
+    filterset_fields = ['investor', 'product_id']
     
     def get_queryset(self):
         user=self.request.user
