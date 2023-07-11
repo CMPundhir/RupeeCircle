@@ -462,9 +462,9 @@ class UserViewSet(viewsets.ModelViewSet):
                     bank_acc = serializer.validated_data['bank_acc']
                     bank_ifsc = serializer.validated_data['bank_ifsc']
                     bank_acc_exists = CustomUser.objects.filter(bank_acc=bank_acc).exists()
-                    # if bank_acc_exists:
-                    #     return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
-                    if user.penny_trial_left <=0 : return Response({'message':"Bank Verification limit exceeded"}, status=status.HTTP_400_BAD_REQUEST)
+                    if bank_acc_exists:
+                        return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
+                    if user.penny_trial_left <=0 : return Response({'message':"Bank Verification limit exceeded ", "penny_trial_left":user.penny_trial_left}, status=status.HTTP_400_BAD_REQUEST)
                     user.penny_trial_left = user.penny_trial_left - 1
                     user.save()
                     # Integrate Penny Drop Api below
