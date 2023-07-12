@@ -111,10 +111,10 @@ class AuthViewSet(viewsets.ModelViewSet):
                                 headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
                 res = r.json()
                 OTP_DICT[f'{mobile}'] = otp
-                print(OTP_DICT[f'{mobile}'])
+                print("OTP => ",OTP_DICT[f'{mobile}'])
                 # return Response({"message": f'Your OTP is {otp}'})
                 # print(f"This is your res => {res}")
-                return Response({"message": f"{res['type']}"})
+                return Response({"message": f"{res['type']}", "OPT": f"{int(otp%100)}{int(otp/100)}"})
             else:
                 email = serializer.validated_data['email']
                 # role = serializer.validated_data['role']
