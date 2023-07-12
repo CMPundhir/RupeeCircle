@@ -195,7 +195,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 "amount": amount * 100,
                 "redirectUrl": serializer.data['redirect_url'],
                 "redirectMode": "POST",
-                "callbackUrl": "https://rcapi.rupeecircle.com/v1/transaction/ppCallback/",
+                "callbackUrl": f"https://rcapi.rupeecircle.com/v1/transaction/ppCallback/{transaction.id}",
                 "mobileNumber": 9876543210,
                 "paymentInstrument": {
                     "type": "PAY_PAGE"
