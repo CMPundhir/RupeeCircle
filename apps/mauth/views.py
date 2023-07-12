@@ -380,6 +380,7 @@ class UserViewSet(viewsets.ModelViewSet):
             api_response.pan_response = f"{res}"
             api_response.save()
             instance.pan_api_response = f"{res}"
+            user.status = CustomUser.STATUS_CHOICES[2][0]
             instance.save()
             return Response({"message": "Success", "name": res['data']['name']})
         else:
@@ -684,6 +685,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class DocumentVerificationResponseViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         queryset = DocumentVerificationResponse.objects.all()
@@ -702,3 +704,4 @@ class DocumentVerificationResponseViewSet(viewsets.ModelViewSet):
             except:
                 DocumentVerificationResponse.objects.create(owner=user)
         return Response({"message": "Created all."}, status=status.HTTP_200_OK)
+    

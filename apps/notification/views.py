@@ -13,7 +13,7 @@ from rest_framework import filters
 
 class ActivityAppViewSet(viewsets.ModelViewSet):
     # authentication_classes = [SessionAuthentication]
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'head']
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['user', 'type', '']
