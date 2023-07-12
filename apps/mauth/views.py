@@ -681,3 +681,23 @@ class UserViewSet(viewsets.ModelViewSet):
     #         i.is_marketplace_allowed = True
     #         i.save()
     #     return Response({"message": "Done"})
+
+
+class DocumentVerificationResponseViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        queryset = DocumentVerificationResponse.objects.all()
+        return queryset
+
+    def get_serializer_class(self):
+        return DocumentVerificationResponseSerializer
+    
+    @action(methods=['GET'], detail=False)
+    def createall(self, request):
+        user=request.user
+        all_users = User.objects.all()
+        for i in all_users:
+            try:
+                DocumentVerificationResponse.objects.get(owner=user)
+            except:
+                DocumentVerificationResponse.objects.create(owner=user)

@@ -152,3 +152,10 @@ class LogHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = LogHistory
         fields = '__all__'
+
+
+class DocumentVerificationResponseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = DocumentVerificationResponse
+        fields = '__all__'
