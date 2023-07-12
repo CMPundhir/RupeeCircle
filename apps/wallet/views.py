@@ -193,9 +193,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 "merchantTransactionId": f"{transaction.transaction_id}",
                 "merchantUserId": user.id,
                 "amount": amount * 100,
-                "redirectUrl": "https://webhook.site/redirect-url",
+                "redirectUrl": serializer.data['redirect_url'],
                 "redirectMode": "POST",
-                "callbackUrl": serializer.data['redirect_url'],
+                "callbackUrl": "https://rcapi.rupeecircle.com/v1/transaction/ppCallback/",
                 "mobileNumber": 9876543210,
                 "paymentInstrument": {
                     "type": "PAY_PAGE"
@@ -226,7 +226,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
     
     @action(methods=['POST'], detail=False , permission_classes=[AllowAny], authentication_classes=[])
     def ppCallback(self, request):
-        # LogService.log(request)
+        data = request.data
+        msg = json.dumps(data)
+        admin = User.objects.filter(username="8745095350")
+        LogService.log(admin, msg)
         return Response("Success")
 
 

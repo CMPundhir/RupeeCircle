@@ -21,6 +21,7 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from utility.sms_email_utils import *
 import os
 from dotenv import load_dotenv
 
@@ -101,71 +102,64 @@ class AuthViewSet(viewsets.ModelViewSet):
         # global OTP
         serializer = self.get_serializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            mobile=serializer.validated_data['mobile']
-            user_exist = User.objects.filter(mobile=mobile).exists()
-            if user_exist:
-                otp = random.randint(100000, 999999)
-                message = 'OTP for login into your RupeeCircle account is '+str(otp)+'.. Please do not share this OTP with anyone to ensure account\'s security.'
-                r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
-                r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
-                                headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
-                res = r.json()
-                OTP_DICT[f'{mobile}'] = otp
-                print("OTP => ",OTP_DICT[f'{mobile}'])
-                # return Response({"message": f'Your OTP is {otp}'})
-                # print(f"This is your res => {res}")
-                return Response({"message": f"{res['type']}", "OPT": f"{int(otp%100)}{int(otp/100)}"})
-            else:
-                email = serializer.validated_data['email']
-                # role = serializer.validated_data['role']
-                otp = random.randint(100000, 999999)
-                email_otp = random.randint(100000, 999999)
-
-                # Sending otp as text message
-
-                message = 'OTP for login into your RupeeCircle account is '+str(otp)+'.. Please do not share this OTP with anyone to ensure account\'s security.'
-                r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
-                r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
-                                headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
-                res = r.json()
-                OTP_DICT[f'{mobile}'] = otp
-                EMAIL_DICT[f'{email}'] = email_otp
-                sender = 'support@rupeecircle.com'
-                receivers = [f'{email}',]
-                print(f"These are your receivers {receivers}")
-
-                message = """From: From RupeeCircle {0}
-                To: To <to@todomain.com>
-                Subject: RupeeCircle Email Verification
-
-                OTP for your email verification is {1}. Don't share this otp with anyone.
-                """.format(email, email_otp)
-
-                try:
-                    smtpObj = smtplib.SMTP('email-smtp.ap-south-1.amazonaws.com', 587)
-                    smtpObj.starttls()
-                    smtpObj.login(user='AKIARATZWSMFEPVRQIPT', password='BECmGjFC1TyU2vgPwVQFnyvrILpofhALguozcjHrquaY')
-                    smtpObj.sendmail(sender, receivers, message)
-                    smtpObj.close()
-                    if res['type'] == 'success':
-                        return Response({"email": "OTP sent successfully", "sms": res['type']}, status=status.HTTP_200_OK)
-                    return Response({"email": "OTP sent successfully", "sms": res['type']}, status=status.HTTP_400_BAD_REQUEST)
-                except SMTPException as e:
-                    if res['type'] == 'success':
-                        return Response({"email": e.smtp_error, "email_status": e.smtp_code, "sms": res['type']}, status=status.HTTP_404_NOT_FOUND)
-                    return Response({"email": e.smtp_error, "sms": res['type']}, status=status.HTTP_400_BAD_REQUEST)
+            if serializer.validated_data['type'] == "LOGIN":
+                if "mobile" in serializer.validated_data and serializer.validated_data['mobile']:
+                    mobile = serializer.validated_data['mobile']
+                    user_exist = User.objects.filter(mobile=mobile).exists()
+                    if not user_exist:
+                        return Response({"message": "User not Registered"}, status=status.HTTP_400_BAD_REQUEST)
+                    data = sendMobileOtp(mobile)
+                    return Response({"message": "Otp Send Successfully", "POT": f"{int(data['otp']%100)}{int(data['otp']/100)}" })
+                else:
+                    return Response({"message": "Phone number required"}, status=status.HTTP_400_BAD_REQUEST)
+            elif serializer.validated_data['type'] == "REGISTER":    
+                mobile = None
+                email = None
                 
-            # otp = random.randint(100000, 999999)
-            # message = 'OTP for login into your RupeeCircle account is '+str(otp)+'.. Please do not share this OTP with anyone to ensure account\'s security.'
-            # r = requests.get(url=f'https://api.msg91.com/api/sendotp.php?authkey=244450ArWieIHo15bd15b6a&message={message}&otp={otp}&sender=RUPCLE&mobile={mobile}&DLT_TE_ID=1207165968024629434')
-            # r = requests.post(url=f'https://control.msg91.com/api/v5/otp?template_id=624809f07c5efc61b777a266&mobile=91{mobile}&otp={otp}', 
-            #                   headers={"Content-Type": "applicaton/json", "Authkey": "244450ArWieIHo15bd15b6a", "Cookie": "PHPSESSID=b830lnmkkuuo4gdovd4qk50io5"})
-            # res = r.json()
-            # OTP_DICT[f'{mobile}'] = otp
-            # print(OTP_DICT[f'{mobile}'])
-            # # return Response({"message": f'Your OTP is {otp}'})
-            # # print(f"This is your res => {res}")
-            # return Response({"message": f"{res['type']}", 'ooo': otp})       
+                if "mobile" in serializer.validated_data and serializer.validated_data['mobile']:
+                    mobile=serializer.validated_data['mobile']
+                if "email" in serializer.validated_data and serializer.validated_data['email']:
+                    email = serializer.validated_data['email']
+                if not mobile and not email:
+                    return Response({"message": "Phone number or email required"}, status=status.HTTP_400_BAD_REQUEST)
+                mob_data = None
+                if mobile:
+                    mob_data = sendMobileOtp(mobile)
+                email_data = None
+                if email:
+                    email_data = sendEmailOtp(email)
+                return Response({"message": "Success", "mob": mob_data, "email": email_data}, status=status.HTTP_200_OK)
+            
+            # if "email" in serializer.validated_data and serializer.validated_data['email']:
+            #     email = serializer.validated_data['email']
+            #     email_otp = random.randint(100000, 999999)
+            #     EMAIL_DICT[f'{email}'] = email_otp
+            #     sender = 'support@rupeecircle.com'
+            #     receivers = [f'{email}',]
+            #     print(f"These are your receivers {receivers}")
+
+            #     message = """From: From RupeeCircle {0}
+            #     To: To <to@todomain.com>
+            #     Subject: RupeeCircle Email Verification
+
+            #     OTP for your email verification is {1}. Don't share this otp with anyone.
+            #     """.format(email, email_otp)
+
+            #     try:
+            #         smtpObj = smtplib.SMTP('email-smtp.ap-south-1.amazonaws.com', 587)
+            #         smtpObj.starttls()
+            #         smtpObj.login(user='AKIARATZWSMFEPVRQIPT', password='BECmGjFC1TyU2vgPwVQFnyvrILpofhALguozcjHrquaY')
+            #         smtpObj.sendmail(sender, receivers, message)
+            #         smtpObj.close()
+            #         if res['type'] == 'success':
+            #             return Response({"email": "OTP sent successfully", "sms": res['type']}, status=status.HTTP_200_OK)
+            #         return Response({"email": "OTP sent successfully", "sms": res['type']}, status=status.HTTP_400_BAD_REQUEST)
+            #     except SMTPException as e:
+            #         if res['type'] == 'success':
+            #             return Response({"email": e.smtp_error, "email_status": e.smtp_code, "sms": res['type']}, status=status.HTTP_404_NOT_FOUND)
+            #         return Response({"email": e.smtp_error, "sms": res['type']}, status=status.HTTP_400_BAD_REQUEST) 
+            
+            # return Response({"message": f"{res['type']}", "POT": f"{int(otp%100)}{int(otp/100)}"})   
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -176,25 +170,36 @@ class AuthViewSet(viewsets.ModelViewSet):
         '''
         data = request.data
         serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
+        print("registerApi => 173")
+        if serializer.is_valid(raise_exception=True):
+            print("registerApi => 175")
             otp = serializer.validated_data['otp']
             is_tnc_accepted = serializer.validated_data['is_tnc_accepted']
             role = serializer.validated_data['role']
             mobile = serializer.validated_data['mobile']
             email = serializer.validated_data['email']
             email_otp = serializer.validated_data['email_otp']
-            if f'{mobile}' in OTP_DICT and OTP_DICT[f'{mobile}'] == otp and f'{email}' in EMAIL_DICT and OTP_DICT[f'{mobile}'] == email_otp:
+            print("------- if f'{mobile}' in OTP_DICT and OTP_DIC----------")
+            print("registerApi => 183")
+            if f'{mobile}' in OTP_DICT and OTP_DICT[f'{mobile}'] == otp and f'{email}' in EMAIL_DICT and EMAIL_DICT[f'{email}'] == email_otp:
                     mobile_exist = CustomUser.objects.filter(mobile=mobile).exists()
                     email_exist = CustomUser.objects.filter(email=email).exists()
+                    print("registerApi => 187")
                     if mobile_exist:
-                        return Response({"message": "User exist with this mobile number."}, status=status.HTTP_400_BAD_REQUEST)
+                        user = CustomUser.objects.get(mobile=mobile)
+                        print(user)
+                        verification = f'{user.status}'.replace('_',' ')
+                        token = get_tokens_for_user(user)
+                        user.email = email
+                        user.is_email_verified = True
+                        print("registerApi => 195")
+                        user.save()
+                        print("registerApi => 197")
+                        return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
+                        # return Response({"message": "User exist with this mobile number."}, status=status.HTTP_400_BAD_REQUEST)
                     if email_exist:
                         return Response({"message": "User exist with this Email ID."}, status=status.HTTP_400_BAD_REQUEST)
-                        # user = CustomUser.objects.get(mobile=mobile)
-                        # print(user)
-                        # verification = f'{user.status}'.replace('_',' ')
-                        # token = get_tokens_for_user(user)
-                        # return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
+                    print("registerApi => 202")
                     if is_tnc_accepted != True:
                         return Response({"message": "Please accept Terms & Conditions."}, status=status.HTTP_400_BAD_REQUEST)
                     # if 'email_otp' in serializer.validated_data and serializer.validated_data['email_otp']:
@@ -210,6 +215,7 @@ class AuthViewSet(viewsets.ModelViewSet):
                     #                                  role=role,
                     #                                  email=email,
                     #                                  is_email_verified=True)
+                    print("registerApi => 218")
                     user = CustomUser.objects.create(username=mobile, 
                                                      mobile=mobile,
                                                      email=email,
@@ -218,7 +224,12 @@ class AuthViewSet(viewsets.ModelViewSet):
                                                      is_tnc_accepted=is_tnc_accepted, 
                                                      status=CustomUser.STATUS_CHOICES[1][0],
                                                      role=role)
-                    DocumentVerificationResponse.objects.create(owner=user)
+                    print("registerApi => 227")
+                    try:
+                        DocumentVerificationResponse.objects.create(owner=user)
+                    except Exception as e:
+                        print("DocumentVerificationResponse.objects.create(owner=user) error => ",e.message)
+                    print("registerApi => 232")
                     # user = CustomUser.objects.get(pk=pk)
                     # if user.status == CustomUser.STATUS_CHOICES[0][0]:
                     # user.is_mobile_verified = True
@@ -240,9 +251,12 @@ class AuthViewSet(viewsets.ModelViewSet):
                     # except:
                     #     user = CustomUser.objects.create(username=mobile, mobile=mobile)
                     token = get_tokens_for_user(user)
-                    return Response({"id": id, "message": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
+                    print("registerApi => 254")
+                    return Response({"id": user.id, "message": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
                     # return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
+            print("registerApi => 257")
             return Response({"message": "Email and Mobile OTP doesn't match"}, status=status.HTTP_400_BAD_REQUEST)
+        print("registerApi => 259")
         return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -529,8 +543,8 @@ class UserViewSet(viewsets.ModelViewSet):
                     acc_holder_name = serializer.validated_data['acc_holder_name']
                     bank_acc = serializer.validated_data['bank_acc']
                     bank_ifsc = serializer.validated_data['bank_ifsc']
-                    bank_acc_exists = CustomUser.objects.filter(bank_acc=bank_acc).exists()
-                    if bank_acc_exists:
+                    is_bank_acc_exists = BankAccount.objects.filter(acc_number=bank_acc).exists()
+                    if is_bank_acc_exists:
                         return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
                     if user.penny_trial_left <=0 : return Response({'message':"Bank Verification limit exceeded ", "penny_trial_left":user.penny_trial_left}, status=status.HTTP_400_BAD_REQUEST)
                     user.penny_trial_left = user.penny_trial_left - 1
