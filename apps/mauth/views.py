@@ -128,38 +128,7 @@ class AuthViewSet(viewsets.ModelViewSet):
                 email_data = None
                 if email:
                     email_data = sendEmailOtp(email)
-                return Response({"message": "Success", "mob": mob_data, "email": email_data}, status=status.HTTP_200_OK)
-            
-            # if "email" in serializer.validated_data and serializer.validated_data['email']:
-            #     email = serializer.validated_data['email']
-            #     email_otp = random.randint(100000, 999999)
-            #     EMAIL_DICT[f'{email}'] = email_otp
-            #     sender = 'support@rupeecircle.com'
-            #     receivers = [f'{email}',]
-            #     print(f"These are your receivers {receivers}")
-
-            #     message = """From: From RupeeCircle {0}
-            #     To: To <to@todomain.com>
-            #     Subject: RupeeCircle Email Verification
-
-            #     OTP for your email verification is {1}. Don't share this otp with anyone.
-            #     """.format(email, email_otp)
-
-            #     try:
-            #         smtpObj = smtplib.SMTP('email-smtp.ap-south-1.amazonaws.com', 587)
-            #         smtpObj.starttls()
-            #         smtpObj.login(user='AKIARATZWSMFEPVRQIPT', password='BECmGjFC1TyU2vgPwVQFnyvrILpofhALguozcjHrquaY')
-            #         smtpObj.sendmail(sender, receivers, message)
-            #         smtpObj.close()
-            #         if res['type'] == 'success':
-            #             return Response({"email": "OTP sent successfully", "sms": res['type']}, status=status.HTTP_200_OK)
-            #         return Response({"email": "OTP sent successfully", "sms": res['type']}, status=status.HTTP_400_BAD_REQUEST)
-            #     except SMTPException as e:
-            #         if res['type'] == 'success':
-            #             return Response({"email": e.smtp_error, "email_status": e.smtp_code, "sms": res['type']}, status=status.HTTP_404_NOT_FOUND)
-            #         return Response({"email": e.smtp_error, "sms": res['type']}, status=status.HTTP_400_BAD_REQUEST) 
-            
-            # return Response({"message": f"{res['type']}", "POT": f"{int(otp%100)}{int(otp/100)}"})   
+                return Response({"message": "Success", "mob": mob_data, "email": email_data}, status=status.HTTP_200_OK) 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=['POST'], detail=False)
@@ -170,94 +139,62 @@ class AuthViewSet(viewsets.ModelViewSet):
         '''
         data = request.data
         serializer = self.get_serializer(data=data)
-        print("registerApi => 173")
         if serializer.is_valid(raise_exception=True):
-            print("registerApi => 175")
             otp = serializer.validated_data['otp']
             is_tnc_accepted = serializer.validated_data['is_tnc_accepted']
             role = serializer.validated_data['role']
             mobile = serializer.validated_data['mobile']
-            email = serializer.validated_data['email']
-            email_otp = serializer.validated_data['email_otp']
-            print("------- if f'{mobile}' in OTP_DICT and OTP_DIC----------")
-            print("registerApi => 183")
-            if f'{mobile}' in OTP_DICT and OTP_DICT[f'{mobile}'] == otp and f'{email}' in EMAIL_DICT and EMAIL_DICT[f'{email}'] == email_otp:
-                    mobile_exist = CustomUser.objects.filter(mobile=mobile).exists()
-                    email_exist = CustomUser.objects.filter(email=email).exists()
-                    print("registerApi => 187")
-                    if mobile_exist:
-                        user = CustomUser.objects.get(mobile=mobile)
-                        print(user)
-                        verification = f'{user.status}'.replace('_',' ')
-                        token = get_tokens_for_user(user)
-                        user.email = email
-                        user.is_email_verified = True
-                        print("registerApi => 195")
-                        user.save()
-                        print("registerApi => 197")
-                        return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
-                        # return Response({"message": "User exist with this mobile number."}, status=status.HTTP_400_BAD_REQUEST)
-                    if email_exist:
-                        return Response({"message": "User exist with this Email ID."}, status=status.HTTP_400_BAD_REQUEST)
-                    print("registerApi => 202")
-                    if is_tnc_accepted != True:
-                        return Response({"message": "Please accept Terms & Conditions."}, status=status.HTTP_400_BAD_REQUEST)
-                    # if 'email_otp' in serializer.validated_data and serializer.validated_data['email_otp']:
-                    #     if 'email' in serializer.validated_data and serializer.validated_data['email']:
-                    #         email = serializer.validated_data['email']
-                    #         email_otp = serializer.validated_data['email_otp']
-                    #         if f"{email}" in EMAIL_DICT and EMAIL_DICT[f'email'] == email_otp:
-                    #             user = CustomUser.objects.create(username=mobile, 
-                    #                                  mobile=mobile, 
-                    #                                  is_mobile_verified=True, 
-                    #                                  is_tnc_accepted=is_tnc_accepted, 
-                    #                                  status=CustomUser.STATUS_CHOICES[1][0],
-                    #                                  role=role,
-                    #                                  email=email,
-                    #                                  is_email_verified=True)
-                    print("registerApi => 218")
-                    user = CustomUser.objects.create(username=mobile, 
-                                                     mobile=mobile,
-                                                     email=email,
-                                                     is_email_verified=True, 
-                                                     is_mobile_verified=True, 
-                                                     is_tnc_accepted=is_tnc_accepted, 
-                                                     status=CustomUser.STATUS_CHOICES[1][0],
-                                                     role=role)
-                    print("registerApi => 227")
-                    try:
-                        DocumentVerificationResponse.objects.create(owner=user)
-                    except Exception as e:
-                        print("DocumentVerificationResponse.objects.create(owner=user) error => ",e.message)
-                    print("registerApi => 232")
-                    # user = CustomUser.objects.get(pk=pk)
-                    # if user.status == CustomUser.STATUS_CHOICES[0][0]:
-                    # user.is_mobile_verified = True
-                    # user.tnc = True
-                    # user.status = CustomUser.STATUS_CHOICES[1][0]
-                    # user.role = role
-
-                    # Integrate Credit Score fetch api below
-                    # if role == User.ROLE_CHOICES[2][1]:
-                    #     user.credit_score = serializer.validated_data['credit_score']
-
-                    # Integrate Credit Score fetch api above
-                    
-                    # user.save()
-                    # id = user.id
-                        # return Response({"msg": "OTP Verified", "step": user.is_active})
-                    # try:
-                    #     user = CustomUser.objects.get(mobile=mobile)
-                    # except:
-                    #     user = CustomUser.objects.create(username=mobile, mobile=mobile)
+            email = None
+            email_otp = None
+            if "email" in serializer.validated_data and serializer.validated_data['email']:
+                email = serializer.validated_data['email']
+                if "email_otp" in serializer.validated_data and serializer.validated_data['email_otp']:
+                    email_otp = serializer.validated_data['email_otp']
+                else:
+                    return Response({"message": "Please Enter EMail OTP as well"}, status=status.HTTP_400_BAD_REQUEST)
+            if f'{mobile}' in OTP_DICT and OTP_DICT[f'{mobile}'] == otp and (not email or f'{email}' in EMAIL_DICT and EMAIL_DICT[f'{email}'] == email_otp):
+                mobile_exist = CustomUser.objects.filter(mobile=mobile).exists()
+                if mobile_exist:
+                    user = CustomUser.objects.get(mobile=mobile)
+                    print(user)
+                    verification = f'{user.status}'.replace('_',' ')
                     token = get_tokens_for_user(user)
-                    print("registerApi => 254")
-                    return Response({"id": user.id, "message": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
-                    # return Response({"message": "OTP does not match."}, status=status.HTTP_400_BAD_REQUEST)
-            print("registerApi => 257")
-            return Response({"message": "Email and Mobile OTP doesn't match"}, status=status.HTTP_400_BAD_REQUEST)
-        print("registerApi => 259")
+                    user.email = email
+                    user.is_email_verified = True
+                    user.save()
+                    return Response({"id": user.id, "token": token, "message": f"User Already exists. Kindly continue with {verification}", "step": user.status}, status=status.HTTP_200_OK)
+                    # return Response({"message": "User exist with this mobile number."}, status=status.HTTP_400_BAD_REQUEST)
+                if email:
+                    email_exist = CustomUser.objects.filter(email=email).exists()
+                    if email_exist:
+                        return Response({"message": "Email ID already registered with other user"}, status=status.HTTP_400_BAD_REQUEST)
+                if is_tnc_accepted != True:
+                    return Response({"message": "Please accept Terms & Conditions."}, status=status.HTTP_400_BAD_REQUEST)
+                if email: 
+                    user = CustomUser.objects.create(username=mobile, 
+                                                    mobile=mobile,
+                                                    email=email,
+                                                    is_email_verified=True, 
+                                                    is_mobile_verified=True, 
+                                                    is_tnc_accepted=is_tnc_accepted, 
+                                                    status=CustomUser.STATUS_CHOICES[1][0],
+                                                    role=role)
+                else:
+                    user = CustomUser.objects.create(username=mobile, 
+                                                    mobile=mobile,
+                                                    is_mobile_verified=True, 
+                                                    is_tnc_accepted=is_tnc_accepted, 
+                                                    status=CustomUser.STATUS_CHOICES[1][0],
+                                                    role=role)
+                try:
+                    DocumentVerificationResponse.objects.create(owner=user)
+                except Exception as e:
+                    print("DocumentVerificationResponse.objects.create(owner=user) error => ",e.message)
+                token = get_tokens_for_user(user)
+                return Response({"id": user.id, "message": "OTP Verified", "step": user.status, "token": token}, status=status.HTTP_200_OK)
+            return Response({"message": "Email or Mobile OTP doesn't match"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+
 
     @action(methods=['POST'], detail=False)
     def dedup(self, request):
