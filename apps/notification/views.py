@@ -24,7 +24,7 @@ class ActivityAppViewSet(viewsets.ModelViewSet):
         user = self.request.user
         # self.queryset = ActivityTracker.objects.filter(
         #     user=user).order_by("-id")
-        self.queryset = ActivityTracker.objects.filter(user=user).order_by('-id')
+        self.queryset = ActivityTracker.objects.all() #filter(user=user).order_by('-id')
         return self.queryset
 
     def get_serializer_class(self):

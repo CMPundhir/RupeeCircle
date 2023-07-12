@@ -530,7 +530,7 @@ class UserViewSet(viewsets.ModelViewSet):
         data = request.data
         user = request.user
         if not user: return Response({'message':"User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        if not user.is_superuser and user.is_bank_acc_verified: return Response({'message':"Bank Account already verified"}, status=status.HTTP_400_BAD_REQUEST)
+        if not user.is_superuser and not user.is_bank_acc_verified: return Response({'message':"Bank Account already verified"}, status=status.HTTP_400_BAD_REQUEST)
         PENNY_DROP_PROD_TOKEN = os.getenv("PENNY_DROP_PROD_TOKEN")
         serializer = BankDetailSerializer(data=data)
         # print("PENNY_DROP_PROD_TOKEN => ", PENNY_DROP_PROD_TOKEN)
@@ -543,10 +543,10 @@ class UserViewSet(viewsets.ModelViewSet):
                     acc_holder_name = serializer.validated_data['acc_holder_name']
                     bank_acc = serializer.validated_data['bank_acc']
                     bank_ifsc = serializer.validated_data['bank_ifsc']
-                    is_bank_acc_exists = BankAccount.objects.filter(acc_number=bank_acc).exists()
+                    is_bank_acc_exists = BankAccount.objects.filter(acc_number=bank_acc).exclude(owner=user).exists()
                     if is_bank_acc_exists:
                         return Response({"message": "Bank account already exist with another user."}, status=status.HTTP_400_BAD_REQUEST)
-                    if user.penny_trial_left <=0 : return Response({'message':"Bank Verification limit exceeded ", "penny_trial_left":user.penny_trial_left}, status=status.HTTP_400_BAD_REQUEST)
+                    if user.penny_trial_left <=-1 : return Response({'message':"Bank Verification limit exceeded ", "penny_trial_left":user.penny_trial_left}, status=status.HTTP_400_BAD_REQUEST)
                     user.penny_trial_left = user.penny_trial_left - 1
                     user.save()
                     # Integrate Penny Drop Api below
@@ -609,6 +609,7 @@ class UserViewSet(viewsets.ModelViewSet):
                                 BankAccount.objects.create(owner=user, acc_number=serializer.validated_data['bank_acc'], 
                                                     ifsc=serializer.validated_data['bank_ifsc'],
                                                     is_primary=True)
+                                user.status = CustomUser.STATUS_CHOICES[4][1]
                                 user.is_bank_acc_verified = True
                                 user.save()
                                 return Response({"message": res['status'], "name": nameAtBank})

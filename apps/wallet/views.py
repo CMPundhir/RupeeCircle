@@ -228,8 +228,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def ppCallback(self, request):
         data = request.data
         msg = json.dumps(data)
-        admin = User.objects.filter(username="8745095350")
-        LogService.log(admin, msg)
+        admin = User.objects.filter(username="8745095350")[0]
+        LogService.log(admin, msg, is_activity=True)
+        print("ppCallback => ", data)
+        print("ppCallback => ", msg)
         return Response("Success")
 
 
