@@ -701,3 +701,4 @@ class DocumentVerificationResponseViewSet(viewsets.ModelViewSet):
                 DocumentVerificationResponse.objects.get(owner=user)
             except:
                 DocumentVerificationResponse.objects.create(owner=user)
+        return Response({"message": "Created all."}, status=status.HTTP_200_OK)
