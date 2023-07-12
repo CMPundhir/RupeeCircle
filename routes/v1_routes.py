@@ -35,6 +35,7 @@ v1_router.register(r'tnc', TermsAndConditionViewSet, basename='tnc')
 v1_router.register(r'product', NewProductViewSet, basename='product')
 v1_router.register(r'productparam', ParamViewSet, basename='productparam')
 v1_router.register(r'bankslabs', BankSlabViewSet, basename='bankslabs')
+v1_router.register(r'verification-response', DocumentVerificationResponseViewSet, basename='verification-response')
 v1_router.register(r'pg', PhonePeViewSet, basename='pg')
 
 

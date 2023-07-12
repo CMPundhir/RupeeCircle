@@ -69,7 +69,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     "corsheaders",
     'sslserver',
-    'django_filters',
+    'django_filters'
     # 'psycopg'
     # 'apps.mauth.apps.MauthConfig.name',
 ]
@@ -181,6 +181,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EMAIL_USE_TLS = True 
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
