@@ -193,9 +193,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 "merchantTransactionId": f"{transaction.transaction_id}",
                 "merchantUserId": user.id,
                 "amount": amount * 100,
-                "redirectUrl": serializer.data['redirect_url'],
+                "redirectUrl": f"{serializer.data['redirect_url']}{transaction.id}",
                 "redirectMode": "POST",
-                "callbackUrl": f"https://rcapi.rupeecircle.com/v1/transaction/ppCallback/{transaction.id}",
+                "callbackUrl": "https://rcapi.rupeecircle.com/v1/transaction/ppCallback/",
                 "mobileNumber": 9876543210,
                 "paymentInstrument": {
                     "type": "PAY_PAGE"
