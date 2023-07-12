@@ -26,7 +26,6 @@ def sendEmailOtp(email):
     EMAIL_DICT[f'{email}'] = otp
     sender = 'support@rupeecircle.com'
 
-    html_content = f"<strong>Your verification OTP is <h2>{otp}</h2></strong>"
     html_content= f'''<div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
   <div style="margin:50px auto;width:70%;padding:20px 0">
     <div style="border-bottom:1px solid #eee">
@@ -51,6 +50,8 @@ def sendEmailOtp(email):
     res = ""
     try:
         res = email.send()
+        status = True
+        message = "OTP Email sent successfully"
     except Exception as e:
         status = False
         print("Error => ",e)
