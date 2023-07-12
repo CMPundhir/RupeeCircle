@@ -224,7 +224,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             # return Response({"res":json.loads(response.text), "data": data, "X_VERIFY": X_VERIFY, "data64": data64})
             return Response({"res":json.loads(response.text)})
     
-    @action(methods=['POST'], detail=False , permission_classes=[AllowAny], authentication_classes=[])
+    @action(methods=['POST', 'GET'], detail=False , permission_classes=[AllowAny], authentication_classes=[])
     def ppCallback(self, request):
         data = request.data
         msg = json.dumps(data)
