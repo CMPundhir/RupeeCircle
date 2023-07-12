@@ -69,8 +69,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     "corsheaders",
     'sslserver',
-    'django_filters',
-    'apps.pgapp'
+    'django_filters'
     # 'psycopg'
     # 'apps.mauth.apps.MauthConfig.name',
 ]
