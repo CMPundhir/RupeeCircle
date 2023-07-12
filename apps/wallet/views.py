@@ -42,7 +42,10 @@ class WalletViewSet(viewsets.ModelViewSet):
         # if user.role == User.ROLE_CHOICES[3][1]:
         #     queryset = Wallet.objects.all()
         # else:
-        queryset = Wallet.objects.filter(owner=user.id).order_by('-id')
+        if user.is_superuser:
+            queryset = Wallet.objects.all().order_by('-id')
+        else:
+            queryset = Wallet.objects.filter(owner=user.id).order_by('-id')
         # queryset = Wallet.objects.all()
         return queryset
     
@@ -158,7 +161,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Transaction.objects.filter(owner=user).order_by('-id')
+        if user.is_superuser:
+            queryset = Transaction.objects.all().order_by('-id')
+        else:
+            queryset = Transaction.objects.filter(owner=user).order_by('-id')
         # return queryset
         # queryset = Transaction.objects.all().order_by('-id')
         return queryset
