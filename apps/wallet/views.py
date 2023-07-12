@@ -1,6 +1,6 @@
 from django.shortcuts import render
 import requests
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -15,6 +15,14 @@ from rest_framework.settings import api_settings
 from .serializers import *
 from utility.ccavutil import encrypt,decrypt
 from django.views.decorators.csrf import csrf_exempt
+import os
+import base64
+import hashlib
+import json
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 accessCode = 'AVSA23KB49BS35ASSB' 	
@@ -156,6 +164,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
         return queryset
     
     def get_serializer_class(self):
+        if self.action == "createOrder":
+            return CreateOrderSerializer
         return TransactionSerializer
 
     @action(methods=['GET'], detail=False)
@@ -169,6 +179,55 @@ class TransactionViewSet(viewsets.ModelViewSet):
         queryset = Transaction.objects.all()
         serializer = TransactionExcelSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(methods=['POST'], detail=False)
+    def createOrder(self, request):
+        user = request.user
+        wallet = Wallet.objects.get(owner=user)
+        serializer = CreateOrderSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            amount = serializer.validated_data['amount']
+            transaction = Transaction.objects.create(wallet=wallet, owner=user, amount=amount, debit=False, type=type)
+            data = {
+                "merchantId": os.getenv("PHONE_PE_MERCHANT_ID"),
+                "merchantTransactionId": f"{transaction.transaction_id}",
+                "merchantUserId": user.id,
+                "amount": amount * 100,
+                "redirectUrl": "https://webhook.site/redirect-url",
+                "redirectMode": "POST",
+                "callbackUrl": serializer.data['redirect_url'],
+                "mobileNumber": 9876543210,
+                "paymentInstrument": {
+                    "type": "PAY_PAGE"
+                }
+            }
+            PHONE_PE_SALT_KEY = os.getenv("PHONE_PE_SALT_KEY")
+            PHONE_PE_KEY_INDEX = os.getenv("PHONE_PE_KEY_INDEX")
+            url = os.getenv("PHONE_PE_PAY_URL")
+            json_object = json.dumps(data, indent = 4) 
+            b = base64.b64encode(bytes(json_object, 'utf-8'))
+            data64 = b.decode('utf-8')
+
+            print("data64 => ", data64)
+            data256 = hashlib.sha256(f"{data64}/pg/v1/pay{PHONE_PE_SALT_KEY}".encode('utf-8')).hexdigest()
+            print("data256 => ", data256)
+            X_VERIFY = f"{data256}###{PHONE_PE_KEY_INDEX}"
+            headers = {
+                "accept": "application/json",
+                "Content-Type": "application/json",
+                "X-VERIFY": X_VERIFY
+            }
+            reqData = {
+                "request": data64,
+            }
+            response = requests.post(url, headers=headers, json=reqData)
+            # return Response({"res":json.loads(response.text), "data": data, "X_VERIFY": X_VERIFY, "data64": data64})
+            return Response({"res":json.loads(response.text)})
+    
+    @action(methods=['POST'], detail=False , permission_classes=[AllowAny], authentication_classes=[])
+    def ppCallback(self, request):
+        # LogService.log(request)
+        return Response("Success")
 
 
 class BankAccountViewSet(viewsets.ModelViewSet):    

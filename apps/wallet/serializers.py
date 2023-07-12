@@ -50,3 +50,7 @@ class BankSlabSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankSlab
         fields = '__all__'
+
+class CreateOrderSerializer(serializers.Serializer):
+    amount = serializers.IntegerField(required=True, min_value=1, max_value=10)
+    redirect_url = serializers.URLField(required=True)

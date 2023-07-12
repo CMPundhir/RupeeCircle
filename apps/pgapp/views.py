@@ -13,9 +13,12 @@ class PhonePeViewSet(viewsets.ModelViewSet):
     # def get_queryset(self):
     #     serializer = PhonePeSerializer()
     #     return super().get_queryset()
+    
+    def get_serializer_class(self):
+        return PhonePeSerializer
 
     @action(methods=['POST'], detail=False)
-    def generateurl(self, request):
+    def create_order(self, request):
         user = request.user
         wallet = Wallet.objects.get(owner=user)
         serializer = PhonePeSerializer(data=request.data)
