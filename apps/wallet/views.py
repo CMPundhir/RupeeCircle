@@ -226,7 +226,12 @@ class TransactionViewSet(viewsets.ModelViewSet):
     
     @action(methods=['POST', 'GET'], detail=False , permission_classes=[AllowAny], authentication_classes=[])
     def ppCallback(self, request):
-        data = request.data
+        data = {}
+        if self.request.method == 'POST':
+            data = request.data
+        else:
+            data = request.query_params
+            print("Get request => ",data)
         msg = json.dumps(data)
         admin = User.objects.filter(username="8745095350")[0]
         LogService.log(admin, msg, is_activity=True)
