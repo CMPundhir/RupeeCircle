@@ -3,6 +3,10 @@ import random
 from utility.otputility import *
 import smtplib
 from smtplib import SMTPException
+from django.core.mail import EmailMessage
+from django.http import HttpResponse
+import json
+
 
 def sendMobileOtp(mob):
     otp = random.randint(100000, 999999)
@@ -18,6 +22,27 @@ def sendMobileOtp(mob):
 
 
 def sendEmailOtp(email):
+    otp = random.randint(100000, 999999)
+    EMAIL_DICT[f'{email}'] = otp
+    sender = 'support@rupeecircle.com'
+
+    html_content = f"<strong>Your verification OTP is <h2>{otp}</h2></strong>"
+    email = EmailMessage("Email verification OTP", html_content, sender, [email])
+    email.content_subtype = "html"
+    status = False
+    message = ""
+    res = ""
+    try:
+        res = email.send()
+    except Exception as e:
+        status = False
+        print("Error => ",e)
+        message = str(e)
+
+    return {"otp": otp, "status": status, "message": message, "res": res}
+
+
+def sendEmailOtp1(email):
     otp = random.randint(100000, 999999)
     EMAIL_DICT[f'{email}'] = otp
     sender = 'support@rupeecircle.com'

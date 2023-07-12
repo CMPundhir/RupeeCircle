@@ -238,3 +238,9 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+
+EMAIL_HOST="email-smtp.ap-south-1.amazonaws.com"
+EMAIL_HOST_USER="AKIARATZWSMFEPVRQIPT"
+EMAIL_HOST_PASSWORD="BECmGjFC1TyU2vgPwVQFnyvrILpofhALguozcjHrquaY"
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
