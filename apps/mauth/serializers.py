@@ -14,10 +14,12 @@ class LogInSerializer(serializers.ModelSerializer):
 
 class GetOTPSerializer(serializers.ModelSerializer):
     mobile = serializers.CharField()
+    email = serializers.EmailField(required=False)
+    # role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
 
     class Meta:
         model = User
-        fields = ['mobile']
+        fields = ['mobile', 'email']
 
 
 class DedupSerializer(serializers.ModelSerializer):
@@ -39,10 +41,13 @@ class VerifyOTPSerializer(serializers.ModelSerializer):
     mobile = serializers.CharField()
     is_tnc_accepted = serializers.BooleanField()
     otp = serializers.IntegerField()
+    email = serializers.EmailField()
+    email_otp = serializers.IntegerField()
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
 
     class Meta:
         model = User
-        fields = ['mobile', 'role', 'is_tnc_accepted', 'otp']
+        fields = ['mobile', 'role', 'is_tnc_accepted', 'otp', 'email', 'email_otp']
 
 
 class PanSerializer(serializers.ModelSerializer):
