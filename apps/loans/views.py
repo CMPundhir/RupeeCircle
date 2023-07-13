@@ -1044,7 +1044,6 @@ class ParamViewSet(viewsets.ModelViewSet):
         return Response({"message": "Method Not Allowed."}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-
 class NewProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
@@ -1055,7 +1054,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = NewProduct.objects.all().order_by('-id')#filter(is_record_active=True)
         return queryset
-    
+
     def get_serializer_class(self):
         if self.action == 'create':
             return ProductInputSerializer
@@ -1064,7 +1063,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
         elif self.action == 'apply':
             return ApplySerializer
         return NewProductSerialzier
-    
+
     def partial_update(self, request, *args, **kwargs):
         print("Product Patch => ",request.data)
         data = request.data
@@ -1137,7 +1136,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
         queryset = NewProduct.objects.all()
         queryset.delete()
         return Response({"message": "Deleted All."}, status=status.HTTP_200_OK)
-    
+
     @action(methods=['POST'], detail=False)
     def calculate_interest(self, request):
         data = request.data
