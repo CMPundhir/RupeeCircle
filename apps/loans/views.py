@@ -1142,7 +1142,7 @@ class NewProductViewSet(viewsets.ModelViewSet):
         data = request.data
         serializer = ProductApplySerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            queryset = NewProduct.objects.filter(is_record_active=True)
+            queryset = NewProduct.objects.filter(is_record_active=True).order_by('month')
             response_list = list()
             for i in queryset:
                 if i.type == NewProduct.TYPE_CHOICES[1][1]:

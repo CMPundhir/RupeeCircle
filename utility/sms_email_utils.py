@@ -3,6 +3,10 @@ import random
 from utility.otputility import *
 import smtplib
 from smtplib import SMTPException
+from django.core.mail import EmailMessage
+from django.http import HttpResponse
+import json
+
 
 def sendMobileOtp(mob):
     otp = random.randint(100000, 999999)
@@ -18,6 +22,45 @@ def sendMobileOtp(mob):
 
 
 def sendEmailOtp(email):
+    otp = random.randint(100000, 999999)
+    EMAIL_DICT[f'{email}'] = otp
+    sender = 'support@rupeecircle.com'
+
+    html_content= f'''<div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
+  <div style="margin:50px auto;width:70%;padding:20px 0">
+    <div style="border-bottom:1px solid #eee">
+      <a href="" style="font-size:1.4em;color: #00466a;text-decoration:none;font-weight:600">RupeeCircle</a>
+    </div>
+    <p style="font-size:1.1em">Hi,</p>
+    <p>Thank you for choosing RupeeCircle. Use the following OTP to complete your Sign Up procedures. OTP is valid for 5 minutes</p>
+    <h2 style="background: #00466a;margin: 0 auto;width: max-content;padding: 0 10px;color: #fff;border-radius: 4px;">{otp}</h2>
+    <p style="font-size:0.9em;">Regards,<br />RupeeCircle</p>
+    <hr style="border:none;border-top:1px solid #eee" />
+    <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
+      <p>RupeeCircle Inc</p>
+      <p>Delhi</p>
+      <p>India</p>
+    </div>
+  </div>
+</div>'''
+    email = EmailMessage("Email verification OTP", html_content, sender, [email])
+    email.content_subtype = "html"
+    status = False
+    message = ""
+    res = ""
+    try:
+        res = email.send()
+        status = True
+        message = "OTP Email sent successfully"
+    except Exception as e:
+        status = False
+        print("Error => ",e)
+        message = str(e)
+
+    return {"otp": otp, "status": status, "message": message, "res": res}
+
+
+def sendEmailOtp1(email):
     otp = random.randint(100000, 999999)
     EMAIL_DICT[f'{email}'] = otp
     sender = 'support@rupeecircle.com'

@@ -42,7 +42,10 @@ class WalletViewSet(viewsets.ModelViewSet):
         # if user.role == User.ROLE_CHOICES[3][1]:
         #     queryset = Wallet.objects.all()
         # else:
-        queryset = Wallet.objects.filter(owner=user.id).order_by('-id')
+        if user.is_superuser:
+            queryset = Wallet.objects.all().order_by('-id')
+        else:
+            queryset = Wallet.objects.filter(owner=user.id).order_by('-id')
         # queryset = Wallet.objects.all()
         return queryset
     
@@ -158,7 +161,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Transaction.objects.filter(owner=user).order_by('-id')
+        if user.is_superuser:
+            queryset = Transaction.objects.all().order_by('-id')
+        else:
+            queryset = Transaction.objects.filter(owner=user).order_by('-id')
         # return queryset
         # queryset = Transaction.objects.all().order_by('-id')
         return queryset
@@ -224,9 +230,14 @@ class TransactionViewSet(viewsets.ModelViewSet):
             # return Response({"res":json.loads(response.text), "data": data, "X_VERIFY": X_VERIFY, "data64": data64})
             return Response({"res":json.loads(response.text)})
     
-    @action(methods=['POST'], detail=False , permission_classes=[AllowAny], authentication_classes=[])
+    @action(methods=['POST', 'GET'], detail=False , permission_classes=[AllowAny], authentication_classes=[])
     def ppCallback(self, request):
-        data = request.data
+        data = {}
+        if self.request.method == 'POST':
+            data = request.data
+        else:
+            data = request.query_params
+            print("Get request => ",data)
         msg = json.dumps(data)
         admin = User.objects.filter(username="8745095350")[0]
         LogService.log(admin, msg, is_activity=True)
