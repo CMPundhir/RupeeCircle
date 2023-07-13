@@ -1,6 +1,7 @@
 from django.shortcuts import render
 import random, requests, json
 import smtplib
+from utility.name_verification import match_name
 from smtplib import SMTPException
 from utility.otputility import *
 from apps.mauth.models import CustomUser
@@ -351,7 +352,7 @@ class UserViewSet(viewsets.ModelViewSet):
             # user.save()
             return Response({"name": "Your Name", "message": "PAN Details Successfully fetched."})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(methods=['POST'], detail=True)
     def panVerify(self, request, pk):
         '''
@@ -440,6 +441,19 @@ class UserViewSet(viewsets.ModelViewSet):
 
             res = response.json()
             if res and 'statusCode' in res and res['statusCode']==200:
+
+                # Matching Aadhaar name with PAN name
+
+                # pan_name = user.first_name
+                # if 'data' in res:
+                #     aadhar_data = res['data']
+                #     if 'full_name' in aadhar_data and aadhar_data['full_name']:
+                #         is_name_matching = match_name(pan_name, aadhar_data['full_name'])
+                #         if not is_name_matching:
+                #             return Response({"message": f"Aadhaar name {aadhar_data['full_name']} doesn't match PAN name {pan_name}"}, status=status.HTTP_400_BAD_REQUEST)
+                # else:
+                #     return Response({"message": "Could not fetch name from Aadhar details."}, status=status.HTTP_204_NO_CONTENT)
+
                 user.is_aadhaar_verified = True
                 user.status = CustomUser.STATUS_CHOICES[3][0]
             else:

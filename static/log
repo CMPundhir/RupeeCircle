@@ -1,0 +1,163 @@
+"GET /v1/users/ HTTP/1.1" 200 36455
+"GET /staticfiles/rest_framework/css/bootstrap-tweaks.css HTTP/1.1" 200 3618
+"GET /staticfiles/rest_framework/css/default.css HTTP/1.1" 200 1234
+"GET /staticfiles/rest_framework/js/jquery-3.5.1.min.js HTTP/1.1" 200 89478
+"GET /staticfiles/rest_framework/js/ajax-form.js HTTP/1.1" 200 3724
+"GET /staticfiles/rest_framework/js/csrf.js HTTP/1.1" 200 1771
+"GET /staticfiles/rest_framework/css/prettify.css HTTP/1.1" 200 846
+"GET /staticfiles/rest_framework/js/prettify-min.js HTTP/1.1" 200 13660
+"GET /staticfiles/rest_framework/js/bootstrap.min.js HTTP/1.1" 200 39685
+"GET /staticfiles/rest_framework/css/bootstrap.min.css HTTP/1.1" 200 121462
+"GET /staticfiles/rest_framework/js/default.js HTTP/1.1" 200 1315
+"GET /staticfiles/rest_framework/img/grid.png HTTP/1.1" 200 1458
+"GET /staticfiles/rest_framework/fonts/glyphicons-halflings-regular.woff2 HTTP/1.1" 200 18028
+"GET /staticfiles/favicon.png HTTP/1.1" 200 203935
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+"GET /v1/ HTTP/1.1" 200 8682
+"GET /v1/notification/ HTTP/1.1" 200 15416
+"GET /v1/notification/recentActivity/ HTTP/1.1" 200 13301
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\notification\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\notification\views.py changed, reloading.
+Watching for file changes with StatReloader
+"OPTIONS /v1/notification/ HTTP/1.1" 200 0
+"GET /v1/notification/ HTTP/1.1" 200 52
+"OPTIONS /v1/auth/getOtp/ HTTP/1.1" 200 0
+"POST /v1/auth/getOtp/ HTTP/1.1" 200 50
+"OPTIONS /v1/auth/login/ HTTP/1.1" 200 0
+"POST /v1/auth/login/ HTTP/1.1" 200 546
+"OPTIONS /v1/users/5/ HTTP/1.1" 200 0
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"OPTIONS /v1/partner/ HTTP/1.1" 200 0
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"OPTIONS /v1/notification/recentActivity/ HTTP/1.1" 200 0
+"GET /v1/notification/recentActivity/ HTTP/1.1" 200 1459
+"OPTIONS /v1/portfolio/upcoming_payment/ HTTP/1.1" 200 0
+"OPTIONS /v1/users/count/ HTTP/1.1" 200 0
+"OPTIONS /v1/productparam/ HTTP/1.1" 200 0
+"GET /v1/productparam/ HTTP/1.1" 200 168
+"GET /v1/users/count/ HTTP/1.1" 200 43
+"GET /v1/portfolio/upcoming_payment/ HTTP/1.1" 200 819
+"OPTIONS /v1/users/5 HTTP/1.1" 200 0
+"GET /v1/users/5 HTTP/1.1" 301 0
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"OPTIONS /v1/investor/?limit=10&offset=0 HTTP/1.1" 200 0
+"GET /v1/investor/?limit=10&offset=0 HTTP/1.1" 200 3725
+"OPTIONS /v1/borrower/?limit=10&offset=0 HTTP/1.1" 200 0
+"GET /v1/investor/?limit=10&offset=0 HTTP/1.1" 200 3725
+"GET /v1/borrower/?limit=10&offset=0 HTTP/1.1" 200 384
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\utility\name_verification.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\utility\name_verification.py changed, reloading.
+Watching for file changes with StatReloader
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+"GET /v1/users/5/ HTTP/1.1" 200 524
+"GET /v1/partner/ HTTP/1.1" 200 1215
+"GET /v1/notification/ HTTP/1.1" 200 1568
+C:\Users\akhan\OneDrive\Desktop\RupeeCircle\apps\mauth\views.py changed, reloading.
+Watching for file changes with StatReloader

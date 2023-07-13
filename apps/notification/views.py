@@ -66,7 +66,7 @@ class RecentActivityViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = ActivityTracker.objects.filter(user=user, is_activity=True).order_by('-id')[:10]
+        queryset = ActivityTracker.objects.filter(user=user, is_activity=True).order_by('-id')[11:21]
         return queryset
     
     def get_serializer_class(self):
