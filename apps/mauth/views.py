@@ -451,6 +451,11 @@ class UserViewSet(viewsets.ModelViewSet):
                 #         is_name_matching = match_name(pan_name, aadhar_data['full_name'])
                 #         if not is_name_matching:
                 #             return Response({"message": f"Aadhaar name {aadhar_data['full_name']} doesn't match PAN name {pan_name}"}, status=status.HTTP_400_BAD_REQUEST)
+                #         else:
+                #              user.is_aadhaar_verified = True
+                #             user.status = CustomUser.STATUS_CHOICES[3][0]
+                #     else:
+                #         return Response({"message": "Could not fetch name from aadhaar details."}, status=status.HTTP_204_NO_CONTENT)
                 # else:
                 #     return Response({"message": "Could not fetch name from Aadhar details."}, status=status.HTTP_204_NO_CONTENT)
 
