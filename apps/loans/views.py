@@ -15,6 +15,7 @@ from apps.notification.services import LogService
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 import datetime
+from apps.notification.models import ActivityTracker
 from dateutil import relativedelta
 
 # Create your views here.
@@ -547,7 +548,7 @@ class InvestmentRequestViewSet(viewsets.ModelViewSet):
         borrower_wallet.balance += loan_amount
         borrower_wallet.save()
         LogService.transaction_log(owner=instance.investor, wallet=wallet, amount=loan_amount, debit=True, type=Transaction.TYPE_CHOICES[5][1])
-        LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {loan_amount}. Current Wallet balance is Rs. {wallet.balance}')
+        LogService.log(user=instance.investor, msg=f'Your wallet is debited with Rs. {loan_amount}. Current Wallet balance is Rs. {wallet.balance}', type=ActivityTracker.TYPE_CHOICES[2][1])
         
         # Creating Loan
         loan_instance = Loan.objects.create(loan_amount=instance.amount,
@@ -703,7 +704,7 @@ class SpecialPlanViewSet(viewsets.ModelViewSet):
                                          privacy=serializer.validated_data['privacy'],
                                          governing_law=serializer.validated_data['governing_law'],
                                          )
-        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.')
+        LogService.log(user=user, is_activity=True, msg=f'You have successfully applied for an investment plan.', type=ActivityTracker.TYPE_CHOICES[2][1])
         return Response({"message": "Application Successful."}, status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=False)
@@ -1171,8 +1172,8 @@ class NewProductViewSet(viewsets.ModelViewSet):
             wallet.invested_amount += serializer.validated_data['amount']
             # return Response({"message": "All good till wallet."})
             wallet.save()
-            LogService.log(user=request.user, msg=f"Investment successful for {instance.product_id}.", is_activity=True)
-            LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} have been deducted from your Wallet.", is_activity=False)
+            LogService.log(user=request.user, msg=f"Investment successful for {instance.product_id}.", is_activity=True, type=ActivityTracker.TYPE_CHOICES[2][1])
+            LogService.log(user=request.user, msg=f"Rs.{serializer.validated_data['amount']} have been deducted from your Wallet.", is_activity=False, type=ActivityTracker.TYPE_CHOICES[0][1])
             LogService.transaction_log(owner=request.user, wallet=wallet, amount=serializer.validated_data['amount'], debit=True, type=Transaction.TYPE_CHOICES[2][1])
             investment = Investment.objects.create(principal=serializer.validated_data['amount'],
                                                     interest_rate=instance.interest_rate,

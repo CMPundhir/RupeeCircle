@@ -15,6 +15,7 @@ from rest_framework.settings import api_settings
 from .serializers import *
 from utility.ccavutil import encrypt,decrypt
 from django.views.decorators.csrf import csrf_exempt
+from apps.notification.models import ActivityTracker
 import os
 import base64
 import hashlib
@@ -81,7 +82,7 @@ class WalletViewSet(viewsets.ModelViewSet):
             instance.balance += serializer.validated_data['value']
             instance.save()
             LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} credited to  your wallet. Your wallet balance is Rs.{instance.balance}.",
-                           is_activity=True)
+                           is_activity=True, type=ActivityTracker.TYPE_CHOICES[0][1])
             LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'], type=Transaction.TYPE_CHOICES[0][1])
             return Response({"message": "Funds added successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -98,7 +99,7 @@ class WalletViewSet(viewsets.ModelViewSet):
             instance.balance -= serializer.validated_data['value']
             instance.save()
             LogService.log(user=user, msg=f"Rs.{serializer.validated_data['value']} debited to your wallet. Your wallet balance is Rs.{instance.balance}.",
-                           is_activity=True)
+                           is_activity=True, type=ActivityTracker.TYPE_CHOICES[0][1])
             LogService.transaction_log(owner=user, wallet=instance, amount=serializer.validated_data['value'], debit=True, type=Transaction.TYPE_CHOICES[1][1])
             return Response({"message": "Funds withdrawn successfully.", "balance": instance.balance}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
