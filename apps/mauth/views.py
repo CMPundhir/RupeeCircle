@@ -450,9 +450,12 @@ class UserViewSet(viewsets.ModelViewSet):
                 #     if 'full_name' in aadhar_data and aadhar_data['full_name']:
                 #         is_name_matching = match_name(pan_name, aadhar_data['full_name'])
                 #         if not is_name_matching:
+                #             api_response = DocumentVerificationResponse.objects.get(owner=user)
+                #             api_response.aadhaar_response = 'Name Mismatch'
+                #             api_response.save()
                 #             return Response({"message": f"Aadhaar name {aadhar_data['full_name']} doesn't match PAN name {pan_name}"}, status=status.HTTP_400_BAD_REQUEST)
                 #         else:
-                #              user.is_aadhaar_verified = True
+                #             user.is_aadhaar_verified = True
                 #             user.status = CustomUser.STATUS_CHOICES[3][0]
                 #     else:
                 #         return Response({"message": "Could not fetch name from aadhaar details."}, status=status.HTTP_204_NO_CONTENT)
