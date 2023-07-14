@@ -172,6 +172,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "createOrder":
             return CreateOrderSerializer
+        elif self.action == "checkStatus":
+            return CheckStatusSerializer
         return TransactionSerializer
 
     @action(methods=['GET'], detail=False)
@@ -244,6 +246,29 @@ class TransactionViewSet(viewsets.ModelViewSet):
         print("ppCallback => ", data)
         print("ppCallback => ", msg)
         return Response("Success")
+    
+    @action(methods=['POST'], detail=False)
+    def checkStatus(self, request):
+        PHONE_PE_MERCHANT_ID = os.getenv('PHONE_PE_MERCHANT_ID')
+        PHONE_PE_SALT_KEY = os.getenv("PHONE_PE_SALT_KEY")
+        PHONE_PE_KEY_INDEX = os.getenv("PHONE_PE_KEY_INDEX")
+        id = str(request.data['id'])
+        print("id => ",id)
+        url = f"https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/status/{PHONE_PE_MERCHANT_ID}/{id}"
+        data256 = hashlib.sha256(f"/pg/v1/status/{PHONE_PE_MERCHANT_ID}/{id}{PHONE_PE_SALT_KEY}".encode('utf-8')).hexdigest()
+        print("data256 => ", data256)
+        X_VERIFY = f"{data256}###{PHONE_PE_KEY_INDEX}"
+        print("X_VERIFY => ",X_VERIFY)
+        X_VERIFY = hashlib.sha256(f"/pg/v1/status/{PHONE_PE_MERCHANT_ID}/{id}{PHONE_PE_SALT_KEY}".encode('utf-8')).hexdigest() + f"###{PHONE_PE_KEY_INDEX}"
+        print("X_VERIFY => ",X_VERIFY)
+        headers = {
+            "accept": "application/json",
+            "Content-Type": "application/json",
+            "X-VERIFY": X_VERIFY,
+            "X-MERCHANT-ID": PHONE_PE_MERCHANT_ID
+        }
+        response = requests.get(url, headers=headers)
+        return Response(response.text)
 
 
 class BankAccountViewSet(viewsets.ModelViewSet):    

@@ -54,3 +54,7 @@ class BankSlabSerializer(serializers.ModelSerializer):
 class CreateOrderSerializer(serializers.Serializer):
     amount = serializers.IntegerField(required=True, min_value=1, max_value=10000)
     redirect_url = serializers.URLField(required=True)
+
+
+class CheckStatusSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=True)
